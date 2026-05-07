@@ -23,9 +23,14 @@ class AppServiceProvider extends ServiceProvider
         //
 
         Http::macro('legacy', function () {
-            return Http::withHeaders([
-                'x-api-key' => config('services.legacy_service.api_key'),
-            ])->baseUrl(config('services.legacy_service.base_url'));
+            $config = config('services.legacy_service');
+
+            return Http::baseUrl($config['base_url'])
+                ->withHeaders([
+                    'x-api-key' => $config['api_key'],
+                    'Accept'    => 'application/json',
+                ])
+                ->timeout(5);
         });
     }
 }

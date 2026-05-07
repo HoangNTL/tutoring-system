@@ -2,18 +2,27 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import morgan from 'morgan';
-import logger from './utils/logger';
 import rTracer from 'cls-rtracer';
 
+import logger from './utils/logger';
 import testRoutes from './routes/test.routes';
 import { globalErrorHandler } from './middlewares/errorHandler';
+import { authApiKey } from './middlewares/authKey';
 
 dotenv.config();
 
 const app = express();
 
-app.use(cors());
 app.use(express.json());
+
+app.use(
+  cors({
+    origin: process.env.CORE_BACKEND_URL || 'http://localhost:8000',
+    methods: ['GET'], // Allow only GET requests
+    allowedHeaders: ['x-api-key', 'Content-Type'],
+    credentials: true,
+  }),
+);
 
 // configure morgan for development logging
 app.use(
@@ -26,6 +35,9 @@ app.use(
   ),
 );
 app.use(rTracer.expressMiddleware()); // Add CLS context to each request
+
+// Apply API key authentication middleware globally to all routes
+app.use(authApiKey);
 
 app.use('/api', testRoutes);
 
