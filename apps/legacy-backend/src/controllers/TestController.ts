@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { TestService } from '../services/TestService';
 import { ApiResponse } from '../utils/ApiResponse';
 import { ITestParams } from '../models/Test';
+import logger from '../utils/logger';
 
 export class TestController {
   constructor(private testService: TestService) {}
@@ -19,7 +20,8 @@ export class TestController {
         result.meta,
       );
     } catch (error) {
-      console.error('Error fetching test data:', error);
+      // console.error('Error fetching test data:', error);
+      logger.error('[TestController] Failed to fetch test data:', error);
       return ApiResponse.error(res, 'Error fetching test data', 500);
     }
   };
