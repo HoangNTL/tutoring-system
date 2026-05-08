@@ -5,9 +5,10 @@ import morgan from 'morgan';
 import rTracer from 'cls-rtracer';
 
 import logger from './utils/logger';
-import testRoutes from './routes/test.routes';
+// import testRoutes from './routes/test.routes';
 import { globalErrorHandler } from './middlewares/errorHandler';
 import { authApiKey } from './middlewares/authKey';
+import rootRouter from './routes/index';
 
 dotenv.config();
 
@@ -39,7 +40,8 @@ app.use(rTracer.expressMiddleware()); // Add CLS context to each request
 // Apply API key authentication middleware globally to all routes
 app.use(authApiKey);
 
-app.use('/api', testRoutes);
+// Mount the root router
+app.use('/api', rootRouter);
 
 // Global error handling middleware
 app.use(globalErrorHandler);

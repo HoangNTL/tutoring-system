@@ -11,6 +11,6 @@ const testRepository = new TestRepository();
 const testService = new TestService(testRepository);
 const testController = new TestController(testService);
 
-router.get('/test-db', validate(testSchema), testController.getTestData);
+router.get('/', validate(testSchema), testController.getTestData);
 
 export default router;
