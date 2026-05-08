@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\BaseQueryParamsRequest;
 use App\Services\TestService;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -16,34 +17,20 @@ class TestController extends Controller
         $this->testService = $testService;
     }
 
-    public function index(Request $request)
+    public function index(BaseQueryParamsRequest $request)
     {
-        $apiResponse = $this->testService->getTest([
-            'page' => $request->query('page', 1),
-            'limit' => $request->query('limit', 10),
-        ]);
+        $params = $request->validated();
 
-        if (!$apiResponse || !$apiResponse['success']) {
-            return back()->with('error', 'Failed to fetch data from Express API');
-        }
+        $res = $this->testService->getTest($params);
+        Log::info('TestController@index - Response from service', ['response' => $res]);
 
-        $items = $apiResponse['data'];
-        $meta  = $apiResponse['meta'];
+        return $this->success($res['items'], 'Data fetched successfully', $res['meta']);
 
-        Log::info("check data: " . json_encode($items));
-        Log::info("check meta: " . json_encode($meta));
+        // call service to get data from database directly
+        // $params = $request->validated();
 
-        $paginatedData = new LengthAwarePaginator(
-            $items,
-            $meta['total'],
-            $meta['perPage'],
-            $meta['currentPage'],
-            // [
-            //     'path'  => $request->url(),
-            //     'query' => $request->query(),
-            // ]
-        );
+        // $data = $this->testService->getTest($params);
 
-        return $paginatedData;
+        // return $this->success($data['items'], 'Data fetched successfully', $data['meta']);
     }
 }
