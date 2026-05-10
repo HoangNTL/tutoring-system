@@ -1,7 +1,7 @@
-import { db } from '../config/database';
-import { ITest, ITestParams } from '../models/Test';
-import { IPaginationMeta } from '../types/common';
-import { getPaginationMeta } from '../utils/PaginationHelper';
+import { db } from '@/config/database';
+import { ITest, ITestParams } from '@/models/Test';
+import { IPaginationMeta } from '@/types/common';
+import { getPaginationMeta } from '@/utils/PaginationHelper';
 
 export class TestRepository {
   async getTestData(

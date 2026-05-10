@@ -1,4 +1,4 @@
-import { IPaginationMeta } from '../types/common';
+import { IPaginationMeta } from '@/types/common';
 
 export const getPaginationMeta = ({
   total,

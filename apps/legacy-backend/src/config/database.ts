@@ -1,8 +1,7 @@
 import knex from 'knex';
 import dotenv from 'dotenv';
-import rTracer from 'cls-rtracer';
 
-import logger from '../utils/logger';
+import logger from '@/utils/logger';
 
 dotenv.config();
 

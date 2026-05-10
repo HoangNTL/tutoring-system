@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { TestController } from '../controllers/TestController';
-import { TestService } from '../services/TestService';
-import { TestRepository } from '../repositories/TestRepository';
-import { validate } from '../middlewares/validate';
-import { testSchema } from '../validations/commonValidation';
+import { TestController } from '@/controllers/TestController';
+import { TestService } from '@/services/TestService';
+import { TestRepository } from '@/repositories/TestRepository';
+import { validate } from '@/middlewares/validate';
+import { testSchema } from '@/validations/commonValidation';
 
 const router = Router();
 

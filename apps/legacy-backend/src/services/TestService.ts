@@ -1,5 +1,5 @@
-import { ITest, ITestParams } from '../models/Test';
-import { TestRepository } from '../repositories/TestRepository';
+import { ITest, ITestParams } from '@/models/Test';
+import { TestRepository } from '@/repositories/TestRepository';
 
 export class TestService {
   constructor(private testRepository: TestRepository) {}

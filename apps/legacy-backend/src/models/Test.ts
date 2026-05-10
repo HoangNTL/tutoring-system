@@ -1,4 +1,4 @@
-import { IBaseQueryParams } from '../types/common';
+import { IBaseQueryParams } from '@/types/common';
 
 export interface ITest {
   id: number;
