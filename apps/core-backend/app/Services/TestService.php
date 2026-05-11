@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Repositories\TestRepository;
+use App\Http\Requests\BaseQueryParamsRequest;
 
 class TestService
 {
@@ -15,7 +16,7 @@ class TestService
         $this->testRepository = $testRepository;
     }
 
-    public function getTest(array $params)
+    public function getTest(BaseQueryParamsRequest $params)
     {
         // Call legacy Express API
         $response = Http::legacy()->get('/test-db', $params);
