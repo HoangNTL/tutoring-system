@@ -6,9 +6,21 @@ export const paginationSchema = {
 };
 
 export const testSchema = Joi.object({
-    ...paginationSchema,
+  ...paginationSchema,
 
-    // seach
-    // filter
-    // sort
-})
+  // seach
+  // filter
+  // sort
+});
+
+export const studentSchema = Joi.object({
+  ...paginationSchema,
+});
+
+export const lecturerSchema = Joi.object({
+  ...paginationSchema,
+});
+
+export const departmentSchema = Joi.object({
+  ...paginationSchema,
+});
