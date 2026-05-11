@@ -22,8 +22,6 @@ class TestController extends Controller
         $params = $request->validated();
 
         $res = $this->testService->getTest($params);
-        Log::info('TestController@index - Request parameters', ['params' => $params]);
-        Log::info('TestController@index - Response from service', ['response' => $res]);
 
         return $this->success($res['items'], 'Data fetched successfully', $res['meta']);
 

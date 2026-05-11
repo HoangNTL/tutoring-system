@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use App\Enums\UserRole;
+use Laravel\Sanctum\HasApiTokens;
+
 
 class User extends Authenticatable
 {
@@ -54,5 +56,10 @@ class User extends Authenticatable
             'password_hash' => 'hashed',
             'role' => UserRole::class,
         ];
+    }
+
+    public function getAuthPassword()
+    {
+        return $this->password_hash;
     }
 }
