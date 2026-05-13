@@ -1,9 +1,9 @@
-export interface ApiResponse<T> {
+export interface BaseResponse<T> {
   success: boolean;
   message: string;
   data: T;
   meta?: IPaginationMeta;
-  errors?: any;
+  errors?: unknown;
 }
 
 export interface IPaginationMeta {
