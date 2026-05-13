@@ -61,6 +61,10 @@ Loading system summary:
 - Local component state handles form submissions
 - Axios interceptors feed an optional global loading overlay via Redux
 
+Logout summary:
+
+- UserMenu triggers `POST /api/v1/auth/logout` and clears client auth state/cache
+
 ### Core Backend
 
 - PHP 8.2

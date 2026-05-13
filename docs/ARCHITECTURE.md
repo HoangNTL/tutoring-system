@@ -68,6 +68,15 @@ Observed auth behavior:
 2. Frontend posts credentials to `/api/v1/auth/login`
 3. Frontend fetches `/api/v1/auth/me`
 4. Protected routes redirect unauthenticated users to `/login`
+5. UserMenu triggers `POST /api/v1/auth/logout`
+
+Logout handling (frontend):
+
+- logout is initiated from the UserMenu UI
+- React Query cache is cleared
+- Redux auth state is reset
+- axios `Authorization` header is cleared
+- token storage keys are cleared if present (common `authToken`/`token`). `TODO: verify`
 
 ## Laravel Architecture
 
