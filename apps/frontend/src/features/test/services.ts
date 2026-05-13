@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import axiosInstance from '../../api/axiosInstance'
-import type { ApiResponse } from '../../types/common'
+import type { BaseResponse } from '../../types/common'
 
 const fetchTest = async (
   page: number,
   limit: number
-): Promise<ApiResponse<any>> => {
+): Promise<BaseResponse<any>> => {
   const { data } = await axiosInstance.get('/test', {
     params: {
       page,

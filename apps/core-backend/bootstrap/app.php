@@ -15,10 +15,10 @@ return Application::configure(basePath: dirname(__DIR__))
         //
 
         // ignore CSRF token validation for API routes
-        $middleware->validateCsrfTokens(except: [
-            'api/v1/auth/login',
-            'api/v1/auth/logout',
-        ]);
+        // $middleware->validateCsrfTokens(except: [
+        //     'api/v1/auth/login',
+        //     'api/v1/auth/logout',
+        // ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
