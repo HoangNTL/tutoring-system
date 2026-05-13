@@ -4,12 +4,14 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Request;
 use App\Jobs\AutoTransitionOpenTutorialPeriodsJob;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__ . '/../routes/web.php',
+        api: __DIR__ . '/../routes/api.php',
         commands: __DIR__ . '/../routes/console.php',
         health: '/up',
     )
@@ -19,13 +21,8 @@ return Application::configure(basePath: dirname(__DIR__))
         )->everyMinute();
     })
     ->withMiddleware(function (Middleware $middleware): void {
-        //
-
-        // ignore CSRF token validation for API routes
-        // $middleware->validateCsrfTokens(except: [
-        //     'api/v1/auth/login',
-        //     'api/v1/auth/logout',
-        // ]);
+        $middleware->statefulApi();
+        $middleware->redirectGuestsTo(fn () => null);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
@@ -35,6 +32,16 @@ return Application::configure(basePath: dirname(__DIR__))
                 return true;
             }
             return $request->expectsJson();
+        });
+
+        $exceptions->render(function (AuthenticationException $e, Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthenticated.',
+                    'errors'  => null,
+                ], 401);
+            }
         });
 
         // Global exception handler for API routes

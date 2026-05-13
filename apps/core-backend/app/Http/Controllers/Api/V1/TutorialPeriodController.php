@@ -7,6 +7,7 @@ use App\Http\Requests\TutorialPeriod\ListTutorialPeriodsRequest;
 use App\Http\Requests\TutorialPeriod\StoreTutorialPeriodRequest;
 use App\Http\Requests\TutorialPeriod\UpdateTutorialPeriodRequest;
 use App\Http\Resources\TutorialPeriodResource;
+use App\Models\TutorialPeriod;
 use App\Services\TutorialPeriodService;
 use Illuminate\Http\Request;
 
@@ -30,9 +31,9 @@ class TutorialPeriodController extends Controller
         );
     }
 
-    public function show(int $id)
+    public function show(TutorialPeriod $tutorial_period)
     {
-        $tutorialPeriod = $this->tutorialPeriodService->getById($id);
+        $tutorialPeriod = $this->tutorialPeriodService->getById($tutorial_period->id);
 
         return $this->success(
             (new TutorialPeriodResource($tutorialPeriod))->resolve(),
@@ -55,9 +56,9 @@ class TutorialPeriodController extends Controller
         );
     }
 
-    public function update(UpdateTutorialPeriodRequest $request, int $id)
+    public function update(UpdateTutorialPeriodRequest $request, TutorialPeriod $tutorial_period)
     {
-        $tutorialPeriod = $this->tutorialPeriodService->update($id, $request->validated());
+        $tutorialPeriod = $this->tutorialPeriodService->update($tutorial_period->id, $request->validated());
 
         return $this->success(
             (new TutorialPeriodResource($tutorialPeriod))->resolve(),
@@ -65,16 +66,16 @@ class TutorialPeriodController extends Controller
         );
     }
 
-    public function destroy(int $id)
+    public function destroy(TutorialPeriod $tutorial_period)
     {
-        $this->tutorialPeriodService->delete($id);
+        $this->tutorialPeriodService->delete($tutorial_period->id);
 
         return $this->success(null, 'Tutorial period deleted successfully');
     }
 
-    public function open(Request $request, int $id)
+    public function open(Request $request, TutorialPeriod $tutorial_period)
     {
-        $tutorialPeriod = $this->tutorialPeriodService->open($id, $request->user()->id);
+        $tutorialPeriod = $this->tutorialPeriodService->open($tutorial_period->id, $request->user()->id);
 
         return $this->success(
             (new TutorialPeriodResource($tutorialPeriod))->resolve(),
@@ -82,9 +83,9 @@ class TutorialPeriodController extends Controller
         );
     }
 
-    public function assigning(Request $request, int $id)
+    public function assigning(Request $request, TutorialPeriod $tutorial_period)
     {
-        $tutorialPeriod = $this->tutorialPeriodService->assigning($id, $request->user()->id);
+        $tutorialPeriod = $this->tutorialPeriodService->assigning($tutorial_period->id, $request->user()->id);
 
         return $this->success(
             (new TutorialPeriodResource($tutorialPeriod))->resolve(),
@@ -92,9 +93,9 @@ class TutorialPeriodController extends Controller
         );
     }
 
-    public function ongoing(Request $request, int $id)
+    public function ongoing(Request $request, TutorialPeriod $tutorial_period)
     {
-        $tutorialPeriod = $this->tutorialPeriodService->ongoing($id, $request->user()->id);
+        $tutorialPeriod = $this->tutorialPeriodService->ongoing($tutorial_period->id, $request->user()->id);
 
         return $this->success(
             (new TutorialPeriodResource($tutorialPeriod))->resolve(),
@@ -102,9 +103,9 @@ class TutorialPeriodController extends Controller
         );
     }
 
-    public function close(Request $request, int $id)
+    public function close(Request $request, TutorialPeriod $tutorial_period)
     {
-        $tutorialPeriod = $this->tutorialPeriodService->close($id, $request->user()->id);
+        $tutorialPeriod = $this->tutorialPeriodService->close($tutorial_period->id, $request->user()->id);
 
         return $this->success(
             (new TutorialPeriodResource($tutorialPeriod))->resolve(),

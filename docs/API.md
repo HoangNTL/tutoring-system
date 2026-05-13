@@ -52,7 +52,7 @@ Current code uses `v1` route prefixes:
 
 Source of current routes:
 
-- `apps/core-backend/routes/web.php`
+- `apps/core-backend/routes/api.php`
 
 ### `POST /api/v1/auth/login`
 

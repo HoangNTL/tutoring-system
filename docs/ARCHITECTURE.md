@@ -92,6 +92,7 @@ Main areas:
 - `app/Repositories`
 - `app/Traits`
 - `database/migrations`
+- `routes/api.php`
 - `routes/web.php`
 
 Observed responsibilities:
@@ -104,8 +105,9 @@ Observed responsibilities:
 
 Important implementation details:
 
-- API-style routes are currently defined in `routes/web.php`
+- API routes are defined in `routes/api.php` with Laravel's `/api` prefix and an internal `v1` prefix
 - `bootstrap/app.php` forces JSON exception rendering for `/api/*`
+- `bootstrap/app.php` enables Sanctum stateful API middleware for cookie-based SPA auth
 - `AppServiceProvider` defines `Http::legacy()` using `config('services.legacy_service')`
 - `config/services.php` builds the legacy base URL as `LEGACY_BACKEND_URL + /api/v1`
 
@@ -185,19 +187,25 @@ Relevant files:
 
 ### Laravel
 
+- `GET /api/v1/test`
 - `POST /api/v1/auth/login`
 - `POST /api/v1/auth/logout`
 - `GET /api/v1/auth/me`
+- `GET /api/v1/tutorial-periods`
+- `GET /api/v1/tutorial-periods/{id}`
+- `POST /api/v1/tutorial-periods`
+- `PUT /api/v1/tutorial-periods/{id}`
+- `DELETE /api/v1/tutorial-periods/{id}`
+- `PATCH /api/v1/tutorial-periods/{id}/open`
+- `PATCH /api/v1/tutorial-periods/{id}/assigning`
+- `PATCH /api/v1/tutorial-periods/{id}/ongoing`
+- `PATCH /api/v1/tutorial-periods/{id}/close`
 
 ### Express
 
 - `GET /api/v1/students`
 - `GET /api/v1/lecturers`
 - `GET /api/v1/departments`
-
-## Noted Inconsistencies
-
-- API routes are placed in `routes/web.php`; no `routes/api.php` was found in current use. `TODO: verify` whether this is intentional
 
 ## Architecture Constraints For Future Work
 
