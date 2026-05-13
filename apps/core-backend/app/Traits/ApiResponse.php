@@ -6,12 +6,17 @@ trait ApiResponse
 {
     protected function success($data, $message = 'Success', $meta = null, $code = 200)
     {
-        return response()->json([
+        $response = [
             'success' => true,
             'message' => $message,
             'data'    => $data,
-            'meta'    => $meta,
-        ], $code);
+        ];
+
+        if ($meta !== null) {
+            $response['meta'] = $meta;
+        }
+
+        return response()->json($response, $code);
     }
 
     protected function error($message = 'Error', $code = 500, $errors = null)
