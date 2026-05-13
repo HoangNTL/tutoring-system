@@ -1,42 +1,13 @@
 import { ArrowRight, ShieldCheck } from 'lucide-react';
 
+import Header from '@/components/layout/Header';
+import Footer from '@/components/layout/Footer';
 import LoginForm from '../components/LoginForm';
-import huceLogo from '@/assets/icons/logo-dai-hoc-xay-dung.svg';
 
 export default function LoginPage() {
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#0f4c81_0px,#0f4c81_96px,#edf3f8_96px,#f8fbfd_100%)] text-slate-900">
-      <header className="border-b border-white/10">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-4 py-5 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-4">
-              <img
-                src={huceLogo}
-                alt="Trường Đại Học Xây Dựng"
-                className="h-12 w-auto max-w-[140px] sm:h-14"
-              />
-
-            <div className="space-y-0.5">
-              <h1 className="text-sm font-bold uppercase tracking-wide text-white sm:text-lg">
-                Trường Đại Học Xây Dựng
-              </h1>
-
-              <p className="text-xs text-sky-100/80 sm:text-sm">
-                Hanoi University of Civil Engineering
-              </p>
-            </div>
-          </div>
-
-          <div className="hidden text-right md:block">
-            <p className="text-sm font-bold uppercase tracking-wide text-yellow-300">
-              Hệ thống đăng ký học phụ đạo
-            </p>
-
-            <p className="text-sm text-sky-100/80">
-              Dành cho sinh viên nước ngoài
-            </p>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       <main className="mx-auto flex min-h-[calc(100vh-152px)] max-w-7xl items-center justify-center px-4 py-10 sm:px-6 lg:px-8">
         <div className="grid w-full max-w-5xl overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/95 shadow-[0_24px_80px_rgba(15,76,129,0.18)] backdrop-blur lg:grid-cols-[1.1fr_0.9fr]">
@@ -81,12 +52,7 @@ export default function LoginPage() {
         </div>
       </main>
 
-      <footer className="border-t border-slate-200/70 bg-white/70">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 py-4 text-center text-xs text-slate-500 sm:px-6 md:flex-row md:text-left lg:px-8">
-          <p>Bản quyền thuộc về Trường Đại học Xây dựng.</p>
-          <p>Quản lý bởi Phòng Đào tạo. Email: daotao@huce.edu.vn</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

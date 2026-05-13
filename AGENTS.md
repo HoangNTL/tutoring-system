@@ -108,6 +108,9 @@ Observed frontend auth flow:
 - request Sanctum CSRF cookie
 - submit username/password to Laravel
 - rely on cookie-based authenticated requests with `withCredentials: true`
+- logout is triggered from the UserMenu and calls `POST /api/v1/auth/logout`
+- after logout, the frontend clears React Query cache, Redux user state, and axios `Authorization`
+- token storage keys are cleared if present (common `authToken`/`token`). `TODO: verify`
 
 Agents should not convert this to token-only auth without approval.
 

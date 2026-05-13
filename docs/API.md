@@ -115,6 +115,13 @@ Current behavior:
 - invalidates the session
 - regenerates the CSRF token
 
+Frontend handling:
+
+- logout is triggered from the UserMenu
+- clears React Query cache and Redux auth state
+- clears axios `Authorization` header
+- clears common token storage keys if present (e.g., `authToken`, `token`). `TODO: verify`
+
 ### `GET /api/v1/auth/me`
 
 Middleware:
