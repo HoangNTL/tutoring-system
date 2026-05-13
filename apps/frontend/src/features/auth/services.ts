@@ -14,12 +14,14 @@ export const useLoginMutation = () => {
   })
 }
 
-export const useMeQuery = () => {
+export const useCurrentUser = () => {
   return useQuery({
     queryKey: ['me'],
     queryFn: getCurrentUserApi,
     retry: false,
     staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
     select: (res) => res.data.user
   })
 }
