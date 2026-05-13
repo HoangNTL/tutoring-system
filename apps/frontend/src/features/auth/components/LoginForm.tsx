@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { isAxiosError } from 'axios';
@@ -21,6 +22,7 @@ import {
 // import { Label } from '@/components/ui/label';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { BaseResponse } from '@/types/common';
+import ButtonLoader from '@/components/loading/ButtonLoader';
 
 const getLoginErrorMessage = (error: unknown) => {
     if (isAxiosError<BaseResponse<never>>(error)) {
@@ -60,6 +62,7 @@ export default function LoginForm() {
     const loginMutation = useLoginMutation();
     const navigate = useNavigate();
     const location = useLocation();
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const redirectTo =
         (
             location.state as
@@ -89,6 +92,7 @@ export default function LoginForm() {
 
     const onSubmit = async (data: LoginSchema) => {
         clearErrors('root');
+        setIsSubmitting(true);
 
         try {
             const response = await loginMutation.mutateAsync(data);
@@ -106,6 +110,8 @@ export default function LoginForm() {
                 type: 'server',
                 message: getLoginErrorMessage(error),
             });
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -140,7 +146,7 @@ export default function LoginForm() {
                             <Input
                                 placeholder="Nhập mã số sinh viên hoặc tài khoản"
                                 {...register('username')}
-                                disabled={loginMutation.isPending}
+                                disabled={isSubmitting}
                                 className="h-12 rounded-2xl border-slate-200 bg-slate-50 pr-4 pl-11 text-sm shadow-none placeholder:text-slate-400 focus-visible:border-[#0f4c81] focus-visible:ring-[#0f4c81]/15"
                             />
                         </div>
@@ -164,7 +170,7 @@ export default function LoginForm() {
                                 type="password"
                                 placeholder="Nhập mật khẩu"
                                 {...register('password')}
-                                disabled={loginMutation.isPending}
+                                disabled={isSubmitting}
                                 className="h-12 rounded-2xl border-slate-200 bg-slate-50 pr-4 pl-11 text-sm shadow-none placeholder:text-slate-400 focus-visible:border-[#0f4c81] focus-visible:ring-[#0f4c81]/15"
                             />
                         </div>
@@ -185,11 +191,13 @@ export default function LoginForm() {
                     <Button
                         type="submit"
                         className="h-12 w-full rounded-2xl bg-[#0f4c81] text-sm font-semibold text-white shadow-[0_12px_30px_rgba(15,76,129,0.25)] hover:bg-[#0c3f6a]"
-                        disabled={loginMutation.isPending}
+                        disabled={isSubmitting}
                     >
-                        {loginMutation.isPending
-                            ? 'Đang đăng nhập...'
-                            : 'Đăng nhập'}
+                        {isSubmitting ? (
+                            <ButtonLoader label="Đang đăng nhập..." />
+                        ) : (
+                            'Đăng nhập'
+                        )}
                     </Button>
 
                     <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm leading-6 text-slate-500">
