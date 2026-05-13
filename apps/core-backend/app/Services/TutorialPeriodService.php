@@ -6,8 +6,8 @@ use App\Enums\TutorialPeriodStatus;
 use App\Models\TutorialPeriod;
 use App\Models\TutorialPeriodStatusLog;
 use App\Traits\PaginationHelper;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Date;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -32,23 +32,25 @@ class TutorialPeriodService
 
     public function getAll(array $filters): array
     {
-        $sortBy = in_array($filters['sortBy'], $this->sortableColumns, true)
-            ? $filters['sortBy']
-            : 'id';
+        $sortBy = $this->resolveSortBy($filters['sortBy'] ?? null);
+        $sortOrder = $this->resolveSortOrder($filters['sortOrder'] ?? null);
+        $page = max((int) ($filters['page'] ?? 1), 1);
+        $limit = max((int) ($filters['limit'] ?? 10), 1);
+        $search = trim((string) ($filters['search'] ?? ''));
 
         $query = TutorialPeriod::query()
             ->with('createdBy')
-            ->orderBy($sortBy, $filters['sortOrder']);
+            ->orderBy($sortBy, $sortOrder);
 
-        if (!empty($filters['search'])) {
-            $query->where('title', 'like', '%' . $filters['search'] . '%');
+        if ($search !== '') {
+            $query->where('title', 'like', '%' . $search . '%');
         }
 
         $paginator = $query->paginate(
-            $filters['limit'],
+            $limit,
             ['*'],
             'page',
-            $filters['page']
+            $page
         );
 
         return $this->formatPaginator($paginator);
@@ -56,21 +58,13 @@ class TutorialPeriodService
 
     public function getById(int $id): TutorialPeriod
     {
-        return TutorialPeriod::query()
-            ->with(['createdBy', 'statusLogs.changedBy'])
-            ->find($id)
-            ?? throw new NotFoundHttpException('Tutorial period not found');
+        return $this->findTutorialPeriodOrFail($id, ['createdBy', 'statusLogs.changedBy']);
     }
 
     public function create(array $data, int $userId): TutorialPeriod
     {
         $tutorialPeriod = TutorialPeriod::create([
-            'title' => $data['title'],
-            'description' => $data['description'],
-            'start_reg_date' => $data['start_reg_date'],
-            'end_reg_date' => $data['end_reg_date'],
-            'start_study_date' => $data['start_study_date'],
-            'end_study_date' => $data['end_study_date'],
+            ...$this->extractTutorialPeriodAttributes($data),
             'status' => TutorialPeriodStatus::DRAFT->value,
             'created_by' => $userId,
         ]);
@@ -84,14 +78,7 @@ class TutorialPeriodService
 
         $this->ensureDraftStatus($tutorialPeriod, 'updated');
 
-        $tutorialPeriod->update([
-            'title' => $data['title'],
-            'description' => $data['description'],
-            'start_reg_date' => $data['start_reg_date'],
-            'end_reg_date' => $data['end_reg_date'],
-            'start_study_date' => $data['start_study_date'],
-            'end_study_date' => $data['end_study_date'],
-        ]);
+        $tutorialPeriod->update($this->extractTutorialPeriodAttributes($data));
 
         return $tutorialPeriod->refresh()->load(['createdBy', 'statusLogs.changedBy']);
     }
@@ -136,7 +123,7 @@ class TutorialPeriodService
             function (TutorialPeriod $tutorialPeriod): void {
                 if (
                     $tutorialPeriod->end_reg_date === null ||
-                    Date::today()->lte($tutorialPeriod->end_reg_date)
+                    now()->lte($tutorialPeriod->end_reg_date->copy()->endOfDay())
                 ) {
                     throw new ConflictHttpException('Tutorial period can only move to ASSIGNING after registration has ended');
                 }
@@ -189,13 +176,7 @@ class TutorialPeriodService
             $changedBy,
             $beforeTransition
         ) {
-            $tutorialPeriod = TutorialPeriod::query()
-                ->lockForUpdate()
-                ->find($id);
-
-            if (!$tutorialPeriod) {
-                throw new NotFoundHttpException('Tutorial period not found');
-            }
+            $tutorialPeriod = $this->findTutorialPeriodOrFail($id, lockForUpdate: true);
 
             if ($tutorialPeriod->status !== $fromStatus) {
                 throw new ConflictHttpException(
@@ -224,5 +205,57 @@ class TutorialPeriodService
 
             return $tutorialPeriod->refresh()->load(['createdBy', 'statusLogs.changedBy']);
         });
+    }
+
+    private function resolveSortBy(?string $sortBy): string
+    {
+        return in_array($sortBy, $this->sortableColumns, true)
+            ? $sortBy
+            : 'id';
+    }
+
+    private function resolveSortOrder(?string $sortOrder): string
+    {
+        $normalizedSortOrder = strtolower((string) $sortOrder);
+
+        return in_array($normalizedSortOrder, ['asc', 'desc'], true)
+            ? $normalizedSortOrder
+            : 'asc';
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function extractTutorialPeriodAttributes(array $data): array
+    {
+        return [
+            'title' => $data['title'] ?? null,
+            'description' => $data['description'] ?? null,
+            'start_reg_date' => $data['start_reg_date'] ?? null,
+            'end_reg_date' => $data['end_reg_date'] ?? null,
+            'start_study_date' => $data['start_study_date'] ?? null,
+            'end_study_date' => $data['end_study_date'] ?? null,
+        ];
+    }
+
+    /**
+     * @param  array<int, string>  $relations
+     */
+    private function findTutorialPeriodOrFail(
+        int $id,
+        array $relations = [],
+        bool $lockForUpdate = false
+    ): TutorialPeriod {
+        $query = TutorialPeriod::query()->with($relations);
+
+        if ($lockForUpdate) {
+            $query->lockForUpdate();
+        }
+
+        try {
+            return $query->findOrFail($id);
+        } catch (ModelNotFoundException $exception) {
+            throw new NotFoundHttpException('Tutorial period not found', $exception);
+        }
     }
 }

@@ -15,8 +15,7 @@ class TutorialPeriodController extends Controller
 {
     public function __construct(
         private TutorialPeriodService $tutorialPeriodService
-    ) {
-    }
+    ) {}
 
     public function index(ListTutorialPeriodsRequest $request)
     {
@@ -24,7 +23,7 @@ class TutorialPeriodController extends Controller
 
         return $this->success(
             collect($result['items'])
-                ->map(fn ($tutorialPeriod) => (new TutorialPeriodResource($tutorialPeriod))->resolve())
+                ->map(fn($tutorialPeriod) => (new TutorialPeriodResource($tutorialPeriod))->resolve())
                 ->all(),
             'Tutorial periods retrieved successfully',
             $result['meta']
