@@ -127,6 +127,13 @@ Observed shared conventions:
 - Laravel uses Form Requests
 - Express uses Joi-based query validation middleware
 
+### Loading States (Frontend)
+
+- React Query loading states are the source of truth for API data fetching
+- Local component state is used for form submission loading (e.g., login)
+- Axios interceptors track global request activity
+- Redux is only for global loading UI/overlay (optional)
+
 ## Safe Working Process
 
 1. Inspect the relevant app boundary first.

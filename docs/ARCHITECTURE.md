@@ -55,6 +55,13 @@ Observed frontend patterns:
 - Redux Toolkit stores auth state
 - React Router protects the root route via `ProtectedRoute`
 
+Loading system design:
+
+- React Query loading states drive API page loading
+- Local component state handles form submission loading
+- Axios interceptors track global request activity
+- Redux stores only the global loading overlay state (optional)
+
 Observed auth behavior:
 
 1. Frontend requests `/sanctum/csrf-cookie`

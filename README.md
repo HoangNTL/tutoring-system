@@ -55,6 +55,12 @@ Observed runtime values in the current repository:
 - React Hook Form
 - Zod
 
+Loading system summary:
+
+- React Query handles API loading states
+- Local component state handles form submissions
+- Axios interceptors feed an optional global loading overlay via Redux
+
 ### Core Backend
 
 - PHP 8.2
