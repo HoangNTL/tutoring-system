@@ -1,9 +1,11 @@
-import type { BaseResponse } from "@/types/common";
+import type { BaseResponse } from '@/types/common'
+
+export type Role = 'ADMIN' | 'DEPARTMENT' | 'LECTURER' | 'STUDENT'
 
 export interface User {
   id: number
   username: string
-  role: string
+  role: Role
 }
 
 export interface LoginPayload {

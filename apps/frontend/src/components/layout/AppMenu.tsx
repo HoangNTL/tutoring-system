@@ -10,45 +10,98 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import type { Role } from '@/features/auth/types'
 import { cn } from '@/lib/utils'
 
-export type AppMenuItem = {
+export type MenuItem = {
   label: string
   path: string
 }
 
-export const appMenuItems: AppMenuItem[] = [
-  {
-    label: 'Quản lý đợt phụ đạo',
-    path: '/tutorial-periods',
-  },
-  {
-    label: 'Quản lý người dùng',
-    path: '/users',
-  },
-  {
-    label: 'Báo cáo & thống kê',
-    path: '/reports',
-  },
-  {
-    label: 'Cài đặt hệ thống',
-    path: '/settings',
-  },
-]
+export const MENU_BY_ROLE: Record<Role, MenuItem[]> = {
+  ADMIN: [
+    {
+      label: 'Quản lý đợt phụ đạo',
+      path: '/tutorial-periods',
+    },
+    {
+      label: 'Quản lý người dùng',
+      path: '/users',
+    },
+    {
+      label: 'Báo cáo & thống kê',
+      path: '/reports',
+    },
+    {
+      label: 'Cài đặt hệ thống',
+      path: '/settings',
+    },
+  ],
+  DEPARTMENT: [
+    {
+      label: 'Xếp lịch phụ đạo',
+      path: '/tutorial-scheduling',
+    },
+    {
+      label: 'Phân công giảng viên',
+      path: '/lecturer-assignments',
+    },
+  ],
+  LECTURER: [
+    {
+      label: 'Lịch dạy',
+      path: '/teaching-schedule',
+    },
+    {
+      label: 'Thông tin cá nhân',
+      path: '/profile',
+    },
+  ],
+  STUDENT: [
+    {
+      label: 'Đăng ký phụ đạo',
+      path: '/tutorial-registration',
+    },
+    {
+      label: 'Lịch học',
+      path: '/study-schedule',
+    },
+    {
+      label: 'Thông tin cá nhân',
+      path: '/profile',
+    },
+  ],
+}
+
+export const getMenuItemsForRole = (role?: Role | null): MenuItem[] => {
+  if (!role) {
+    return []
+  }
+
+  return MENU_BY_ROLE[role]
+}
+
+export const getDefaultMenuPathForRole = (role?: Role | null): string => {
+  const [firstItem] = getMenuItemsForRole(role)
+
+  return firstItem?.path ?? '/login'
+}
 
 interface AppMenuProps {
-  items?: AppMenuItem[]
+  role?: Role | null
   userName?: string
   onLogout?: () => void
   isLoggingOut?: boolean
 }
 
 export default function AppMenu({
-  items = appMenuItems,
+  role,
   userName,
   onLogout,
   isLoggingOut = false,
 }: AppMenuProps) {
+  const items = getMenuItemsForRole(role)
+
   return (
     <div className="border-b border-slate-200/80 bg-white/90 backdrop-blur">
       <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">

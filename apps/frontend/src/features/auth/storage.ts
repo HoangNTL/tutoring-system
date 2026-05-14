@@ -1,6 +1,7 @@
 import type { User } from '@/features/auth/types'
 
 const AUTH_USER_STORAGE_KEY = 'auth_user'
+const AUTH_ROLES = new Set(['ADMIN', 'DEPARTMENT', 'LECTURER', 'STUDENT'])
 
 const isUser = (value: unknown): value is User => {
   if (typeof value !== 'object' || value === null) {
@@ -12,7 +13,8 @@ const isUser = (value: unknown): value is User => {
   return (
     typeof candidate.id === 'number' &&
     typeof candidate.username === 'string' &&
-    typeof candidate.role === 'string'
+    typeof candidate.role === 'string' &&
+    AUTH_ROLES.has(candidate.role)
   )
 }
 
