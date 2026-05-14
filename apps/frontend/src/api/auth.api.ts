@@ -12,7 +12,7 @@ export const loginApi = async (
 ): Promise<LoginResponse> => {
   const normalizedPayload: LoginPayload = {
     username: payload.username.trim(),
-    password: payload.password,
+    password: payload.password
   }
 
   await getCsrfCookie()
@@ -25,12 +25,13 @@ export const loginApi = async (
     throw new Error(response.data.message || 'Login failed')
   }
 
-  return getCurrentUserApi()
+  return response.data
 }
 
 export const logoutApi = async (): Promise<BaseResponse<null>> => {
   const response = await axiosInstance.post<BaseResponse<null>>(
-    API_ENDPOINTS.LOGOUT
+    API_ENDPOINTS.LOGOUT,
+    undefined
   )
   return response.data
 }

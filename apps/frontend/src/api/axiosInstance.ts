@@ -33,6 +33,7 @@ axiosInstance.interceptors.response.use(
   },
   (error) => {
     store.dispatch(requestFinished())
+
     return Promise.reject(error)
   }
 )

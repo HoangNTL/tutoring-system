@@ -6,7 +6,7 @@ use App\Models\TutorialPeriod;
 use App\Http\Controllers\TestController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['web'])->prefix('v1')->group(function () {
+Route::prefix('v1')->group(function () {
     Route::get('/test', [TestController::class, 'index']);
 
     Route::prefix('auth')->group(function () {

@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 
 import LoginPage from '@/features/auth/pages/LoginPage';
 import ProtectedRoute from './ProtectedRoute';
@@ -7,21 +7,19 @@ import HomePage from '@/pages/HomePage';
 
 export default function AppRouter() {
     return (
-        <BrowserRouter>
-            <Routes>
-                <Route path="/login" element={<LoginPage />} />
+        <Routes>
+            <Route path="/login" element={<LoginPage />} />
 
-                <Route
-                    path="/"
-                    element={
-                        <ProtectedRoute>
-                            <MainLayout>
-                                <HomePage />
-                            </MainLayout>
-                        </ProtectedRoute>
-                    }
-                />
-            </Routes>
-        </BrowserRouter>
+            <Route
+                path="/"
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <HomePage />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
+        </Routes>
     );
 }

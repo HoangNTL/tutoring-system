@@ -15,14 +15,11 @@ class AuthController extends Controller
     {
         $credentials = $request->validated();
 
-        // $remember = $request->boolean('remember');
-
         if (!Auth::attempt(
             [
                 'username' => $credentials['username'],
                 'password' => $credentials['password'],
             ],
-            // $remember
         )) {
 
             return $this->error('Invalid credentials', 401);

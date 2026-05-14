@@ -9,6 +9,7 @@ import type { NavItemConfig } from '@/components/navigation/NavItem';
 import { logoutApi } from '@/api/auth.api';
 import axiosInstance from '@/api/axiosInstance';
 import { clearUser } from '@/features/auth/authSlice';
+import { clearStoredAuthUser } from '@/features/auth/storage';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 
 type MainLayoutProps = PropsWithChildren<{
@@ -28,6 +29,7 @@ export default function MainLayout({
         {
             label: 'Management',
             children: [
+                { label: 'Tutorial Periods', path: '/' },
                 { label: 'Users', path: '/users' },
                 { label: 'Roles', path: '/roles' },
             ],
@@ -43,6 +45,7 @@ export default function MainLayout({
         try {
             await logoutMutation.mutateAsync();
         } finally {
+            clearStoredAuthUser();
             localStorage.removeItem('authToken');
             localStorage.removeItem('token');
             sessionStorage.removeItem('authToken');

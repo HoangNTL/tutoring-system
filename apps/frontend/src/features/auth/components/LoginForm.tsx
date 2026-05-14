@@ -5,6 +5,7 @@ import { isAxiosError } from 'axios';
 import { Lock, ShieldCheck, User } from 'lucide-react';
 
 import { useLoginMutation } from '../services';
+import { storeAuthUser } from '../storage';
 import { setUser } from '../authSlice';
 import { useAppDispatch } from '@/store/hooks';
 
@@ -97,6 +98,7 @@ export default function LoginForm() {
         try {
             const response = await loginMutation.mutateAsync(data);
 
+            storeAuthUser(response.data.user);
             dispatch(setUser(response.data.user));
 
             navigate(

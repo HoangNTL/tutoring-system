@@ -1,30 +1,18 @@
 import { Navigate, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
-import { useCurrentUser } from '@/features/auth/services';
 import PageLoader from '@/components/loading/PageLoader';
-import { useAppDispatch } from '@/store/hooks';
-import { setUser, clearUser } from '@/features/auth/authSlice';
+import { useAppSelector } from '@/store/hooks';
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
-    const dispatch = useAppDispatch();
-    const { data: user, isLoading, isError } = useCurrentUser();
+    const { user, isAuthenticated, isCheckingAuth, hasCheckedAuth } = useAppSelector(
+        (state) => state.auth
+    );
     const location = useLocation();
 
-    useEffect(() => {
-        if (user) {
-            dispatch(setUser(user));
-        }
-
-        if (isError) {
-            dispatch(clearUser());
-        }
-    }, [user, isError, dispatch]);
-
-    if (isLoading) {
+    if (isCheckingAuth || !hasCheckedAuth) {
         return <PageLoader label="Đang tải trang..." />;
     }
 
-    if (!user) {
+    if (!isAuthenticated || !user) {
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
