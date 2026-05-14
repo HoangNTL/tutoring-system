@@ -14,6 +14,7 @@ class StoreTutorialPeriodRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'user_id' => ['required', 'integer', 'exists:users,id'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string'],
             'start_reg_date' => ['required', 'date', 'before:end_reg_date'],

@@ -33,6 +33,11 @@ return Application::configure(basePath: dirname(__DIR__))
             StartSession::class,
         ]);
 
+        // Development-only: allow API requests without CSRF tokens while frontend auth is bypassed.
+        $middleware->validateCsrfTokens(except: [
+            'api/*',
+        ]);
+
         $middleware->redirectGuestsTo(fn() => null);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

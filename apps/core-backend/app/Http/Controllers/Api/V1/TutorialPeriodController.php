@@ -42,9 +42,11 @@ class TutorialPeriodController extends Controller
 
     public function store(StoreTutorialPeriodRequest $request)
     {
+        $validated = $request->validated();
+
         $tutorialPeriod = $this->tutorialPeriodService->create(
-            $request->validated(),
-            $request->user()->id
+            $validated,
+            (int) $validated['user_id']
         );
 
         return $this->success(
@@ -74,7 +76,11 @@ class TutorialPeriodController extends Controller
 
     public function open(Request $request, TutorialPeriod $tutorial_period)
     {
-        $tutorialPeriod = $this->tutorialPeriodService->open($tutorial_period->id, $request->user()->id);
+        $validated = $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+        ]);
+
+        $tutorialPeriod = $this->tutorialPeriodService->open($tutorial_period->id, (int) $validated['user_id']);
 
         return $this->success(
             (new TutorialPeriodResource($tutorialPeriod))->resolve(),
@@ -84,7 +90,11 @@ class TutorialPeriodController extends Controller
 
     public function assigning(Request $request, TutorialPeriod $tutorial_period)
     {
-        $tutorialPeriod = $this->tutorialPeriodService->assigning($tutorial_period->id, $request->user()->id);
+        $validated = $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+        ]);
+
+        $tutorialPeriod = $this->tutorialPeriodService->assigning($tutorial_period->id, (int) $validated['user_id']);
 
         return $this->success(
             (new TutorialPeriodResource($tutorialPeriod))->resolve(),
@@ -94,7 +104,11 @@ class TutorialPeriodController extends Controller
 
     public function ongoing(Request $request, TutorialPeriod $tutorial_period)
     {
-        $tutorialPeriod = $this->tutorialPeriodService->ongoing($tutorial_period->id, $request->user()->id);
+        $validated = $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+        ]);
+
+        $tutorialPeriod = $this->tutorialPeriodService->ongoing($tutorial_period->id, (int) $validated['user_id']);
 
         return $this->success(
             (new TutorialPeriodResource($tutorialPeriod))->resolve(),
@@ -104,7 +118,11 @@ class TutorialPeriodController extends Controller
 
     public function close(Request $request, TutorialPeriod $tutorial_period)
     {
-        $tutorialPeriod = $this->tutorialPeriodService->close($tutorial_period->id, $request->user()->id);
+        $validated = $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+        ]);
+
+        $tutorialPeriod = $this->tutorialPeriodService->close($tutorial_period->id, (int) $validated['user_id']);
 
         return $this->success(
             (new TutorialPeriodResource($tutorialPeriod))->resolve(),

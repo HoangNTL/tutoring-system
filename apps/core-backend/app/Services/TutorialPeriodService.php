@@ -37,6 +37,7 @@ class TutorialPeriodService
         $page = max((int) ($filters['page'] ?? 1), 1);
         $limit = max((int) ($filters['limit'] ?? 10), 1);
         $search = trim((string) ($filters['search'] ?? ''));
+        $status = $this->resolveStatus($filters['status'] ?? null);
 
         $query = TutorialPeriod::query()
             ->with('createdBy')
@@ -44,6 +45,10 @@ class TutorialPeriodService
 
         if ($search !== '') {
             $query->where('title', 'like', '%' . $search . '%');
+        }
+
+        if ($status !== null) {
+            $query->where('status', $status->value);
         }
 
         $paginator = $query->paginate(
@@ -221,6 +226,21 @@ class TutorialPeriodService
         return in_array($normalizedSortOrder, ['asc', 'desc'], true)
             ? $normalizedSortOrder
             : 'asc';
+    }
+
+    private function resolveStatus(?string $status): ?TutorialPeriodStatus
+    {
+        if (!$status) {
+            return null;
+        }
+
+        foreach (TutorialPeriodStatus::cases() as $tutorialPeriodStatus) {
+            if ($tutorialPeriodStatus->name === $status) {
+                return $tutorialPeriodStatus;
+            }
+        }
+
+        return null;
     }
 
     /**
