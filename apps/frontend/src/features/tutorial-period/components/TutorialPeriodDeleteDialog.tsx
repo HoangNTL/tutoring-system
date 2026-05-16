@@ -8,7 +8,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/shared/ui/alert-dialog'
-import type { TutorialPeriod } from '@/features/tutorial-period/types'
+import type { TutorialPeriod } from '@/features/tutorial-period/types/tutorialPeriod.types'
 
 type TutorialPeriodDeleteDialogProps = {
   tutorialPeriod: TutorialPeriod | null

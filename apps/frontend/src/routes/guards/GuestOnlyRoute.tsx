@@ -12,7 +12,7 @@ type GuestOnlyRouteProps = {
 export default function GuestOnlyRoute({ children }: GuestOnlyRouteProps) {
   const { status, user } = useAppSelector((state) => state.auth)
 
-  if (status === 'idle' || status === 'checking') {
+  if (status === 'checking') {
     return <PageLoader label="Đang kiểm tra phiên đăng nhập..." />
   }
 

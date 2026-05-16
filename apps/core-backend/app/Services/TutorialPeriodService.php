@@ -32,7 +32,7 @@ class TutorialPeriodService
 
     public function getAll(array $filters): array
     {
-        $sortBy = $this->resolveSortBy($filters['sort_by'] ?? null);
+        $sortBy = $this->resolveSortBy($filters['sort_column'] ?? null);
         $sortOrder = $this->resolveSortOrder($filters['sort_order'] ?? null);
         $page = max((int) ($filters['page'] ?? 1), 1);
         $limit = max((int) ($filters['limit'] ?? 10), 1);

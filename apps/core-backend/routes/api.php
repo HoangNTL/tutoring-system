@@ -13,7 +13,7 @@ Route::prefix('v1')->group(function () {
         });
     });
 
-    Route::middleware(['web', 'auth:sanctum'])->group(function () {
+    Route::middleware('auth:sanctum')->group(function () {
         Route::get('/tutorial-periods', [TutorialPeriodController::class, 'index']);
         Route::get('/tutorial-periods/{tutorial_period}', [TutorialPeriodController::class, 'show']);
         Route::post('/tutorial-periods', [TutorialPeriodController::class, 'store']);

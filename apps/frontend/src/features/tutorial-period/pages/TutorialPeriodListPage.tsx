@@ -13,9 +13,9 @@ import { TutorialPeriodFormDialog } from '@/features/tutorial-period/components/
 import { TutorialPeriodTable } from '@/features/tutorial-period/components/TutorialPeriodTable'
 import {
   type TutorialPeriod,
-  type TutorialPeriodPayload,
   type TutorialPeriodStatus,
-} from '@/features/tutorial-period/types'
+} from '@/features/tutorial-period/types/tutorialPeriod.types'
+import type { TutorialPeriodFormValues } from '@/features/tutorial-period/schemas/tutorialPeriod.schema'
 import { getApiErrorMessage } from '@/shared/api/errors'
 import { Button } from '@/shared/ui/button'
 import ErrorState from '@/shared/ui/error-state'
@@ -135,7 +135,7 @@ export default function TutorialPeriodListPage() {
     }
   }
 
-  const handleSubmitForm = async (values: TutorialPeriodPayload) => {
+  const handleSubmitForm = async (values: TutorialPeriodFormValues) => {
     setFormError(null)
 
     try {

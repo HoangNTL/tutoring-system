@@ -1,16 +1,37 @@
-import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
+import {
+  createAsyncThunk,
+  createSlice,
+  type PayloadAction,
+} from '@reduxjs/toolkit'
 
+import { getCurrentUserApi } from '@/features/auth/api'
 import type { User } from '@/features/auth/types'
 
-export type AuthStatus = 'idle' | 'checking' | 'authenticated' | 'guest'
+export type AuthStatus =
+  | 'checking'
+  | 'authenticated'
+  | 'unauthenticated'
 
 interface AuthState {
   status: AuthStatus
   user: User | null
 }
 
+export const checkAuth = createAsyncThunk(
+  'auth/checkAuth',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getCurrentUserApi()
+
+      return response.data.user
+    } catch {
+      return rejectWithValue('Unauthenticated')
+    }
+  }
+)
+
 const initialState: AuthState = {
-  status: 'idle',
+  status: 'checking',
   user: null,
 }
 
@@ -18,25 +39,31 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    startAuthCheck(state) {
-      state.status = 'checking'
-    },
     setAuthUser(state, action: PayloadAction<User>) {
       state.status = 'authenticated'
       state.user = action.payload
     },
-    setGuest(state) {
-      state.status = 'guest'
-      state.user = null
-    },
     clearAuth(state) {
-      state.status = 'guest'
+      state.status = 'unauthenticated'
       state.user = null
     },
   },
+  extraReducers: (builder) => {
+    builder
+      .addCase(checkAuth.pending, (state) => {
+        state.status = 'checking'
+      })
+      .addCase(checkAuth.fulfilled, (state, action) => {
+        state.status = 'authenticated'
+        state.user = action.payload
+      })
+      .addCase(checkAuth.rejected, (state) => {
+        state.status = 'unauthenticated'
+        state.user = null
+      })
+  },
 })
 
-export const { startAuthCheck, setAuthUser, setGuest, clearAuth } =
-  authSlice.actions
+export const { setAuthUser, clearAuth } = authSlice.actions
 
 export default authSlice.reducer

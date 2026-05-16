@@ -15,7 +15,6 @@ class ListTutorialPeriodsRequest extends BaseQueryRequest
     public function rules(): array
     {
         return array_merge(parent::rules(), [
-            'sort_by' => 'string|nullable|in:id,title,start_reg_date,end_reg_date,start_study_date,end_study_date,status,created_at,updated_at',
             'search' => 'string|nullable|max:255',
             'status' => 'string|nullable|in:' . implode(
                 ',',
@@ -25,5 +24,23 @@ class ListTutorialPeriodsRequest extends BaseQueryRequest
                 )
             ),
         ]);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function sortableFields(): array
+    {
+        return [
+            'id' => 'id',
+            'title' => 'title',
+            'startRegDate' => 'start_reg_date',
+            'endRegDate' => 'end_reg_date',
+            'startStudyDate' => 'start_study_date',
+            'endStudyDate' => 'end_study_date',
+            'status' => 'status',
+            'createdAt' => 'created_at',
+            'updatedAt' => 'updated_at',
+        ];
     }
 }

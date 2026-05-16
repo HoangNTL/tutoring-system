@@ -9,7 +9,7 @@ import {
 import {
   tutorialPeriodStatuses,
   type TutorialPeriodStatus,
-} from '@/features/tutorial-period/types'
+} from '@/features/tutorial-period/types/tutorialPeriod.types'
 
 type TutorialPeriodFiltersProps = {
   searchInput: string

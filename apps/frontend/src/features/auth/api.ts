@@ -25,6 +25,8 @@ export const loginApi = async (
 }
 
 export const logoutApi = async (): Promise<BaseResponse<null>> => {
+  await getCsrfCookie()
+
   const response = await http.post<BaseResponse<null>>(
     AUTH_API_ENDPOINTS.logout,
     undefined

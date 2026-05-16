@@ -2,6 +2,7 @@ import { Pencil, Trash2 } from 'lucide-react'
 
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
+import { formatDate } from '@/shared/lib/date'
 import {
   Table,
   TableBody,
@@ -11,7 +12,7 @@ import {
   TableRow,
 } from '@/shared/ui/table'
 import { cn } from '@/shared/lib/utils'
-import type { TutorialPeriod } from '@/features/tutorial-period/types'
+import type { TutorialPeriod } from '@/features/tutorial-period/types/tutorialPeriod.types'
 
 const statusBadgeClassNames: Record<string, string> = {
   DRAFT: 'border-slate-200 bg-slate-100 text-slate-700',
@@ -46,8 +47,8 @@ export function TutorialPeriodTable({
         </TableHeader>
         <TableBody>
           {tutorialPeriods.map((tutorialPeriod) => {
-            const canEdit = tutorialPeriod.permissions?.can_edit ?? false
-            const canDelete = tutorialPeriod.permissions?.can_delete ?? false
+            const canEdit = tutorialPeriod.permissions?.canEdit ?? false
+            const canDelete = tutorialPeriod.permissions?.canDelete ?? false
 
             return (
               <TableRow key={tutorialPeriod.id}>
@@ -73,11 +74,13 @@ export function TutorialPeriodTable({
                   </Badge>
                 </TableCell>
                 <TableCell className="align-top text-sm text-slate-600">
-                  <div>{tutorialPeriod.start_reg_date}</div>
-                  <div className="text-slate-400">đến {tutorialPeriod.end_reg_date}</div>
+                  <div>{formatDate(tutorialPeriod.startRegDate) || 'N/A'}</div>
+                  <div className="text-slate-400">
+                    đến {formatDate(tutorialPeriod.endRegDate) || 'N/A'}
+                  </div>
                 </TableCell>
                 <TableCell className="align-top text-sm text-slate-600">
-                  {tutorialPeriod.created_by?.username ?? 'N/A'}
+                  {tutorialPeriod.createdBy?.username ?? 'N/A'}
                 </TableCell>
                 <TableCell className="px-4 align-top">
                   <div className="flex justify-end gap-2">

@@ -10,6 +10,22 @@ use Illuminate\Support\Str;
 use App\Jobs\AutoTransitionOpenTutorialPeriodsJob;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 
+if (!function_exists('transformValidationErrorsToCamelCaseOnce')) {
+    function transformValidationErrorsToCamelCaseOnce(array $errors): array
+    {
+        $normalized = [];
+
+        foreach ($errors as $key => $value) {
+            $normalizedKey = is_string($key) ? Str::camel($key) : $key;
+            $normalized[$normalizedKey] = is_array($value)
+                ? transformValidationErrorsToCamelCaseOnce($value)
+                : $value;
+        }
+
+        return $normalized;
+    }
+}
+
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__ . '/../routes/web.php',
@@ -74,19 +90,3 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         });
     })->create();
-
-if (!function_exists('transformValidationErrorsToCamelCaseOnce')) {
-    function transformValidationErrorsToCamelCaseOnce(array $errors): array
-    {
-        $normalized = [];
-
-        foreach ($errors as $key => $value) {
-            $normalizedKey = is_string($key) ? Str::camel($key) : $key;
-            $normalized[$normalizedKey] = is_array($value)
-                ? transformValidationErrorsToCamelCaseOnce($value)
-                : $value;
-        }
-
-        return $normalized;
-    }
-}

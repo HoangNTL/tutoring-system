@@ -7,11 +7,11 @@ export default function RequireAuth() {
   const { status, user } = useAppSelector((state) => state.auth)
   const location = useLocation()
 
-  if (status === 'idle' || status === 'checking') {
+  if (status === 'checking') {
     return <PageLoader label="Đang kiểm tra phiên đăng nhập..." />
   }
 
-  if (status !== 'authenticated' || !user) {
+  if (status === 'unauthenticated' || !user) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 

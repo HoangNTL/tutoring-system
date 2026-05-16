@@ -1,48 +1,30 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 
-import { useAppDispatch, useAppSelector } from '@/app/store/hooks'
-import { getCurrentUserApi } from '@/features/auth/api'
-import {
-  setAuthUser,
-  setGuest,
-  startAuthCheck,
-} from '@/features/auth/authSlice'
+import { useAppDispatch } from '@/app/store/hooks'
+import { checkAuth, clearAuth } from '@/features/auth/authSlice'
+import { setUnauthorizedHandler } from '@/shared/api/http'
 
 export const useAuthBootstrap = () => {
   const dispatch = useAppDispatch()
-  const authStatus = useAppSelector((state) => state.auth.status)
+  const hasBootstrappedRef = useRef(false)
 
   useEffect(() => {
-    if (authStatus !== 'idle') {
+    setUnauthorizedHandler(() => {
+      dispatch(clearAuth())
+    })
+
+    return () => {
+      setUnauthorizedHandler(null)
+    }
+  }, [dispatch])
+
+  useEffect(() => {
+    if (hasBootstrappedRef.current) {
       return
     }
 
-    let isMounted = true
+    hasBootstrappedRef.current = true
 
-    const bootstrapAuth = async () => {
-      dispatch(startAuthCheck())
-
-      try {
-        const response = await getCurrentUserApi()
-
-        if (!isMounted) {
-          return
-        }
-
-        dispatch(setAuthUser(response.data.user))
-      } catch {
-        if (!isMounted) {
-          return
-        }
-
-        dispatch(setGuest())
-      }
-    }
-
-    void bootstrapAuth()
-
-    return () => {
-      isMounted = false
-    }
-  }, [authStatus, dispatch])
+    void dispatch(checkAuth())
+  }, [dispatch])
 }
