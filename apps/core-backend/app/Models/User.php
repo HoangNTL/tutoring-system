@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use App\Enums\UserRole;
-use Laravel\Sanctum\HasApiTokens;
 
 
 class User extends Authenticatable
@@ -27,6 +26,7 @@ class User extends Authenticatable
         // 'password',
         'username',
         'password_hash',
+        'role',
         'student_id',
         'lecturer_id',
         'department_id',

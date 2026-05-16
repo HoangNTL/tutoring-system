@@ -4,9 +4,8 @@ namespace App\Http\Resources;
 
 use App\Enums\TutorialPeriodStatus;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\JsonResource;
 
-class TutorialPeriodResource extends JsonResource
+class TutorialPeriodResource extends BaseApiResource
 {
     /**
      * Transform the resource into an array.
@@ -15,14 +14,14 @@ class TutorialPeriodResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return [
+        return $this->camelize([
             'id' => $this->id,
             'title' => $this->title,
             'description' => $this->description,
-            'start_reg_date' => $this->formatDate($this->start_reg_date),
-            'end_reg_date' => $this->formatDate($this->end_reg_date),
-            'start_study_date' => $this->formatDate($this->start_study_date),
-            'end_study_date' => $this->formatDate($this->end_study_date),
+            'start_reg_date' => $this->formatDateTime($this->start_reg_date),
+            'end_reg_date' => $this->formatDateTime($this->end_reg_date),
+            'start_study_date' => $this->formatDateTime($this->start_study_date),
+            'end_study_date' => $this->formatDateTime($this->end_study_date),
             'status' => $this->status?->name,
             'opened_at' => $this->whenNotNull($this->formatDateTime($this->opened_at)),
             'assigned_at' => $this->whenNotNull($this->formatDateTime($this->assigned_at)),
@@ -72,12 +71,7 @@ class TutorialPeriodResource extends JsonResource
                     ->all();
                 }
             ),
-        ];
-    }
-
-    private function formatDate(mixed $value): ?string
-    {
-        return $value?->format('Y-m-d');
+        ]);
     }
 
     private function formatDateTime(mixed $value): ?string

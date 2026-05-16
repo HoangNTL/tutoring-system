@@ -2,52 +2,24 @@
 
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\TutorialPeriodController;
-use App\Http\Controllers\TestController;
 use Illuminate\Support\Facades\Route;
-// use App\Models\TutorialPeriod;
 
 Route::prefix('v1')->group(function () {
-    Route::get('/test', [TestController::class, 'index']);
-
-    Route::prefix('auth')->group(function () {
-        Route::post('/login', [AuthController::class, 'login']);
-        Route::post('/logout', [AuthController::class, 'logout']);
-
-        // Route::middleware('auth:sanctum')->group(function () {
-        //     Route::get('/me', [AuthController::class, 'me']);
-        // });
-
-        Route::get('/me', [AuthController::class, 'me']);
+    Route::middleware('web')->prefix('auth')->group(function () {
+        Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
+        Route::middleware('auth:sanctum')->group(function () {
+            Route::post('/logout', [AuthController::class, 'logout']);
+            Route::get('/me', [AuthController::class, 'me']);
+        });
     });
 
-    // Route::middleware('auth:sanctum')->group(function () {
-    //     Route::get('/tutorial-periods', [TutorialPeriodController::class, 'index'])
-    //         ->middleware('can:viewAny,' . TutorialPeriod::class);
-    //     Route::get('/tutorial-periods/{tutorial_period}', [TutorialPeriodController::class, 'show'])
-    //         ->middleware('can:view,tutorial_period');
-    //     Route::post('/tutorial-periods', [TutorialPeriodController::class, 'store'])
-    //         ->middleware('can:create,' . TutorialPeriod::class);
-    //     Route::put('/tutorial-periods/{tutorial_period}', [TutorialPeriodController::class, 'update'])
-    //         ->middleware('can:update,tutorial_period');
-    //     Route::delete('/tutorial-periods/{tutorial_period}', [TutorialPeriodController::class, 'destroy'])
-    //         ->middleware('can:delete,tutorial_period');
-    //     Route::patch('/tutorial-periods/{tutorial_period}/open', [TutorialPeriodController::class, 'open'])
-    //         ->middleware('can:update,tutorial_period');
-    //     Route::patch('/tutorial-periods/{tutorial_period}/assigning', [TutorialPeriodController::class, 'assigning'])
-    //         ->middleware('can:update,tutorial_period');
-    //     Route::patch('/tutorial-periods/{tutorial_period}/ongoing', [TutorialPeriodController::class, 'ongoing'])
-    //         ->middleware('can:update,tutorial_period');
-    //     Route::patch('/tutorial-periods/{tutorial_period}/close', [TutorialPeriodController::class, 'close'])
-    //         ->middleware('can:update,tutorial_period');
-    // });
-
-    Route::get('/tutorial-periods', [TutorialPeriodController::class, 'index']);
-    Route::get('/tutorial-periods/{tutorial_period}', [TutorialPeriodController::class, 'show']);
-    Route::post('/tutorial-periods', [TutorialPeriodController::class, 'store']);
-    Route::put('/tutorial-periods/{tutorial_period}', [TutorialPeriodController::class, 'update']);
-    Route::delete('/tutorial-periods/{tutorial_period}', [TutorialPeriodController::class, 'destroy']);
-    Route::patch('/tutorial-periods/{tutorial_period}/open', [TutorialPeriodController::class, 'open']);
-    Route::patch('/tutorial-periods/{tutorial_period}/assigning', [TutorialPeriodController::class, 'assigning']);
-    Route::patch('/tutorial-periods/{tutorial_period}/ongoing', [TutorialPeriodController::class, 'ongoing']);
-    Route::patch('/tutorial-periods/{tutorial_period}/close', [TutorialPeriodController::class, 'close']);
+    Route::middleware(['web', 'auth:sanctum'])->group(function () {
+        Route::get('/tutorial-periods', [TutorialPeriodController::class, 'index']);
+        Route::get('/tutorial-periods/{tutorial_period}', [TutorialPeriodController::class, 'show']);
+        Route::post('/tutorial-periods', [TutorialPeriodController::class, 'store']);
+        Route::put('/tutorial-periods/{tutorial_period}', [TutorialPeriodController::class, 'update']);
+        Route::patch('/tutorial-periods/{tutorial_period}', [TutorialPeriodController::class, 'update']);
+        Route::delete('/tutorial-periods/{tutorial_period}', [TutorialPeriodController::class, 'destroy']);
+        Route::patch('/tutorial-periods/{tutorial_period}/status', [TutorialPeriodController::class, 'updateStatus']);
+    });
 });

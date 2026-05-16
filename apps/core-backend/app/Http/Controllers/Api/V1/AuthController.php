@@ -5,11 +5,8 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Resources\UserResource;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-
 
 class AuthController extends Controller
 {
@@ -36,10 +33,9 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        Auth::logout();
+        Auth::guard('web')->logout();
 
         $request->session()->invalidate();
-
         $request->session()->regenerateToken();
 
         return $this->success(null, 'Logout successful', null, 200);
@@ -47,14 +43,8 @@ class AuthController extends Controller
 
     public function me(Request $request)
     {
-        $user = $request->user() ?? User::query()->orderBy('id')->first();
-
-        if ($user === null) {
-            throw new NotFoundHttpException('No user available for development fallback');
-        }
-
         return $this->success([
-            'user' => new UserResource($user),
+            'user' => new UserResource($request->user()),
         ], 'User retrieved successfully', null, 200);
     }
 }

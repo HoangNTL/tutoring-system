@@ -4,7 +4,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAppSelector } from '@/app/store/hooks'
 import RoleLayout from '@/layouts/RoleLayout'
 import { LoginPage, appRoutes, getDefaultRouteForRole } from '@/routes/route-config'
-import GuestOnlyRoute from '@/routes/guards/GuestOnlyRoute'
+// import GuestOnlyRoute from '@/routes/guards/GuestOnlyRoute'
 import RequireAuth from '@/routes/guards/RequireAuth'
 import RequireRole from '@/routes/guards/RequireRole'
 import PageLoader from '@/shared/ui/loading/page-loader'
@@ -21,11 +21,11 @@ export default function AppRouter() {
       <Route
         path="/login"
         element={
-          <GuestOnlyRoute>
+          // <GuestOnlyRoute>
             <Suspense fallback={<PageLoader label="Đang tải trang đăng nhập..." />}>
               <LoginPage />
             </Suspense>
-          </GuestOnlyRoute>
+          // </GuestOnlyRoute>
         }
       />
 

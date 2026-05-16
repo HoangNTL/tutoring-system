@@ -6,10 +6,8 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use App\Jobs\AutoTransitionOpenTutorialPeriodsJob;
-use Illuminate\Session\Middleware\StartSession;
-use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
-use Illuminate\Cookie\Middleware\EncryptCookies;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -27,15 +25,6 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->api(prepend: [
             EnsureFrontendRequestsAreStateful::class,
-
-            EncryptCookies::class,
-            AddQueuedCookiesToResponse::class,
-            StartSession::class,
-        ]);
-
-        // Development-only: allow API requests without CSRF tokens while frontend auth is bypassed.
-        $middleware->validateCsrfTokens(except: [
-            'api/*',
         ]);
 
         $middleware->redirectGuestsTo(fn() => null);
@@ -55,7 +44,8 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthenticated.',
-                    'errors'  => null,
+                    'data' => null,
+                    'meta' => null,
                 ], 401);
             }
         });
@@ -63,17 +53,40 @@ return Application::configure(basePath: dirname(__DIR__))
         // Global exception handler for API routes
         $exceptions->render(function (Throwable $e, Request $request) {
             if ($request->is('api/*')) {
-
                 $statusCode = method_exists($e, 'getStatusCode') ? $e->getStatusCode() : 500;
-
-                $errors = ($e instanceof \Illuminate\Validation\ValidationException) ? $e->errors() : null;
+                $errors = ($e instanceof \Illuminate\Validation\ValidationException)
+                    ? transformValidationErrorsToCamelCaseOnce($e->errors())
+                    : null;
                 if ($errors) $statusCode = 422;
 
-                return response()->json([
+                $response = [
                     'success' => false,
                     'message' => $e->getMessage() ?: 'An error occurred',
-                    'errors'  => $errors,
-                ], $statusCode);
+                    'data' => null,
+                    'meta' => null,
+                ];
+
+                if ($errors !== null) {
+                    $response['errors'] = $errors;
+                }
+
+                return response()->json($response, $statusCode);
             }
         });
     })->create();
+
+if (!function_exists('transformValidationErrorsToCamelCaseOnce')) {
+    function transformValidationErrorsToCamelCaseOnce(array $errors): array
+    {
+        $normalized = [];
+
+        foreach ($errors as $key => $value) {
+            $normalizedKey = is_string($key) ? Str::camel($key) : $key;
+            $normalized[$normalizedKey] = is_array($value)
+                ? transformValidationErrorsToCamelCaseOnce($value)
+                : $value;
+        }
+
+        return $normalized;
+    }
+}

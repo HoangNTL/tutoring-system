@@ -32,8 +32,8 @@ class TutorialPeriodService
 
     public function getAll(array $filters): array
     {
-        $sortBy = $this->resolveSortBy($filters['sortBy'] ?? null);
-        $sortOrder = $this->resolveSortOrder($filters['sortOrder'] ?? null);
+        $sortBy = $this->resolveSortBy($filters['sort_by'] ?? null);
+        $sortOrder = $this->resolveSortOrder($filters['sort_order'] ?? null);
         $page = max((int) ($filters['page'] ?? 1), 1);
         $limit = max((int) ($filters['limit'] ?? 10), 1);
         $search = trim((string) ($filters['search'] ?? ''));
@@ -156,6 +156,17 @@ class TutorialPeriodService
             'closed_at',
             $changedBy
         );
+    }
+
+    public function updateStatus(int $id, string $status, int $changedBy): TutorialPeriod
+    {
+        return match ($status) {
+            TutorialPeriodStatus::OPEN->name => $this->open($id, $changedBy),
+            TutorialPeriodStatus::ASSIGNING->name => $this->assigning($id, $changedBy),
+            TutorialPeriodStatus::ONGOING->name => $this->ongoing($id, $changedBy),
+            TutorialPeriodStatus::CLOSED->name => $this->close($id, $changedBy),
+            default => throw new ConflictHttpException('Unsupported tutorial period status transition'),
+        };
     }
 
     private function ensureDraftStatus(TutorialPeriod $tutorialPeriod, string $action): void

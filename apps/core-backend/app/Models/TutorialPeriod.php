@@ -41,10 +41,10 @@ class TutorialPeriod extends Model
     protected function casts(): array
     {
         return [
-            'start_reg_date' => 'date',
-            'end_reg_date' => 'date',
-            'start_study_date' => 'date',
-            'end_study_date' => 'date',
+            'start_reg_date' => 'datetime',
+            'end_reg_date' => 'datetime',
+            'start_study_date' => 'datetime',
+            'end_study_date' => 'datetime',
             'status' => TutorialPeriodStatus::class,
             'opened_at' => 'datetime',
             'assigned_at' => 'datetime',
