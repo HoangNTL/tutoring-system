@@ -52,7 +52,7 @@ Current code uses `v1` route prefixes:
 
 Source of current routes:
 
-- `apps/core-backend/routes/web.php`
+- `apps/core-backend/routes/api.php`
 
 ### `POST /api/v1/auth/login`
 
@@ -89,13 +89,9 @@ Success response shape:
     "user": {
       "id": 1,
       "username": "example",
-      "role": 4,
-      "studentId": 10,
-      "lecturerId": null,
-      "departmentId": null
+      "role": "ADMIN"
     }
-  },
-  "meta": null
+  }
 }
 ```
 
@@ -137,9 +133,6 @@ Response user fields:
 - `id`
 - `username`
 - `role`
-- `studentId`
-- `lecturerId`
-- `departmentId`
 
 Serialization source:
 

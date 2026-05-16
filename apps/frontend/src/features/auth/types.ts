@@ -1,20 +1,18 @@
-import type { BaseResponse } from "@/types/common";
+import type { BaseResponse } from '@/shared/types/api'
+
+export type Role = 'ADMIN' | 'DEPARTMENT' | 'LECTURER' | 'STUDENT'
 
 export interface User {
-  id: number;
-  username: string;
-  role: number;
-  studentId: number | null;
-  lecturerId: number | null;
-  departmentId: number | null;
+  id: number
+  username: string
+  role: Role
 }
 
 export interface LoginPayload {
-  username: string;
-  password: string;
-  // remember?: boolean;
+  username: string
+  password: string
 }
 
 export type LoginResponse = BaseResponse<{
-  user: User;
+  user: User
 }>

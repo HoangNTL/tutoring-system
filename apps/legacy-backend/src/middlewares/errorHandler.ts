@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 
-import logger from '@/utils/logger';
+import logger from '@/shared/logger';
+import { errorResponse } from '@/shared/response';
 
 export const globalErrorHandler = (
   err: any,
@@ -19,8 +20,9 @@ export const globalErrorHandler = (
     },
   });
 
-  res.status(statusCode).json({
-    success: false,
-    message: err.message.replace(/^Error: /i, ''),
-  });
+  return errorResponse(
+    res,
+    err.message.replace(/^Error: /i, ''),
+    statusCode,
+  );
 };

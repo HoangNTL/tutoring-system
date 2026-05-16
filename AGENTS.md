@@ -156,5 +156,4 @@ When updating docs:
 
 ## Known Ambiguities
 
-- Laravel API routes live in `routes/web.php` instead of `routes/api.php`. `TODO: verify`
 - Legacy backend production start workflow is not defined in `package.json`. `TODO: verify`

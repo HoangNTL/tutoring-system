@@ -1,37 +1,31 @@
 import knex from 'knex';
-import dotenv from 'dotenv';
 
-import logger from '@/utils/logger';
-
-dotenv.config();
+import { env, isProduction } from '@/config/env';
+import logger from '@/shared/logger';
 
 const db = knex({
   client: 'mssql',
   connection: {
-    host: process.env.DB_SERVER || 'localhost',
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_DATABASE,
-    port: Number(process.env.DB_PORT) || 1433,
+    host: env.db.host,
+    user: env.db.user,
+    password: env.db.password,
+    database: env.db.database,
+    port: env.db.port,
     options: {
       encrypt: false,
       trustServerCertificate: true,
     },
   },
-  // optional: configure connection pool settings
 });
 
-// Listen for query events to log SQL queries and errors
 db.on('query', (query) => {
-  // log SQL queries in development mode for debugging
-  if (process.env.NODE_ENV !== 'production') {
+  if (!isProduction) {
     logger.info(
       `[SQL] ${query.sql} | Params: ${JSON.stringify(query.bindings)}`,
     );
   }
 });
 
-// Test the database connection immediately
 db.raw('SELECT 1')
   .then(() => {
     logger.info('[Database] SQL Server connected successfully.');
@@ -42,9 +36,10 @@ db.raw('SELECT 1')
       code: err.code,
     });
 
-    if (process.env.NODE_ENV !== 'production') {
+    if (!isProduction) {
       logger.error('Stopping server due to DB connection error...');
       process.exit(1);
     }
   });
+
 export { db };

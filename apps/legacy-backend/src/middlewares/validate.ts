@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { Schema } from 'joi';
 
-import { ApiResponse } from '@/utils/ApiResponse';
+import { errorResponse } from '@/shared/response';
 
 export const validate = (schema: Schema) => {
   return (req: Request, res: Response, next: NextFunction) => {
@@ -15,7 +15,7 @@ export const validate = (schema: Schema) => {
       const errorMessage = error.details
         .map((detail) => detail.message)
         .join(', ');
-      return ApiResponse.error(res, errorMessage, 400);
+      return errorResponse(res, errorMessage, 400);
     }
 
     Object.assign(req.query, value);

@@ -1,15 +1,15 @@
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import morgan from 'morgan';
 import rTracer from 'cls-rtracer';
 
-import logger from '@/utils/logger';
+import { env } from '@/config/env';
 import { globalErrorHandler } from '@/middlewares/errorHandler';
-import { authApiKey } from '@/middlewares/authKey';
-import rootRouter from '@/routes/index';
-
-dotenv.config();
+import { authApiKey } from '@/middlewares/authApiKey';
+import departmentRouter from '@/modules/departments/department.routes';
+import lecturerRouter from '@/modules/lecturers/lecturer.routes';
+import studentRouter from '@/modules/students/student.routes';
+import logger from '@/shared/logger';
 
 const app = express();
 
@@ -17,36 +17,30 @@ app.use(express.json());
 
 app.use(
   cors({
-    origin: process.env.CORE_BACKEND_URL || 'http://localhost:8000',
-    methods: ['GET'], // Allow only GET requests
+    origin: env.coreBackendUrl,
+    methods: ['GET'],
     allowedHeaders: ['x-api-key', 'Content-Type'],
     credentials: true,
   }),
 );
 
-// configure morgan for development logging
 app.use(
   morgan(
     ':method :url :status :response-time ms - :res[content-length] bytes',
     {
-      skip: (req, res) => res.statusCode >= 400, // Skip logging for errors, we'll log them in the error handler
+      skip: (req, res) => res.statusCode >= 400,
       stream: { write: (message) => logger.info(`[HTTP] ${message.trim()}`) },
     },
   ),
 );
-app.use(rTracer.expressMiddleware()); // Add CLS context to each request
+app.use(rTracer.expressMiddleware());
 
-// Apply API key authentication middleware globally to all routes
 app.use(authApiKey);
-
-// Mount the root router
-app.use('/api', rootRouter);
-
-// Global error handling middleware
+app.use('/api/v1/students', studentRouter);
+app.use('/api/v1/lecturers', lecturerRouter);
+app.use('/api/v1/departments', departmentRouter);
 app.use(globalErrorHandler);
 
-const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, () => {
-  logger.info(`Server is running on port ${PORT}`);
+app.listen(env.port, () => {
+  logger.info(`Server is running on port ${env.port}`);
 });

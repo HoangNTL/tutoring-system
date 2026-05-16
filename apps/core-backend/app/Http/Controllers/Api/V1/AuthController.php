@@ -8,21 +8,17 @@ use App\Http\Resources\UserResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-
 class AuthController extends Controller
 {
     public function login(LoginRequest $request)
     {
         $credentials = $request->validated();
 
-        // $remember = $request->boolean('remember');
-
         if (!Auth::attempt(
             [
                 'username' => $credentials['username'],
                 'password' => $credentials['password'],
             ],
-            // $remember
         )) {
 
             return $this->error('Invalid credentials', 401);
@@ -37,10 +33,9 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        Auth::logout();
+        Auth::guard('web')->logout();
 
         $request->session()->invalidate();
-
         $request->session()->regenerateToken();
 
         return $this->success(null, 'Logout successful', null, 200);

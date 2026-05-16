@@ -1,37 +1,69 @@
-import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
-import type { User } from './types'
+import {
+  createAsyncThunk,
+  createSlice,
+  type PayloadAction,
+} from '@reduxjs/toolkit'
+
+import { getCurrentUserApi } from '@/features/auth/api'
+import type { User } from '@/features/auth/types'
+
+export type AuthStatus =
+  | 'checking'
+  | 'authenticated'
+  | 'unauthenticated'
 
 interface AuthState {
+  status: AuthStatus
   user: User | null
-  isAuthenticated: boolean
-  isLoading: boolean
 }
 
+export const checkAuth = createAsyncThunk(
+  'auth/checkAuth',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getCurrentUserApi()
+
+      return response.data.user
+    } catch {
+      return rejectWithValue('Unauthenticated')
+    }
+  }
+)
+
 const initialState: AuthState = {
+  status: 'checking',
   user: null,
-  isAuthenticated: false,
-  isLoading: false
 }
 
 const authSlice = createSlice({
   name: 'auth',
   initialState,
-
   reducers: {
-    setUser(state, action: PayloadAction<User>) {
+    setAuthUser(state, action: PayloadAction<User>) {
+      state.status = 'authenticated'
       state.user = action.payload
-      state.isAuthenticated = true
-      state.isLoading = false
     },
-
-    clearUser(state) {
+    clearAuth(state) {
+      state.status = 'unauthenticated'
       state.user = null
-      state.isAuthenticated = false
-      state.isLoading = false
-    }
-  }
+    },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(checkAuth.pending, (state) => {
+        state.status = 'checking'
+      })
+      .addCase(checkAuth.fulfilled, (state, action) => {
+        state.status = 'authenticated'
+        state.user = action.payload
+      })
+      .addCase(checkAuth.rejected, (state) => {
+        state.status = 'unauthenticated'
+        state.user = null
+      })
+  },
 })
 
-export const { setUser, clearUser } = authSlice.actions
+export const { setAuthUser, clearAuth } = authSlice.actions
 
 export default authSlice.reducer

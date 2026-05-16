@@ -1,8 +1,8 @@
-import { ArrowRight, ShieldCheck } from 'lucide-react';
+import { ArrowRight, ShieldCheck } from 'lucide-react'
 
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
-import LoginForm from '../components/LoginForm';
+import LoginForm from '@/features/auth/components/LoginForm'
+import Footer from '@/layouts/components/Footer'
+import Header from '@/layouts/components/Header'
 
 export default function LoginPage() {
   return (
@@ -54,5 +54,5 @@ export default function LoginPage() {
 
       <Footer />
     </div>
-  );
+  )
 }

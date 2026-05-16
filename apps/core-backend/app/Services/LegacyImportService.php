@@ -4,143 +4,96 @@ namespace App\Services;
 
 use App\Enums\UserRole;
 use App\Models\User;
-use Illuminate\Support\Facades\Http;
+use App\Services\External\LegacyApiService;
 use Illuminate\Support\Facades\Log;
 
 class LegacyImportService
 {
-    private const LIMIT = 100;
+    public function __construct(
+        private LegacyApiService $legacyApiService
+    ) {}
 
-    private function formatDoBPassword(?string $doB): string
+    private function formatDevPassword(?string $dateOfBirth): string
     {
-        if (empty($doB)) {
+        // DEV ONLY: using simple predictable password.
+        // TODO: replace with secure password handling in production.
+        if (empty($dateOfBirth)) {
             return '1';
         }
 
-        return str_replace('/', '', $doB);
-    }
-
-    private function fetchPaginatedData(string $endpoint): array
-    {
-        $page = 1;
-
-        $allData = [];
-
-        do {
-
-            $response = Http::legacy()->get($endpoint, [
-                'page' => $page,
-                'limit' => self::LIMIT,
-            ]);
-
-            Log::info("Fetching data from legacy API: $endpoint, page: $page");
-
-            if ($response->failed()) {
-                break;
-            }
-
-            $result = $response->json();
-
-            $data = $result['data'] ?? [];
-
-            $allData = array_merge($allData, $data);
-
-            $totalPages = $result['meta']['lastPage'] ?? 1;
-
-            $page++;
-
-        } while ($page <= $totalPages);
-
-        return $allData;
+        return str_replace('/', '', $dateOfBirth);
     }
 
     public function importStudents(): void
     {
-        $students = $this->fetchPaginatedData('/students');
+        $students = $this->legacyApiService->fetchAllStudents();
         Log::info("Fetched " . count($students) . " students from legacy API.");
 
         foreach ($students as $student) {
-
-            if (
-                empty($student['id']) ||
-                empty($student['studentCode'])
-            ) {
-                continue;
-            }
-
             $user = User::firstOrNew([
-                'username' => $student['studentCode']
+                'username' => $student['username']
             ]);
 
-            $user->password_hash = $this->formatDoBPassword(
-                $student['dateOfBirth'] ?? null
+            $this->synchronizeImportedUser(
+                $user,
+                UserRole::STUDENT,
+                'student_id',
+                $student['legacy_id'],
+                $this->formatDevPassword($student['date_of_birth'] ?? null)
             );
-
-            $user->role = UserRole::STUDENT;
-            $user->student_id = $student['id'];
-
-            $user->save();
         }
     }
 
     public function importLecturers(): void
     {
-        $lecturers = $this->fetchPaginatedData('/lecturers');
+        $lecturers = $this->legacyApiService->fetchAllLecturers();
 
         foreach ($lecturers as $lecturer) {
-
-            if (
-                empty($lecturer['id']) ||
-                empty($lecturer['lecturerCode'])
-            ) {
-                continue;
-            }
-
             $user = User::firstOrNew([
-                'username' => $lecturer['lecturerCode']
+                'username' => $lecturer['username']
             ]);
 
-            $user->password_hash = $this->formatDoBPassword(
-                $lecturer['dateOfBirth'] ?? null
+            $this->synchronizeImportedUser(
+                $user,
+                UserRole::LECTURER,
+                'lecturer_id',
+                $lecturer['legacy_id'],
+                $this->formatDevPassword($lecturer['date_of_birth'] ?? null)
             );
-
-            $user->role = UserRole::LECTURER;
-            $user->lecturer_id = $lecturer['id'];
-
-            $user->save();
         }
     }
 
     public function importDepartments(): void
     {
-        $departments = $this->fetchPaginatedData('/departments');
+        $departments = $this->legacyApiService->fetchAllDepartments();
 
         foreach ($departments as $department) {
-
-            if (empty($department['id'])) {
-                continue;
-            }
-
-            $username = 'bm' . $department['id'];
-
             $user = User::firstOrNew([
-                'username' => $username
+                'username' => $department['username']
             ]);
 
-            $user->password_hash = '1';
-            $user->role = UserRole::DEPARTMENT;
-            $user->department_id = $department['id'];
-
-            $user->save();
+            $this->synchronizeImportedUser(
+                $user,
+                UserRole::DEPARTMENT,
+                'department_id',
+                $department['legacy_id'],
+                $this->formatDevPassword(null)
+            );
         }
     }
 
-    // public function importAll(): void
-    // {
-    //     $this->importStudents();
-
-    //     $this->importLecturers();
-
-    //     $this->importDepartments();
-    // }
+    private function synchronizeImportedUser(
+        User $user,
+        UserRole $role,
+        string $legacyColumn,
+        int $legacyId,
+        string $password
+    ): void {
+        // DEV ONLY: using simple predictable password.
+        // TODO: replace with secure password generation and reset flow in production.
+        $user->password_hash = $password;
+        $user->role = $role;
+        $user->{$legacyColumn} = $legacyId;
+        $user->save();
+    }
 }

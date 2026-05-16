@@ -148,19 +148,20 @@ Implication:
 
 ## Unclear Or Implicit Decisions
 
-### 10. API routes are defined in `routes/web.php`
+### 10. Laravel API routes are defined in `routes/api.php`
 
 Status:
 
-- confirmed in code, rationale not documented
+- confirmed in code
+
+Evidence:
+
+- `bootstrap/app.php` registers `routes/api.php`
+- `apps/core-backend/routes/api.php` defines the `/api/v1/...` endpoints
 
 Implication:
 
-- this should be treated as current behavior, not necessarily as a recommended pattern
-
-Decision note:
-
-- `TODO: verify` whether this was a deliberate simplification or a temporary stage
+- Laravel API routing now follows the framework's standard API route structure
 
 ### 11. Express appears to be internal-service oriented
 

@@ -120,7 +120,8 @@ Key folders:
 - `app/Services`: business and integration services
 - `app/Repositories`: data access layer
 - `database/migrations`: Laravel-managed schema
-- `routes/web.php`: current route definitions, including API-style routes
+- `routes/api.php`: API route definitions
+- `routes/web.php`: web route definitions
 
 Observed responsibilities:
 
@@ -207,11 +208,21 @@ Expected URL from current `.env`:
 
 ## Current API Surface
 
-Laravel routes currently defined in `apps/core-backend/routes/web.php`:
+Laravel routes currently defined in `apps/core-backend/routes/api.php`:
 
+- `GET /api/v1/test`
 - `POST /api/v1/auth/login`
 - `POST /api/v1/auth/logout`
 - `GET /api/v1/auth/me`
+- `GET /api/v1/tutorial-periods`
+- `GET /api/v1/tutorial-periods/{id}`
+- `POST /api/v1/tutorial-periods`
+- `PUT /api/v1/tutorial-periods/{id}`
+- `DELETE /api/v1/tutorial-periods/{id}`
+- `PATCH /api/v1/tutorial-periods/{id}/open`
+- `PATCH /api/v1/tutorial-periods/{id}/assigning`
+- `PATCH /api/v1/tutorial-periods/{id}/ongoing`
+- `PATCH /api/v1/tutorial-periods/{id}/close`
 
 Express routes currently mounted under `/api/v1`:
 
@@ -251,5 +262,4 @@ See the detailed docs:
 
 ## Known Unclear Points
 
-- Laravel API routes are currently defined in `routes/web.php` instead of a dedicated `routes/api.php`. This is code-accurate, but intent is not documented. `TODO: verify`
 - Legacy backend has a development script but no explicit production `start` script. `TODO: verify`
