@@ -1,40 +1,81 @@
-import { useDeferredValue, useMemo, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useState } from 'react'
+import { CalendarSearch, CirclePlus } from 'lucide-react'
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Skeleton } from '@/components/ui/skeleton'
 import {
   useCreateTutorialPeriodMutation,
   useDeleteTutorialPeriodMutation,
   useTutorialPeriods,
   useUpdateTutorialPeriodMutation,
 } from '@/features/tutorial-period/hooks'
+import { TutorialPeriodDeleteDialog } from '@/features/tutorial-period/components/TutorialPeriodDeleteDialog'
+import { TutorialPeriodFilters } from '@/features/tutorial-period/components/TutorialPeriodFilters'
 import { TutorialPeriodFormDialog } from '@/features/tutorial-period/components/TutorialPeriodFormDialog'
 import { TutorialPeriodTable } from '@/features/tutorial-period/components/TutorialPeriodTable'
 import {
-  tutorialPeriodStatuses,
-  type CreateTutorialPeriodPayload,
   type TutorialPeriod,
   type TutorialPeriodPayload,
   type TutorialPeriodStatus,
 } from '@/features/tutorial-period/types'
-import { useAppSelector } from '@/store/hooks'
+import { getApiErrorMessage } from '@/shared/api/errors'
+import { Button } from '@/shared/ui/button'
+import ErrorState from '@/shared/ui/error-state'
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/shared/ui/empty'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/shared/ui/pagination'
+import { Skeleton } from '@/shared/ui/skeleton'
+import { Spinner } from '@/shared/ui/spinner'
 
 const pageSize = 10
 
+const buildPaginationItems = (
+  currentPage: number,
+  lastPage: number
+): Array<number | 'ellipsis'> => {
+  if (lastPage <= 7) {
+    return Array.from({ length: lastPage }, (_, index) => index + 1)
+  }
+
+  if (currentPage <= 3) {
+    return [1, 2, 3, 4, 'ellipsis', lastPage]
+  }
+
+  if (currentPage >= lastPage - 2) {
+    return [
+      1,
+      'ellipsis',
+      lastPage - 3,
+      lastPage - 2,
+      lastPage - 1,
+      lastPage,
+    ]
+  }
+
+  return [
+    1,
+    'ellipsis',
+    currentPage - 1,
+    currentPage,
+    currentPage + 1,
+    'ellipsis',
+    lastPage,
+  ]
+}
+
 export default function TutorialPeriodListPage() {
-  const currentUserId = useAppSelector((state) => state.auth.user?.id)
   const [page, setPage] = useState(1)
   const [searchInput, setSearchInput] = useState('')
   const [statusFilter, setStatusFilter] = useState<TutorialPeriodStatus | 'ALL'>('ALL')
@@ -42,6 +83,8 @@ export default function TutorialPeriodListPage() {
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false)
   const [selectedTutorialPeriod, setSelectedTutorialPeriod] = useState<TutorialPeriod | null>(null)
   const [tutorialPeriodToDelete, setTutorialPeriodToDelete] = useState<TutorialPeriod | null>(null)
+  const [formError, setFormError] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const deferredSearch = useDeferredValue(searchInput)
 
@@ -57,9 +100,11 @@ export default function TutorialPeriodListPage() {
 
   const tutorialPeriods = tutorialPeriodsQuery.data?.data ?? []
   const paginationMeta = tutorialPeriodsQuery.data?.meta
+  const lastPage = paginationMeta?.lastPage ?? 1
+  const currentPage = paginationMeta?.currentPage ?? page
+  const totalItems = paginationMeta?.total ?? 0
 
-  const isFormSubmitting =
-    createMutation.isPending || updateMutation.isPending
+  const isFormSubmitting = createMutation.isPending || updateMutation.isPending
 
   const dialogTutorialPeriod = useMemo(
     () => (dialogMode === 'edit' ? selectedTutorialPeriod : null),
@@ -67,12 +112,14 @@ export default function TutorialPeriodListPage() {
   )
 
   const openCreateDialog = () => {
+    setFormError(null)
     setDialogMode('create')
     setSelectedTutorialPeriod(null)
     setIsFormDialogOpen(true)
   }
 
   const openEditDialog = (tutorialPeriod: TutorialPeriod) => {
+    setFormError(null)
     setDialogMode('edit')
     setSelectedTutorialPeriod(tutorialPeriod)
     setIsFormDialogOpen(true)
@@ -82,31 +129,31 @@ export default function TutorialPeriodListPage() {
     setIsFormDialogOpen(open)
 
     if (!open) {
+      setFormError(null)
       setSelectedTutorialPeriod(null)
       setDialogMode('create')
     }
   }
 
   const handleSubmitForm = async (values: TutorialPeriodPayload) => {
-    if (dialogMode === 'create') {
-      if (!currentUserId) {
-        throw new Error('Missing user_id for tutorial period creation')
+    setFormError(null)
+
+    try {
+      if (dialogMode === 'create') {
+        await createMutation.mutateAsync(values)
+      } else if (selectedTutorialPeriod) {
+        await updateMutation.mutateAsync({
+          tutorialPeriodId: selectedTutorialPeriod.id,
+          payload: values,
+        })
       }
 
-      const createPayload: CreateTutorialPeriodPayload = {
-        ...values,
-        user_id: currentUserId,
-      }
-
-      await createMutation.mutateAsync(createPayload)
-    } else if (selectedTutorialPeriod) {
-      await updateMutation.mutateAsync({
-        tutorialPeriodId: selectedTutorialPeriod.id,
-        payload: values,
-      })
+      closeFormDialog(false)
+    } catch (error) {
+      setFormError(
+        getApiErrorMessage(error, 'Không thể lưu đợt phụ đạo. Vui lòng thử lại.')
+      )
     }
-
-    closeFormDialog(false)
   }
 
   const handleDelete = async () => {
@@ -114,12 +161,44 @@ export default function TutorialPeriodListPage() {
       return
     }
 
-    await deleteMutation.mutateAsync(tutorialPeriodToDelete.id)
-    setTutorialPeriodToDelete(null)
+    setDeleteError(null)
+
+    try {
+      await deleteMutation.mutateAsync(tutorialPeriodToDelete.id)
+      setTutorialPeriodToDelete(null)
+    } catch (error) {
+      setDeleteError(
+        getApiErrorMessage(error, 'Không thể xóa đợt phụ đạo. Vui lòng thử lại.')
+      )
+    }
   }
 
   const canGoPrevious = page > 1
-  const canGoNext = page < (paginationMeta?.lastPage ?? 1)
+  const canGoNext = page < lastPage
+  const hasActiveFilters =
+    deferredSearch.trim().length > 0 || statusFilter !== 'ALL'
+  const paginationItems = useMemo(
+    () => buildPaginationItems(currentPage, lastPage),
+    [currentPage, lastPage]
+  )
+  const isInitialLoading = tutorialPeriodsQuery.isPending && !tutorialPeriodsQuery.data
+  const isRefetching = tutorialPeriodsQuery.isFetching && !!tutorialPeriodsQuery.data
+
+  useEffect(() => {
+    if (page === 1) {
+      return
+    }
+
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [page])
+
+  const handlePageChange = (nextPage: number) => {
+    if (nextPage === page || nextPage < 1 || nextPage > lastPage) {
+      return
+    }
+
+    setPage(nextPage)
+  }
 
   return (
     <div className="space-y-6">
@@ -142,91 +221,134 @@ export default function TutorialPeriodListPage() {
       </div>
 
       <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-1 flex-col gap-3 md:flex-row">
-            <Input
-              value={searchInput}
-              onChange={(event) => {
-                setSearchInput(event.target.value)
-                setPage(1)
-              }}
-              placeholder="Tìm theo tiêu đề đợt phụ đạo"
-              className="h-10 md:max-w-md"
-            />
-
-            <Select
-              value={statusFilter}
-              onValueChange={(value) => {
-                setStatusFilter(value as TutorialPeriodStatus | 'ALL')
-                setPage(1)
-              }}
-            >
-              <SelectTrigger className="h-10 min-w-44">
-                <SelectValue placeholder="Lọc trạng thái" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
-                {tutorialPeriodStatuses.map((status) => (
-                  <SelectItem key={status} value={status}>
-                    {status}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {paginationMeta ? (
-            <p className="text-sm text-slate-500">
-              Tổng {paginationMeta.total} đợt phụ đạo
-            </p>
-          ) : null}
-        </div>
+        <TutorialPeriodFilters
+          searchInput={searchInput}
+          statusFilter={statusFilter}
+          total={paginationMeta?.total}
+          onSearchChange={(value) => {
+            setSearchInput(value)
+            setPage(1)
+          }}
+          onStatusChange={(value) => {
+            setStatusFilter(value)
+            setPage(1)
+          }}
+        />
 
         <div className="mt-5">
-          {tutorialPeriodsQuery.isLoading ? (
+          {isInitialLoading ? (
             <div className="space-y-3">
               <Skeleton className="h-14 rounded-xl" />
               <Skeleton className="h-14 rounded-xl" />
               <Skeleton className="h-14 rounded-xl" />
             </div>
           ) : tutorialPeriodsQuery.isError ? (
-            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-5 text-sm text-red-600">
-              Không thể tải danh sách đợt phụ đạo. Vui lòng thử lại.
-            </div>
+            <ErrorState
+              title="Không thể tải đợt học"
+              description={getApiErrorMessage(
+                tutorialPeriodsQuery.error,
+                'Vui lòng thử lại sau.'
+              )}
+            />
+          ) : tutorialPeriods.length === 0 ? (
+            <Empty className="min-h-[18rem] rounded-2xl border border-dashed border-slate-200 bg-slate-50/70">
+              <EmptyHeader>
+                <EmptyMedia variant="icon" className="size-10 rounded-xl bg-slate-100 text-slate-600">
+                  <CalendarSearch className="size-5" />
+                </EmptyMedia>
+                <EmptyTitle>
+                  {hasActiveFilters
+                    ? 'Không tìm thấy đợt học'
+                    : 'Chưa có đợt học'}
+                </EmptyTitle>
+                <EmptyDescription className="max-w-md text-sm text-slate-500">
+                  {hasActiveFilters
+                    ? 'Thử đổi bộ lọc hoặc tạo đợt phụ đạo mới.'
+                    : 'Tạo đợt phụ đạo đầu tiên để bắt đầu quản lý.'}
+                </EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent>
+                <Button onClick={openCreateDialog}>
+                  <CirclePlus className="size-4" />
+                  Tạo đợt phụ đạo
+                </Button>
+              </EmptyContent>
+            </Empty>
           ) : (
             <TutorialPeriodTable
               tutorialPeriods={tutorialPeriods}
-              onCreate={openCreateDialog}
               onEdit={openEditDialog}
               onDelete={setTutorialPeriodToDelete}
             />
           )}
         </div>
 
-        <div className="mt-5 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-slate-500">
-            Trang {paginationMeta?.currentPage ?? page} / {paginationMeta?.lastPage ?? 1}
-          </p>
+        {tutorialPeriods.length > 0 ? (
+          <div className="mt-5 flex flex-col gap-4 border-t border-slate-200 pt-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-3 text-sm text-slate-500">
+              <span>
+                Trang {currentPage} / {lastPage}
+              </span>
+              <span className="hidden text-slate-300 sm:inline">•</span>
+              <span>{totalItems} kết quả</span>
+              {isRefetching ? (
+                <span className="inline-flex items-center gap-2 text-[#0f4c81]">
+                  <Spinner size="sm" className="text-[#0f4c81]" />
+                  Đang cập nhật
+                </span>
+              ) : null}
+            </div>
 
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setPage((currentPage) => Math.max(1, currentPage - 1))}
-              disabled={!canGoPrevious}
-            >
-              Trang trước
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setPage((currentPage) => currentPage + 1)}
-              disabled={!canGoNext}
-            >
-              Trang sau
-            </Button>
+            <Pagination className="mx-0 w-auto justify-start lg:justify-end">
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    text="Trước"
+                    aria-disabled={!canGoPrevious}
+                    className={!canGoPrevious ? 'pointer-events-none opacity-50' : ''}
+                    onClick={(event) => {
+                      event.preventDefault()
+                      handlePageChange(page - 1)
+                    }}
+                  />
+                </PaginationItem>
+
+                {paginationItems.map((item, index) => (
+                  <PaginationItem key={`${item}-${index}`}>
+                    {item === 'ellipsis' ? (
+                      <PaginationEllipsis />
+                    ) : (
+                      <PaginationLink
+                        href="#"
+                        isActive={item === currentPage}
+                        onClick={(event) => {
+                          event.preventDefault()
+                          handlePageChange(item)
+                        }}
+                      >
+                        {item}
+                      </PaginationLink>
+                    )}
+                  </PaginationItem>
+                ))}
+
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    text="Sau"
+                    aria-disabled={!canGoNext}
+                    className={!canGoNext ? 'pointer-events-none opacity-50' : ''}
+                    onClick={(event) => {
+                      event.preventDefault()
+                      handlePageChange(page + 1)
+                    }}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
           </div>
-        </div>
+        ) : null}
       </div>
 
       <TutorialPeriodFormDialog
@@ -234,43 +356,30 @@ export default function TutorialPeriodListPage() {
         open={isFormDialogOpen}
         tutorialPeriod={dialogTutorialPeriod}
         isSubmitting={isFormSubmitting}
+        submitError={formError}
         onOpenChange={closeFormDialog}
         onSubmit={handleSubmitForm}
       />
 
-      <AlertDialog
-        open={tutorialPeriodToDelete !== null}
+      {deleteError ? (
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          {deleteError}
+        </div>
+      ) : null}
+
+      <TutorialPeriodDeleteDialog
+        tutorialPeriod={tutorialPeriodToDelete}
+        isDeleting={deleteMutation.isPending}
+        onConfirm={() => {
+          void handleDelete()
+        }}
         onOpenChange={(open) => {
           if (!open) {
+            setDeleteError(null)
             setTutorialPeriodToDelete(null)
           }
         }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Xóa đợt phụ đạo</AlertDialogTitle>
-            <AlertDialogDescription>
-              {tutorialPeriodToDelete
-                ? `Bạn có chắc chắn muốn xóa "${tutorialPeriodToDelete.title}" không? Hành động này chỉ áp dụng cho đợt ở trạng thái DRAFT.`
-                : 'Xác nhận xóa đợt phụ đạo.'}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteMutation.isPending}>
-              Hủy
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(event) => {
-                event.preventDefault()
-                void handleDelete()
-              }}
-              disabled={deleteMutation.isPending}
-            >
-              {deleteMutation.isPending ? 'Đang xóa...' : 'Xóa'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      />
     </div>
   )
 }

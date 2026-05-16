@@ -1,7 +1,7 @@
 import { Pencil, Trash2 } from 'lucide-react'
 
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Badge } from '@/shared/ui/badge'
+import { Button } from '@/shared/ui/button'
 import {
   Table,
   TableBody,
@@ -9,8 +9,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { cn } from '@/lib/utils'
+} from '@/shared/ui/table'
+import { cn } from '@/shared/lib/utils'
 import type { TutorialPeriod } from '@/features/tutorial-period/types'
 
 const statusBadgeClassNames: Record<string, string> = {
@@ -23,33 +23,15 @@ const statusBadgeClassNames: Record<string, string> = {
 
 interface TutorialPeriodTableProps {
   tutorialPeriods: TutorialPeriod[]
-  onCreate: () => void
   onEdit: (tutorialPeriod: TutorialPeriod) => void
   onDelete: (tutorialPeriod: TutorialPeriod) => void
 }
 
 export function TutorialPeriodTable({
   tutorialPeriods,
-  onCreate,
   onEdit,
   onDelete,
 }: TutorialPeriodTableProps) {
-  if (tutorialPeriods.length === 0) {
-    return (
-      <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white px-6 text-center">
-        <h3 className="text-lg font-semibold text-slate-900">
-          Chưa có đợt phụ đạo nào
-        </h3>
-        <p className="mt-2 max-w-md text-sm text-slate-500">
-          Tạo đợt phụ đạo đầu tiên để bắt đầu quản lý thời gian đăng ký và học tập.
-        </p>
-        <Button className="mt-5" onClick={onCreate}>
-          Tạo đợt phụ đạo
-        </Button>
-      </div>
-    )
-  }
-
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <Table>

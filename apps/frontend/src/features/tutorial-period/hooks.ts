@@ -11,14 +11,12 @@ import type {
   TutorialPeriodListParams,
   TutorialPeriodPayload,
 } from '@/features/tutorial-period/types'
-import { useAppSelector } from '@/store/hooks'
+import { useAppSelector } from '@/app/store/hooks'
 
 export const tutorialPeriodsQueryKey = ['tutorial-periods'] as const
 
 export const useTutorialPeriods = (params: TutorialPeriodListParams) => {
-  const { hasCheckedAuth, isAuthenticated } = useAppSelector(
-    (state) => state.auth
-  )
+  const authStatus = useAppSelector((state) => state.auth.status)
 
   return useQuery({
     queryKey: [
@@ -28,7 +26,7 @@ export const useTutorialPeriods = (params: TutorialPeriodListParams) => {
       params.search,
       params.status,
     ],
-    enabled: hasCheckedAuth && isAuthenticated,
+    enabled: authStatus === 'authenticated',
     queryFn: () => getTutorialPeriods(params),
     placeholderData: (previousData) => previousData,
   })
@@ -36,10 +34,21 @@ export const useTutorialPeriods = (params: TutorialPeriodListParams) => {
 
 export const useCreateTutorialPeriodMutation = () => {
   const queryClient = useQueryClient()
+  const currentUserId = useAppSelector((state) => state.auth.user?.id)
 
   return useMutation({
-    mutationFn: (payload: CreateTutorialPeriodPayload) =>
-      createTutorialPeriod(payload),
+    mutationFn: async (payload: TutorialPeriodPayload) => {
+      if (!currentUserId) {
+        throw new Error('Không tìm thấy người dùng hiện tại.')
+      }
+
+      const createPayload: CreateTutorialPeriodPayload = {
+        ...payload,
+        user_id: currentUserId,
+      }
+
+      return createTutorialPeriod(createPayload)
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: tutorialPeriodsQueryKey })
     },

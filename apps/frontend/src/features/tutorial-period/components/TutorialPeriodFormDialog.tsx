@@ -3,7 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@/shared/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -11,10 +11,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
+} from '@/shared/ui/dialog'
+import { Input } from '@/shared/ui/input'
+import { Label } from '@/shared/ui/label'
+import { Textarea } from '@/shared/ui/textarea'
 import type {
   TutorialPeriod,
   TutorialPeriodPayload,
@@ -60,6 +60,7 @@ interface TutorialPeriodFormDialogProps {
   open: boolean
   tutorialPeriod: TutorialPeriod | null
   isSubmitting: boolean
+  submitError?: string | null
   onOpenChange: (open: boolean) => void
   onSubmit: (values: TutorialPeriodPayload) => Promise<void>
 }
@@ -86,6 +87,7 @@ export function TutorialPeriodFormDialog({
   open,
   tutorialPeriod,
   isSubmitting,
+  submitError,
   onOpenChange,
   onSubmit,
 }: TutorialPeriodFormDialogProps) {
@@ -130,6 +132,12 @@ export function TutorialPeriodFormDialog({
 
           <div className="flex-1 overflow-y-auto px-6 py-4">
             <div className="grid gap-5">
+              {submitError ? (
+                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                  {submitError}
+                </div>
+              ) : null}
+
               <div className="grid gap-2">
                 <Label htmlFor="tutorial-period-title">Tiêu đề</Label>
                 <Input

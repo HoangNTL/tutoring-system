@@ -1,4 +1,4 @@
-import type { BaseResponse, IPaginationMeta } from '@/types/common'
+import type { BaseResponse, PaginationMeta } from '@/shared/types/api'
 
 export const tutorialPeriodStatuses = [
   'DRAFT',
@@ -61,7 +61,7 @@ export interface CreateTutorialPeriodPayload extends TutorialPeriodPayload {
 }
 
 export type TutorialPeriodListResponse = BaseResponse<TutorialPeriod[]> & {
-  meta?: IPaginationMeta
+  meta?: PaginationMeta
 }
 
 export type TutorialPeriodResponse = BaseResponse<TutorialPeriod>

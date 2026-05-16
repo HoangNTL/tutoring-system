@@ -1,58 +1,42 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
-import type { User } from './types'
+
+import type { User } from '@/features/auth/types'
+
+export type AuthStatus = 'idle' | 'checking' | 'authenticated' | 'guest'
 
 interface AuthState {
+  status: AuthStatus
   user: User | null
-  isAuthenticated: boolean
-  isLoading: boolean
-  isCheckingAuth: boolean
-  hasCheckedAuth: boolean
 }
 
 const initialState: AuthState = {
+  status: 'idle',
   user: null,
-  isAuthenticated: false,
-  isLoading: false,
-  isCheckingAuth: false,
-  hasCheckedAuth: false,
 }
 
 const authSlice = createSlice({
   name: 'auth',
   initialState,
-
   reducers: {
     startAuthCheck(state) {
-      state.isCheckingAuth = true
+      state.status = 'checking'
     },
-
-    setUser(state, action: PayloadAction<User>) {
+    setAuthUser(state, action: PayloadAction<User>) {
+      state.status = 'authenticated'
       state.user = action.payload
-      state.isAuthenticated = true
-      state.isLoading = false
-      state.isCheckingAuth = false
-      state.hasCheckedAuth = true
     },
-
     setGuest(state) {
+      state.status = 'guest'
       state.user = null
-      state.isAuthenticated = false
-      state.isLoading = false
-      state.isCheckingAuth = false
-      state.hasCheckedAuth = true
     },
-
-    clearUser(state) {
+    clearAuth(state) {
+      state.status = 'guest'
       state.user = null
-      state.isAuthenticated = false
-      state.isLoading = false
-      state.isCheckingAuth = false
-      state.hasCheckedAuth = true
-    }
-  }
+    },
+  },
 })
 
-export const { startAuthCheck, setUser, setGuest, clearUser } =
+export const { startAuthCheck, setAuthUser, setGuest, clearAuth } =
   authSlice.actions
 
 export default authSlice.reducer

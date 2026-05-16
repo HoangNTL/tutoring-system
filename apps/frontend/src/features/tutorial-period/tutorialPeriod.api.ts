@@ -1,5 +1,4 @@
-import axiosInstance from '@/api/axiosInstance'
-import { API_ENDPOINTS } from '@/constants/api'
+import http from '@/shared/api/http'
 import type {
   CreateTutorialPeriodPayload,
   TutorialPeriodListParams,
@@ -7,7 +6,9 @@ import type {
   TutorialPeriodPayload,
   TutorialPeriodResponse,
 } from '@/features/tutorial-period/types'
-import type { BaseResponse } from '@/types/common'
+import type { BaseResponse } from '@/shared/types/api'
+
+const TUTORIAL_PERIODS_ENDPOINT = '/api/v1/tutorial-periods'
 
 const buildTutorialPeriodListParams = (
   params: TutorialPeriodListParams
@@ -59,8 +60,8 @@ const normalizeTutorialPeriodPayload = <TPayload extends TutorialPeriodPayload>(
 export const getTutorialPeriods = async (
   params: TutorialPeriodListParams
 ): Promise<TutorialPeriodListResponse> => {
-  const response = await axiosInstance.get<TutorialPeriodListResponse>(
-    API_ENDPOINTS.TUTORIAL_PERIODS,
+  const response = await http.get<TutorialPeriodListResponse>(
+    TUTORIAL_PERIODS_ENDPOINT,
     {
       params: buildTutorialPeriodListParams(params),
     }
@@ -74,10 +75,8 @@ export const createTutorialPeriod = async (
 ): Promise<TutorialPeriodResponse> => {
   const normalizedPayload = normalizeTutorialPeriodPayload(payload)
 
-  console.log('createTutorialPeriod payload', normalizedPayload)
-
-  const response = await axiosInstance.post<TutorialPeriodResponse>(
-    API_ENDPOINTS.TUTORIAL_PERIODS,
+  const response = await http.post<TutorialPeriodResponse>(
+    TUTORIAL_PERIODS_ENDPOINT,
     normalizedPayload
   )
 
@@ -90,10 +89,8 @@ export const updateTutorialPeriod = async (
 ): Promise<TutorialPeriodResponse> => {
   const normalizedPayload = normalizeTutorialPeriodPayload(payload)
 
-  console.log('updateTutorialPeriod payload', normalizedPayload)
-
-  const response = await axiosInstance.put<TutorialPeriodResponse>(
-    `${API_ENDPOINTS.TUTORIAL_PERIODS}/${tutorialPeriodId}`,
+  const response = await http.put<TutorialPeriodResponse>(
+    `${TUTORIAL_PERIODS_ENDPOINT}/${tutorialPeriodId}`,
     normalizedPayload
   )
 
@@ -103,8 +100,8 @@ export const updateTutorialPeriod = async (
 export const deleteTutorialPeriod = async (
   tutorialPeriodId: number
 ): Promise<BaseResponse<null>> => {
-  const response = await axiosInstance.delete<BaseResponse<null>>(
-    `${API_ENDPOINTS.TUTORIAL_PERIODS}/${tutorialPeriodId}`
+  const response = await http.delete<BaseResponse<null>>(
+    `${TUTORIAL_PERIODS_ENDPOINT}/${tutorialPeriodId}`
   )
 
   return response.data
