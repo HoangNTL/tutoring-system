@@ -1,21 +1,27 @@
 # API
 
-## Overview
+This document describes the current API contract in the repository.
 
-This document describes the currently detected API behavior from the codebase. It does not assume undocumented endpoints.
+## Scope
 
-There are two backend APIs in this repository:
+There are two API layers:
 
-- Laravel API in `apps/core-backend`
-- Express API in `apps/legacy-backend`
+- Public application API: Laravel in `apps/core-backend`
+- Internal legacy data API: Express in `apps/legacy-backend`
 
-The frontend currently targets Laravel, and Laravel targets Express for some data retrieval.
+The frontend talks only to the Laravel API.
 
-## Shared Response Convention
+## API Conventions
 
-Both backends currently use a similar JSON response shape.
+### Base paths
 
-Success:
+- Laravel public API: `/api/v1/...`
+- Sanctum CSRF bootstrap: `/sanctum/csrf-cookie`
+- Legacy internal API: `/api/v1/...` on the Express service
+
+### Response envelope
+
+Successful responses:
 
 ```json
 {
@@ -26,60 +32,73 @@ Success:
 }
 ```
 
-Error:
+Standard errors:
 
 ```json
 {
   "success": false,
-  "message": "Error",
-  "errors": null
+  "message": "Error message",
+  "data": null,
+  "meta": null
 }
 ```
 
-Observed implementation sources:
-
-- Laravel: `app/Traits/ApiResponse.php`
-- Express: `src/utils/ApiResponse.ts`
-
-## Versioning
-
-Current code uses `v1` route prefixes:
-
-- Laravel: `/api/v1/...`
-- Express: `/api/v1/...`
-
-## Laravel API
-
-Source of current routes:
-
-- `apps/core-backend/routes/api.php`
-
-### `POST /api/v1/auth/login`
-
-Purpose:
-
-- authenticate a user using `username` and `password`
-
-Request body:
+Validation errors:
 
 ```json
 {
-  "username": "string",
-  "password": "string"
+  "success": false,
+  "message": "The given data was invalid.",
+  "data": null,
+  "meta": null,
+  "errors": {
+    "startRegDate": [
+      "The startRegDate field is required."
+    ]
+  }
 }
 ```
 
-Validation source:
+### Naming contract
 
-- `app/Http/Requests/Auth/LoginRequest.php`
+- Public Laravel API requests use camelCase.
+- Public Laravel API responses use camelCase.
+- Database columns remain snake_case internally.
+- Laravel Form Requests normalize incoming camelCase to internal snake_case before validation.
 
-Auth behavior:
+## Authentication
 
-- uses `Auth::attempt(...)`
-- maps password checking to `User::getAuthPassword()` which returns `password_hash`
-- regenerates the session on success
+The SPA uses Sanctum session authentication with cookies.
 
-Success response shape:
+### Required browser flow
+
+1. `GET /sanctum/csrf-cookie`
+2. `POST /api/v1/auth/login`
+3. Authenticated requests with cookies and CSRF header
+4. `GET /api/v1/auth/me` on app startup to restore session state
+5. `POST /api/v1/auth/logout` to invalidate the session
+
+### Frontend client requirements
+
+- `withCredentials: true`
+- `withXSRFToken: true`
+- `xsrfCookieName: XSRF-TOKEN`
+- `xsrfHeaderName: X-XSRF-TOKEN`
+
+### Auth endpoints
+
+#### `POST /api/v1/auth/login`
+
+Request:
+
+```json
+{
+  "username": "admin",
+  "password": "secret"
+}
+```
+
+Response:
 
 ```json
 {
@@ -88,207 +107,252 @@ Success response shape:
   "data": {
     "user": {
       "id": 1,
-      "username": "example",
+      "username": "admin",
       "role": "ADMIN"
     }
+  },
+  "meta": null
+}
+```
+
+Notes:
+
+- Route uses `web` middleware and `throttle:login`.
+- Session is regenerated after successful login.
+
+#### `GET /api/v1/auth/me`
+
+Response:
+
+```json
+{
+  "success": true,
+  "message": "User retrieved successfully",
+  "data": {
+    "user": {
+      "id": 1,
+      "username": "admin",
+      "role": "ADMIN"
+    }
+  },
+  "meta": null
+}
+```
+
+#### `POST /api/v1/auth/logout`
+
+Response:
+
+```json
+{
+  "success": true,
+  "message": "Logout successful",
+  "data": null,
+  "meta": null
+}
+```
+
+Notes:
+
+- Uses the `web` guard for logout.
+- Invalidates the current session.
+- Regenerates the CSRF token.
+
+## Tutorial Period API
+
+All tutorial period routes require `auth:sanctum`.
+
+### Resource shape
+
+```json
+{
+  "id": 1,
+  "title": "Đợt phụ đạo học kỳ 1",
+  "description": "Mô tả đợt phụ đạo",
+  "startRegDate": "2026-05-18 00:00:00",
+  "endRegDate": "2026-05-23 00:00:00",
+  "startStudyDate": "2026-06-01 00:00:00",
+  "endStudyDate": "2026-06-30 00:00:00",
+  "status": "DRAFT",
+  "openedAt": null,
+  "assignedAt": null,
+  "startedAt": null,
+  "closedAt": null,
+  "createdBy": {
+    "id": 1,
+    "username": "admin",
+    "role": "ADMIN"
+  },
+  "createdAt": "2026-05-17 09:00:00",
+  "updatedAt": "2026-05-17 09:00:00",
+  "permissions": {
+    "canEdit": true,
+    "canDelete": true,
+    "canOpen": true
+  },
+  "statusLogs": []
+}
+```
+
+### `GET /api/v1/tutorial-periods`
+
+Supported query params:
+
+- `page`
+- `limit`
+- `search`
+- `status`
+- `sortBy`
+- `sortOrder`
+
+Example:
+
+```http
+GET /api/v1/tutorial-periods?page=1&limit=10&sortBy=startRegDate&sortOrder=desc&search=phu%20dao
+```
+
+Allowed `sortBy` values:
+
+- `id`
+- `title`
+- `startRegDate`
+- `endRegDate`
+- `startStudyDate`
+- `endStudyDate`
+- `status`
+- `createdAt`
+- `updatedAt`
+
+Response:
+
+```json
+{
+  "success": true,
+  "message": "Tutorial periods retrieved successfully",
+  "data": [
+    {
+      "id": 1,
+      "title": "Đợt phụ đạo học kỳ 1",
+      "description": "Mô tả đợt phụ đạo",
+      "startRegDate": "2026-05-18 00:00:00",
+      "endRegDate": "2026-05-23 00:00:00",
+      "startStudyDate": "2026-06-01 00:00:00",
+      "endStudyDate": "2026-06-30 00:00:00",
+      "status": "DRAFT",
+      "openedAt": null,
+      "assignedAt": null,
+      "startedAt": null,
+      "closedAt": null,
+      "createdBy": {
+        "id": 1,
+        "username": "admin",
+        "role": "ADMIN"
+      },
+      "createdAt": "2026-05-17 09:00:00",
+      "updatedAt": "2026-05-17 09:00:00",
+      "permissions": {
+        "canEdit": true,
+        "canDelete": true,
+        "canOpen": true
+      },
+      "statusLogs": []
+    }
+  ],
+  "meta": {
+    "total": 1,
+    "perPage": 10,
+    "currentPage": 1,
+    "lastPage": 1
   }
 }
 ```
 
-Failure behavior:
+### `GET /api/v1/tutorial-periods/{id}`
 
-- returns `401` with message `Invalid credentials`
+Returns a single tutorial period resource.
 
-### `POST /api/v1/auth/logout`
+### `POST /api/v1/tutorial-periods`
 
-Purpose:
-
-- log out the current user
-
-Current behavior:
-
-- calls `Auth::logout()`
-- invalidates the session
-- regenerates the CSRF token
-
-Frontend handling:
-
-- logout is triggered from the UserMenu
-- clears React Query cache and Redux auth state
-- clears axios `Authorization` header
-- clears common token storage keys if present (e.g., `authToken`, `token`). `TODO: verify`
-
-### `GET /api/v1/auth/me`
-
-Middleware:
-
-- `auth:sanctum`
-
-Purpose:
-
-- return the current authenticated user
-
-Response user fields:
-
-- `id`
-- `username`
-- `role`
-
-Serialization source:
-
-- `app/Http/Resources/UserResource.php`
-
-## Sanctum / Session Auth
-
-Observed frontend usage:
-
-- frontend first calls `GET /sanctum/csrf-cookie`
-- frontend then posts login credentials
-- axios uses `withCredentials: true`
-
-Relevant frontend files:
-
-- `apps/frontend/src/api/axiosInstance.ts`
-- `apps/frontend/src/api/auth.api.ts`
-- `apps/frontend/src/constants/api.ts`
-
-Observed Sanctum/session configuration:
-
-- guard: `web`
-- session driver: `database`
-- stateful domain in current `.env`: `localhost:5173`
-
-## Express API
-
-Mount path:
-
-- `app.use('/api', rootRouter)`
-- `rootRouter.use('/v1', v1Router)`
-
-This yields the following endpoint prefix:
-
-- `/api/v1`
-
-### Authentication
-
-All Express routes are currently protected by API key middleware.
-
-Required header:
-
-```http
-x-api-key: <CORE_BACKEND_API_KEY>
-```
-
-Behavior:
-
-- missing configured secret returns `500`
-- missing or invalid client key returns `403`
-
-Source:
-
-- `apps/legacy-backend/src/middlewares/authKey.ts`
-
-### `GET /api/v1/students`
-
-Purpose:
-
-- retrieve paginated student data
-
-Query parameters:
-
-- `page`
-- `limit`
-
-Returned fields:
-
-- `id`
-- `studentCode`
-- `dateOfBirth`
-
-Source:
-
-- `src/repositories/StudentRepository.ts`
-
-Current filter logic:
-
-- nationality is non-empty
-- nationality is not `Việt Nam`
-- `YEAR(NgayNhapHoc) + 6 > 2024`
-
-This appears to be domain-specific filtering logic, but no rationale is documented in the repo. `TODO: verify`
-
-### `GET /api/v1/lecturers`
-
-Purpose:
-
-- retrieve paginated lecturer data
-
-Returned fields:
-
-- `id`
-- `lecturerCode`
-- `dateOfBirth`
-
-Current filter logic:
-
-- `IsChamDutHopDong = 0 OR IsChamDutHopDong IS NULL`
-
-Rationale is not documented in the repo. `TODO: verify`
-
-### `GET /api/v1/departments`
-
-Purpose:
-
-- retrieve paginated department data
-
-Returned fields:
-
-- `id`
-- `name`
-
-## Pagination Convention
-
-Observed pagination metadata:
+Request:
 
 ```json
 {
-  "total": 100,
-  "perPage": 10,
-  "currentPage": 1,
-  "lastPage": 10
+  "title": "Đợt phụ đạo học kỳ 1",
+  "description": "Mô tả đợt phụ đạo",
+  "startRegDate": "2026-05-18",
+  "endRegDate": "2026-05-23",
+  "startStudyDate": "2026-06-01",
+  "endStudyDate": "2026-06-30"
 }
 ```
 
-Laravel source:
+Notes:
 
-- `app/Traits/PaginationHelper.php`
+- `createdBy` is derived from the authenticated user.
+- The API accepts camelCase input and validates internally against snake_case model fields.
 
-Express source:
+### `PUT /api/v1/tutorial-periods/{id}` or `PATCH /api/v1/tutorial-periods/{id}`
 
-- `src/utils/PaginationHelper.ts`
+Request fields are the same as create.
 
-## Error Handling
+- `PUT` or `PATCH` can be used.
+- Update validation supports partial payloads.
 
-### Laravel
+### `PATCH /api/v1/tutorial-periods/{id}/status`
 
-Observed behavior in `bootstrap/app.php`:
+Request:
 
-- `/api/*` exceptions are forced to JSON
-- validation exceptions return `422`
-- generic API exceptions return JSON with `success`, `message`, and optional `errors`
+```json
+{
+  "status": "OPEN"
+}
+```
 
-### Express
+Allowed values:
 
-Observed behavior:
+- `OPEN`
+- `ASSIGNING`
+- `ONGOING`
+- `CLOSED`
 
-- Joi query validation returns `400`
-- global error handler logs request context and returns JSON
+### `DELETE /api/v1/tutorial-periods/{id}`
 
-Source:
+Response:
 
-- `src/middlewares/validate.ts`
-- `src/middlewares/errorHandler.ts`
+```json
+{
+  "success": true,
+  "message": "Tutorial period deleted successfully",
+  "data": null,
+  "meta": null
+}
+```
 
-## Current Unclear Points
+## Authorization
 
-- It is not documented whether Express is intended for internal-only use or also for external clients. Current code suggests internal use through Laravel. `TODO: verify`
+Tutorial period actions are protected by `TutorialPeriodPolicy`.
+
+Controller authorization checks currently enforce:
+
+- `viewAny`
+- `view`
+- `create`
+- `update`
+- `delete`
+
+## Internal Legacy API
+
+The Express service is not a browser-facing auth API. It is used by Laravel for legacy data reads.
+
+Current internal endpoints:
+
+- `GET /api/v1/students`
+- `GET /api/v1/lecturers`
+- `GET /api/v1/departments`
+
+Characteristics:
+
+- API key protected
+- read-oriented
+- backed by SQL Server
+- intended for service-to-service access from Laravel

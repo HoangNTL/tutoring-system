@@ -1,203 +1,158 @@
-# Decisions
+# Technical Decisions
 
-## Purpose
+This document captures current technical decisions reflected in the codebase.
 
-This file records architecture and implementation decisions that are already visible in the codebase.
+## 1. Laravel remains the public application API
 
-Where intent is not explicitly documented in code, the item is marked `TODO: verify`.
+Status: adopted
 
-## Current Decisions
+Laravel is the single browser-facing backend for:
 
-### 1. The repository is a multi-application monorepo
+- authentication
+- validation
+- authorization
+- application orchestration
+- MySQL-backed domain logic
 
-Status:
+Why:
 
-- confirmed from folder structure
+- keeps browser auth, policy enforcement, and response contracts in one place
+- prevents the frontend from depending directly on legacy SQL Server behavior
+- allows Laravel to normalize legacy data before it reaches the UI
 
-Evidence:
+## 2. Legacy SQL Server access stays isolated in the Express service
 
-- `apps/frontend`
-- `apps/core-backend`
-- `apps/legacy-backend`
+Status: adopted
 
-Implication:
+Legacy SQL Server access remains inside `apps/legacy-backend`.
 
-- work should preserve clear boundaries between UI, core backend, and legacy integration layers
+Why:
 
-### 2. Laravel is the frontend-facing backend
+- preserves separation between core application logic and legacy data access
+- keeps SQL Server concerns out of the frontend and Laravel controllers
+- allows API key protection and read-oriented endpoint design at the internal boundary
 
-Status:
+## 3. Sanctum is used in session-based SPA mode
 
-- confirmed from frontend API configuration
+Status: adopted
 
-Evidence:
+Authentication is based on:
 
-- frontend `VITE_API_BASE_URL=http://localhost:8000`
-- frontend auth API paths target Laravel-style routes
+- `/sanctum/csrf-cookie`
+- cookie-backed session login
+- `auth:sanctum`
+- session restoration via `/api/v1/auth/me`
 
-Implication:
+Why:
 
-- browser clients should not need to call SQL Server-facing services directly
+- aligns with first-party SPA usage
+- avoids introducing token storage into the browser
+- keeps logout and session invalidation aligned with Laravel defaults
 
-### 3. Express is used as a legacy data gateway
+## 4. Public API contract uses camelCase
 
-Status:
+Status: adopted
 
-- confirmed from Laravel service integration and Express SQL Server repositories
+Laravel request and response contracts use camelCase.
 
-Evidence:
+Examples:
 
-- Laravel `Http::legacy()` macro
-- Express Knex SQL Server config
-- Express versioned routes for students, lecturers, departments
+- `startRegDate`
+- `sortBy`
+- `createdBy`
 
-Implication:
+Why:
 
-- legacy academic data access currently lives behind a dedicated service boundary
+- matches frontend TypeScript and React conventions
+- removes repetitive mapping code in the frontend
+- keeps the external contract consistent across query params, request bodies, and responses
 
-### 4. Laravel currently uses MySQL for application data
+## 5. Database schema stays snake_case
 
-Status:
+Status: adopted
 
-- confirmed from current Laravel `.env`
+MySQL tables and Eloquent attributes remain snake_case internally.
 
-Evidence:
+Why:
 
-- `DB_CONNECTION=mysql`
-- `DB_DATABASE=tutoring_db`
+- preserves Laravel and SQL conventions
+- avoids unnecessary schema churn
+- allows API contract concerns to stay at the request/resource layer
 
-Implication:
+## 6. Frontend no longer uses a response mapping layer for Laravel API data
 
-- Laravel-managed users, sessions, cache, jobs, and Sanctum tables belong to MySQL in the current local setup
+Status: adopted
 
-### 5. Legacy academic data currently comes from SQL Server
+The previous frontend mapping layer for tutorial periods was removed.
 
-Status:
+Why:
 
-- confirmed from Express DB configuration and repositories
+- the Laravel API now returns camelCase directly
+- domain types and API payloads align naturally
+- fewer translation layers means less drift and less maintenance
 
-Evidence:
+## 7. Frontend is organized by feature, not by technical type alone
 
-- Knex client `mssql`
-- SQL Server tables queried in repositories
+Status: adopted
 
-Implication:
+Feature folders under `apps/frontend/src/features` own their pages, hooks, schema, and local API usage.
 
-- SQL Server schema knowledge should be derived from query code unless external DB docs are provided
+Why:
 
-### 6. Frontend authentication uses cookie/session flow with Sanctum support
+- scales better as more role-specific modules are added
+- keeps related UI, validation, and feature logic together
+- reduces cross-folder churn during feature work
 
-Status:
+## 8. Role-based layouts are selected from authenticated user role
 
-- confirmed from frontend and Laravel code
+Status: adopted
 
-Evidence:
+The frontend uses different layouts for:
 
-- frontend calls `/sanctum/csrf-cookie`
-- axios uses `withCredentials: true`
-- Laravel protects `/api/v1/auth/me` with `auth:sanctum`
-- Laravel auth guard is `web`
+- admin/department users
+- lecturers
+- students
 
-Implication:
+Why:
 
-- new frontend auth work should preserve cookie/session expectations unless explicitly changed
+- keeps navigation and information architecture aligned with user responsibilities
+- avoids one oversized generic shell for all roles
 
-### 7. API responses are intentionally normalized across backends
+## 9. TanStack Query is the primary server-state layer
 
-Status:
+Status: adopted
 
-- confirmed from helper implementations
+TanStack Query owns API fetching and cache behavior.
 
-Evidence:
+Redux is kept for authentication state and a small amount of global app state.
 
-- Laravel `ApiResponse` trait
-- Express `ApiResponse` utility
+Why:
 
-Implication:
+- query caching and invalidation are better handled by a dedicated server-state tool
+- reduces custom loading/error synchronization code
+- keeps Redux focused on app state rather than API state
 
-- new endpoints should keep the `success` / `message` / `data` / `meta` shape unless a deliberate API redesign is approved
+## 10. shadcn/ui is the base UI system
 
-### 8. Pagination shape is shared across backends
+Status: adopted
 
-Status:
+The frontend uses shadcn/ui components and shared wrappers for form and modal UI.
 
-- confirmed from pagination helpers
+Why:
 
-Evidence:
+- provides composable primitives without locking the UI into a heavy theme layer
+- fits the current admin-style application better than browser-native form controls alone
+- supports consistent patterns such as `Calendar + Popover` date selection
 
-- Laravel and Express both expose `total`, `perPage`, `currentPage`, `lastPage`
+## 11. Date display is handled only at the UI layer
 
-Implication:
+Status: adopted
 
-- cross-service pagination remains consistent for frontend consumers
+Backend APIs keep raw date and datetime values.
+Frontend utilities format them for display in Vietnam time.
 
-### 9. Legacy import creates Laravel users from external records
+Why:
 
-Status:
-
-- confirmed from command and service code
-
-Evidence:
-
-- `php artisan import:legacy-users`
-- import service pulls students, lecturers, and departments from the legacy API
-
-Implication:
-
-- Laravel auth identity is partially synchronized from the legacy system rather than manually entered only in MySQL
-
-## Unclear Or Implicit Decisions
-
-### 10. Laravel API routes are defined in `routes/api.php`
-
-Status:
-
-- confirmed in code
-
-Evidence:
-
-- `bootstrap/app.php` registers `routes/api.php`
-- `apps/core-backend/routes/api.php` defines the `/api/v1/...` endpoints
-
-Implication:
-
-- Laravel API routing now follows the framework's standard API route structure
-
-### 11. Express appears to be internal-service oriented
-
-Status:
-
-- likely, but not explicitly documented
-
-Evidence:
-
-- API key middleware is applied globally
-- Laravel service config is wired directly to Express
-- CORS is restricted to `CORE_BACKEND_URL`
-
-Implication:
-
-- changes should assume Express is primarily for backend-to-backend use unless product requirements say otherwise
-
-Decision note:
-
-- `TODO: verify`
-
-### 12. Legacy import password defaults are operational but not explained
-
-Status:
-
-- confirmed in code, rationale undocumented
-
-Evidence:
-
-- DOB-derived passwords
-- fallback password `1`
-
-Implication:
-
-- this behavior should not be silently normalized or expanded without security review
-
-Decision note:
-
-- `TODO: verify`
+- keeps API payloads stable and machine-friendly
+- avoids mixing display formatting concerns into persistence or transport layers
+- lets the UI control presentation consistently

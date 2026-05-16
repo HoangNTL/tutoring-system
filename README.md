@@ -1,216 +1,75 @@
-# Tutoring System Monorepo
+# Tutoring System
 
-This repository contains a tutoring system split across three applications:
+Tutoring System is a three-app repository for managing tutoring periods, authentication, and legacy academic data access.
 
-- `apps/frontend`: React SPA used by end users
-- `apps/core-backend`: Laravel backend for authentication and core API orchestration
-- `apps/legacy-backend`: Express backend that reads legacy academic data from SQL Server
+## Applications
 
-The current codebase is organized as a monorepo with the frontend calling Laravel, and Laravel calling the legacy Express service for some data access.
+| App | Path | Responsibility |
+| --- | --- | --- |
+| Frontend SPA | `apps/frontend` | React application for login, role-based navigation, and tutoring period UI |
+| Core backend | `apps/core-backend` | Laravel API, Sanctum session auth, validation, orchestration, MySQL data |
+| Legacy backend | `apps/legacy-backend` | Express API for read-only SQL Server access used by Laravel |
 
-## Repository Layout
+## Current Implementation Snapshot
 
-```text
-.
-|-- apps/
-|   |-- frontend/
-|   |-- core-backend/
-|   `-- legacy-backend/
-|-- docs/
-|   `-- Architecture.png
-|-- AGENTS.md
-`-- README.md
-```
+- The public application API is served by Laravel under `/api/v1/...`.
+- Authentication uses Laravel Sanctum with session cookies and CSRF protection.
+- The public API contract uses camelCase for request and response fields.
+- Tutorial period management is the main fully integrated feature today.
+- Several frontend role-specific pages already exist, but many of them are UI placeholders until matching backend modules are implemented.
 
-## High-Level Architecture
+## Architecture Summary
 
-```text
-React frontend
-  -> Laravel core backend
-     -> MySQL
-     -> Legacy Express backend
-        -> SQL Server
-```
+1. The browser talks to the Laravel backend.
+2. Laravel handles authentication, validation, authorization, and MySQL-backed domain logic.
+3. Laravel calls the legacy Express service for some imported or legacy datasets.
+4. The Express service reads from SQL Server and exposes internal versioned endpoints.
 
-Observed runtime values in the current repository:
+For a fuller system breakdown, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-- Frontend API base URL: `http://localhost:8000`
-- Laravel app URL: `http://localhost`
-- Laravel current DB connection: `mysql`
-- Legacy backend URL from Laravel config: `http://localhost:5000/api/v1`
-- Legacy backend port: `5000`
+## Authentication Flow
 
-## Detected Tech Stack
+The SPA uses cookie-based Sanctum authentication:
 
-### Frontend
+1. `GET /sanctum/csrf-cookie`
+2. `POST /api/v1/auth/login`
+3. authenticated browser requests with `withCredentials: true`
+4. `GET /api/v1/auth/me` to restore session state on reload
+5. `POST /api/v1/auth/logout` to end the session
 
-- React 19
-- TypeScript
-- Vite 8
-- Tailwind CSS 4
-- React Router 7
-- Redux Toolkit
-- TanStack React Query
-- Axios
-- React Hook Form
-- Zod
+The frontend Axios client is configured with:
 
-Loading system summary:
+- `withCredentials: true`
+- `withXSRFToken: true`
+- `xsrfCookieName: 'XSRF-TOKEN'`
+- `xsrfHeaderName: 'X-XSRF-TOKEN'`
 
-- React Query handles API loading states
-- Local component state handles form submissions
-- Axios interceptors feed an optional global loading overlay via Redux
+## Frontend Structure
 
-Logout summary:
+The frontend is organized by feature:
 
-- UserMenu triggers `POST /api/v1/auth/logout` and clears client auth state/cache
+- `src/features/auth`
+- `src/features/tutorial-period`
+- `src/features/users`
+- `src/features/reports`
+- `src/features/settings`
+- `src/features/tutorial-scheduling`
+- `src/features/lecturer-assignments`
+- `src/features/teaching-schedule`
+- `src/features/tutorial-registration`
+- `src/features/study-schedule`
+- `src/features/profile`
 
-### Core Backend
+Role-based layouts are selected from the authenticated user role:
 
-- PHP 8.2
-- Laravel 12
-- Laravel Sanctum 4
-- Laravel Vite plugin
-- Tailwind CSS 4
+- `ADMIN` and `DEPARTMENT` use the admin-style layout
+- `LECTURER` uses the lecturer layout
+- `STUDENT` uses the student layout
 
-### Legacy Backend
+## Core API Surface
 
-- Node.js
-- TypeScript
-- Express 5
-- Knex
-- `mssql`
-- Joi
-- Morgan
-- Winston
+Currently implemented Laravel endpoints:
 
-### Databases
-
-- MySQL for Laravel-managed application data
-- SQL Server for legacy academic data accessed by Express
-
-## Application Organization
-
-### `apps/frontend`
-
-Key folders:
-
-- `src/api`: Axios client and API wrappers
-- `src/constants`: shared constants such as endpoint paths
-- `src/features`: feature modules, currently including `auth`
-- `src/routes`: router and route guards
-- `src/store`: Redux store setup
-- `src/components`: UI and layout components
-
-Observed auth flow:
-
-- Axios uses `withCredentials: true`
-- Frontend requests Sanctum CSRF cookie
-- Frontend posts login credentials to Laravel
-- Protected pages use `/api/v1/auth/me`
-
-### `apps/core-backend`
-
-Key folders:
-
-- `app/Http/Controllers`: HTTP controllers
-- `app/Http/Requests`: request validation
-- `app/Http/Resources`: API resource serialization
-- `app/Models`: Eloquent models
-- `app/Services`: business and integration services
-- `app/Repositories`: data access layer
-- `database/migrations`: Laravel-managed schema
-- `routes/api.php`: API route definitions
-- `routes/web.php`: web route definitions
-
-Observed responsibilities:
-
-- Session-based login/logout and current-user lookup
-- JSON API responses for `/api/*`
-- Proxy/integration calls to the legacy Express backend
-- Legacy user import command
-
-### `apps/legacy-backend`
-
-Key folders:
-
-- `src/config`: DB config
-- `src/routes`: versioned routers
-- `src/controllers`: HTTP controllers
-- `src/services`: service layer
-- `src/repositories`: SQL Server queries via Knex
-- `src/models`: TypeScript interfaces
-- `src/middlewares`: API key auth, validation, error handling
-
-Observed responsibilities:
-
-- Read-only API endpoints under `/api/v1`
-- SQL Server access for students, lecturers, and departments
-- API key protection for all mounted routes
-
-## Running the Project
-
-These commands are based on scripts and framework defaults already present in the repo.
-
-### Frontend
-
-Working directory: `apps/frontend`
-
-Development:
-
-```bash
-npm run dev
-```
-
-Expected default URL:
-
-- `http://localhost:5173`
-
-### Core Backend
-
-Working directory: `apps/core-backend`
-
-Minimal Laravel API server:
-
-```bash
-php artisan serve
-```
-
-Vite assets for the Laravel app itself:
-
-```bash
-npm run dev
-```
-
-Combined development workflow defined in `composer.json`:
-
-```bash
-composer dev
-```
-
-Observed/default API URL used by the frontend:
-
-- `http://localhost:8000`
-
-### Legacy Backend
-
-Working directory: `apps/legacy-backend`
-
-Development:
-
-```bash
-npm run dev
-```
-
-Expected URL from current `.env`:
-
-- `http://localhost:5000`
-
-## Current API Surface
-
-Laravel routes currently defined in `apps/core-backend/routes/api.php`:
-
-- `GET /api/v1/test`
 - `POST /api/v1/auth/login`
 - `POST /api/v1/auth/logout`
 - `GET /api/v1/auth/me`
@@ -218,48 +77,84 @@ Laravel routes currently defined in `apps/core-backend/routes/api.php`:
 - `GET /api/v1/tutorial-periods/{id}`
 - `POST /api/v1/tutorial-periods`
 - `PUT /api/v1/tutorial-periods/{id}`
+- `PATCH /api/v1/tutorial-periods/{id}`
 - `DELETE /api/v1/tutorial-periods/{id}`
-- `PATCH /api/v1/tutorial-periods/{id}/open`
-- `PATCH /api/v1/tutorial-periods/{id}/assigning`
-- `PATCH /api/v1/tutorial-periods/{id}/ongoing`
-- `PATCH /api/v1/tutorial-periods/{id}/close`
+- `PATCH /api/v1/tutorial-periods/{id}/status`
 
-Express routes currently mounted under `/api/v1`:
+See [docs/API.md](docs/API.md) for request and response examples.
 
-- `GET /api/v1/students`
-- `GET /api/v1/lecturers`
-- `GET /api/v1/departments`
+## Tech Stack
 
-Common response envelope observed in both backends:
+### Frontend
 
-```json
-{
-  "success": true,
-  "message": "Success",
-  "data": {},
-  "meta": null
-}
+- React 19
+- TypeScript
+- Vite
+- React Router
+- Redux Toolkit
+- TanStack Query
+- Axios
+- React Hook Form
+- Zod
+- Tailwind CSS
+- shadcn/ui
+- date-fns + date-fns-tz
+
+### Core Backend
+
+- Laravel 12
+- Sanctum
+- MySQL
+
+### Legacy Backend
+
+- Express 5
+- TypeScript
+- Knex
+- SQL Server
+
+## Local Setup
+
+This repository does not provide a single root runner. Start each app from its own directory.
+
+### 1. Frontend
+
+```bash
+cd apps/frontend
+npm install
+npm run dev
 ```
 
-Error shape:
+### 2. Core Backend
 
-```json
-{
-  "success": false,
-  "message": "Error",
-  "errors": null
-}
+```bash
+cd apps/core-backend
+composer install
+php artisan migrate
+php artisan serve
 ```
 
-See the detailed docs:
+### 3. Legacy Backend
 
+```bash
+cd apps/legacy-backend
+npm install
+npm run dev
+```
+
+For a production-style legacy backend start:
+
+```bash
+cd apps/legacy-backend
+npm run build
+npm start
+```
+
+## Documentation Index
+
+- [docs/API.md](docs/API.md)
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- [docs/DATABASE.md](docs/DATABASE.md)
+- [docs/DECISIONS.md](docs/DECISIONS.md)
+- [docs/TASKS.md](docs/TASKS.md)
 - [AGENTS.md](AGENTS.md)
-- [Architecture](docs/ARCHITECTURE.md)
-- [API](docs/API.md)
-- [Database](docs/DATABASE.md)
-- [Tasks](docs/TASKS.md)
-- [Decisions](docs/DECISIONS.md)
-
-## Known Unclear Points
-
-- Legacy backend has a development script but no explicit production `start` script. `TODO: verify`

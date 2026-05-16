@@ -1,215 +1,240 @@
 # Architecture
 
-## Overview
+This document describes the current system architecture in the repository.
 
-This repository is organized as a three-application system:
+## System Overview
 
-- a React frontend in `apps/frontend`
-- a Laravel backend in `apps/core-backend`
-- an Express legacy-data backend in `apps/legacy-backend`
+The repository is split into three applications:
 
-The current architecture is integration-oriented rather than fully consolidated. Laravel is the primary backend exposed to the frontend, while Express acts as a legacy data gateway to SQL Server.
+1. `apps/frontend`: browser SPA
+2. `apps/core-backend`: Laravel API and application logic
+3. `apps/legacy-backend`: Express service for legacy SQL Server data
 
-## Top-Level Structure
-
-```text
-apps/
-  frontend/
-  core-backend/
-  legacy-backend/
-docs/
-  Architecture.png
-README.md
-AGENTS.md
-```
-
-## Runtime Flow
+High-level request flow:
 
 ```text
-Browser
-  -> React frontend
-     -> Laravel core backend
-        -> MySQL
-        -> Express legacy backend
-           -> SQL Server
+Browser SPA
+  -> Laravel API
+     -> MySQL
+     -> Legacy Express API
+        -> SQL Server
 ```
 
 ## Frontend Architecture
 
-Location: `apps/frontend`
+### Stack
 
-Main areas:
+- React
+- TypeScript
+- Vite
+- React Router
+- Redux Toolkit
+- TanStack Query
+- Axios
+- React Hook Form
+- Zod
+- Tailwind CSS
+- shadcn/ui
 
-- `src/api`: HTTP client and API wrappers
-- `src/constants`: endpoint constants
-- `src/features/auth`: login flow, auth types, auth service hooks
-- `src/routes`: router and protected route handling
-- `src/store`: Redux store and hooks
-- `src/components/ui`: UI primitives
+### Structure
 
-Observed frontend patterns:
+The frontend follows a feature-based structure.
 
-- Axios instance uses `baseURL` from `VITE_API_BASE_URL`
-- Axios sends cookies with `withCredentials: true`
-- React Query is used for server state
-- Redux Toolkit stores auth state
-- React Router protects the root route via `ProtectedRoute`
+```text
+apps/frontend/src/
+  app/
+  features/
+    auth/
+    tutorial-period/
+    users/
+    reports/
+    settings/
+    tutorial-scheduling/
+    lecturer-assignments/
+    teaching-schedule/
+    tutorial-registration/
+    study-schedule/
+    profile/
+  layouts/
+  routes/
+  shared/
+```
 
-Loading system design:
+Key boundaries:
 
-- React Query loading states drive API page loading
-- Local component state handles form submission loading
-- Axios interceptors track global request activity
-- Redux stores only the global loading overlay state (optional)
+- `features/*`: feature-specific pages, hooks, schema, API usage
+- `layouts/*`: role-aware shells
+- `routes/*`: route guards and route configuration
+- `shared/*`: shared UI, API client, utilities, config
 
-Observed auth behavior:
+### Role-based layouts
 
-1. Frontend requests `/sanctum/csrf-cookie`
-2. Frontend posts credentials to `/api/v1/auth/login`
-3. Frontend fetches `/api/v1/auth/me`
-4. Protected routes redirect unauthenticated users to `/login`
-5. UserMenu triggers `POST /api/v1/auth/logout`
+The UI chooses a layout by authenticated role:
 
-Logout handling (frontend):
+- `ADMIN` -> admin layout
+- `DEPARTMENT` -> admin layout
+- `LECTURER` -> lecturer layout
+- `STUDENT` -> student layout
 
-- logout is initiated from the UserMenu UI
-- React Query cache is cleared
-- Redux auth state is reset
-- axios `Authorization` header is cleared
-- token storage keys are cleared if present (common `authToken`/`token`). `TODO: verify`
+The route layer uses:
 
-## Laravel Architecture
+- `RequireAuth`
+- `RequireRole`
+- `GuestOnlyRoute`
 
-Location: `apps/core-backend`
+### Server state and auth state
 
-Main areas:
+- TanStack Query is the primary server-state layer.
+- Redux stores authentication state and global UI-level concerns.
+- Auth bootstrap runs on app startup and calls `/api/v1/auth/me`.
 
-- `app/Http/Controllers`
-- `app/Http/Requests`
-- `app/Http/Resources`
-- `app/Models`
-- `app/Services`
-- `app/Repositories`
-- `app/Traits`
-- `database/migrations`
-- `routes/api.php`
-- `routes/web.php`
+### Current feature maturity
 
-Observed responsibilities:
+Fully integrated today:
 
-- frontend-facing auth endpoints
-- consistent JSON response envelope for API routes
-- session-based auth backed by Sanctum middleware
-- integration to legacy Express service through an HTTP macro
-- legacy user import into Laravel `users`
+- authentication
+- tutorial period management
 
-Important implementation details:
+Frontend pages that currently exist mostly as placeholders:
 
-- API routes are defined in `routes/api.php` with Laravel's `/api` prefix and an internal `v1` prefix
-- `bootstrap/app.php` forces JSON exception rendering for `/api/*`
-- `bootstrap/app.php` enables Sanctum stateful API middleware for cookie-based SPA auth
-- `AppServiceProvider` defines `Http::legacy()` using `config('services.legacy_service')`
-- `config/services.php` builds the legacy base URL as `LEGACY_BACKEND_URL + /api/v1`
+- users
+- reports
+- settings
+- tutorial scheduling
+- lecturer assignments
+- teaching schedule
+- tutorial registration
+- study schedule
+- profile
 
-## Express Architecture
+## Laravel Backend Architecture
 
-Location: `apps/legacy-backend`
+### Stack
 
-Main areas:
+- Laravel 12
+- Sanctum
+- MySQL
 
-- `src/app.ts`
-- `src/config/database.ts`
-- `src/routes/v1`
-- `src/controllers/v1`
-- `src/services`
-- `src/repositories`
-- `src/middlewares`
+### Application flow
 
-Observed responsibilities:
+The Laravel app follows the current layered pattern:
 
-- versioned internal API under `/api/v1`
-- read access to SQL Server tables
-- API key protection using `x-api-key`
-- query validation with Joi
-- response shaping with a shared `ApiResponse` helper
+```text
+Request
+  -> FormRequest
+  -> Controller
+  -> Service
+  -> Model / External service
+  -> API Resource
+  -> JSON response
+```
 
-Observed middleware chain:
+Responsibilities:
 
-1. `express.json()`
-2. `cors(...)`
-3. `morgan(...)`
-4. `cls-rtracer`
-5. global API key middleware
-6. `/api` router
-7. global error handler
+- Form Requests: validation, camelCase request normalization, safe query parsing
+- Controllers: thin orchestration and authorization
+- Services: business logic
+- Models: persistence and relationships
+- Resources: public camelCase API contract
 
-## Inter-Service Boundaries
+### Public API modules currently implemented
 
-### Frontend to Laravel
+- auth
+- tutorial periods
 
-Current expectation:
+### Auth architecture
 
-- browser-facing auth and protected resource access go through Laravel
-- frontend base URL defaults to `http://localhost:8000`
+Sanctum is used in SPA session mode:
 
-Relevant files:
+1. frontend requests `/sanctum/csrf-cookie`
+2. login posts credentials to Laravel
+3. Laravel creates a session
+4. browser sends session and XSRF cookies on subsequent requests
+5. frontend restores state with `/api/v1/auth/me`
 
-- `apps/frontend/src/api/axiosInstance.ts`
-- `apps/frontend/src/constants/api.ts`
+Laravel route middleware shape:
 
-### Laravel to Express
+- auth routes run through `web`
+- protected routes use `auth:sanctum`
+- the API middleware stack prepends `EnsureFrontendRequestsAreStateful`
 
-Current expectation:
+### Query system
 
-- Laravel calls Express through `Http::legacy()`
-- requests include `x-api-key`
-- legacy base URL defaults to `http://localhost:5000/api/v1`
+The Laravel API exposes a standard query shape for list endpoints:
 
-Relevant files:
+- `page`
+- `limit`
+- `search`
+- `sortBy`
+- `sortOrder`
 
-- `apps/core-backend/app/Providers/AppServiceProvider.php`
-- `apps/core-backend/config/services.php`
-- `apps/legacy-backend/src/middlewares/authKey.ts`
+Internally:
 
-### Express to SQL Server
+- public query params remain camelCase
+- validated request data is normalized to internal snake_case
+- allowed sort fields are explicitly mapped to database columns
 
-Current expectation:
+### API contract
 
-- Express is the layer that queries legacy academic tables
-- Knex is configured with the `mssql` client
+The public Laravel API is camelCase end to end:
 
-Relevant files:
+- request bodies use camelCase
+- query params use camelCase
+- resources return camelCase
 
-- `apps/legacy-backend/src/config/database.ts`
-- `apps/legacy-backend/src/repositories/*.ts`
+The database remains snake_case internally.
 
-## Current Endpoint Placement
+## Legacy Backend Architecture
 
-### Laravel
+### Stack
 
-- `GET /api/v1/test`
-- `POST /api/v1/auth/login`
-- `POST /api/v1/auth/logout`
-- `GET /api/v1/auth/me`
-- `GET /api/v1/tutorial-periods`
-- `GET /api/v1/tutorial-periods/{id}`
-- `POST /api/v1/tutorial-periods`
-- `PUT /api/v1/tutorial-periods/{id}`
-- `DELETE /api/v1/tutorial-periods/{id}`
-- `PATCH /api/v1/tutorial-periods/{id}/open`
-- `PATCH /api/v1/tutorial-periods/{id}/assigning`
-- `PATCH /api/v1/tutorial-periods/{id}/ongoing`
-- `PATCH /api/v1/tutorial-periods/{id}/close`
+- Express 5
+- TypeScript
+- Knex
+- SQL Server
 
-### Express
+### Responsibility
 
-- `GET /api/v1/students`
-- `GET /api/v1/lecturers`
-- `GET /api/v1/departments`
+The legacy backend is a read-oriented internal service.
 
-## Architecture Constraints For Future Work
+It is responsible for:
 
-- Preserve Laravel as the frontend-facing backend unless the user explicitly requests otherwise.
-- Preserve Express as the SQL Server access layer unless the user explicitly requests otherwise.
-- Preserve MySQL ownership for Laravel-managed user/session/framework data.
-- Treat the current repo as partially modernized, with legacy integration still active.
+- querying legacy SQL Server datasets
+- exposing versioned internal endpoints
+- protecting those endpoints with an API key
+
+Current endpoint groups:
+
+- students
+- lecturers
+- departments
+
+Laravel owns the browser-facing integration boundary and normalizes legacy data for the frontend.
+
+## Data Contract Boundaries
+
+### Database
+
+- MySQL tables use snake_case
+- SQL Server remains legacy-driven
+
+### Laravel internals
+
+- Eloquent attributes and columns remain snake_case
+- request validation normalizes camelCase into internal snake_case
+
+### Frontend contract
+
+- frontend domain models use camelCase
+- no frontend response mapper is required for the Laravel API
+
+## UI Architecture Notes
+
+The frontend UI has recently been simplified around:
+
+- shadcn/ui components
+- shared date utilities
+- `Calendar + Popover` date picking instead of native `type="date"`
+- lighter modal and form composition
+
+Date display is formatted in Vietnam time using shared utilities, while API payloads remain raw data values until they reach the display layer.

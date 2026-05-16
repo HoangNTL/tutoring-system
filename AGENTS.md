@@ -4,13 +4,13 @@ This file describes how AI coding agents should work in this repository.
 
 ## Scope
 
-This repository contains three existing applications:
+This repository contains three applications:
 
 - `apps/frontend`: React SPA
 - `apps/core-backend`: Laravel backend
 - `apps/legacy-backend`: Express backend for legacy SQL Server data
 
-Agents should treat this as an existing system with established folder boundaries and integration paths.
+Agents should treat this as an existing multi-app system with established boundaries.
 
 ## Hard Rules
 
@@ -20,19 +20,19 @@ Agents should treat this as an existing system with established folder boundarie
 - Do not change database schema unless explicitly requested.
 - Do not move responsibilities between frontend, Laravel, and Express without explicit approval.
 - Do not replace legacy integration assumptions with guesses.
-- If a behavior is unclear, write `TODO: verify` in documentation or ask the user before changing code.
+- If a behavior is unclear, write `TODO: verify` in documentation or ask before changing code.
 
 ## Architecture Awareness
 
-Observed request/data flow:
+Observed request and data flow:
 
 1. Frontend sends browser requests to Laravel.
-2. Laravel handles auth and core API orchestration.
+2. Laravel handles auth, validation, authorization, and application orchestration.
 3. Laravel calls the legacy Express backend for some datasets.
 4. Express reads from SQL Server.
 5. Laravel uses MySQL for its own application data.
 
-Agents should preserve this separation unless the user requests an architecture change.
+Preserve this separation unless the user requests an architecture change.
 
 ## Folder Ownership
 
@@ -42,6 +42,7 @@ Use this area for:
 
 - React UI
 - client-side routing
+- role-based layouts and navigation
 - frontend state management
 - browser API calls to Laravel
 
@@ -49,7 +50,7 @@ Avoid:
 
 - direct SQL access
 - direct calls to SQL Server
-- embedding Laravel-only behavior in the UI unless already established
+- backend-specific business logic that belongs in Laravel
 
 ### Core Backend: `apps/core-backend`
 
@@ -58,13 +59,14 @@ Use this area for:
 - authentication
 - request validation
 - API responses
+- authorization policies
 - orchestration between frontend-facing API and legacy services
 - Laravel-managed MySQL data
 
 Avoid:
 
 - duplicating legacy SQL queries unless explicitly requested
-- undocumented changes to auth/session behavior
+- undocumented changes to auth or session behavior
 
 ### Legacy Backend: `apps/legacy-backend`
 
@@ -82,9 +84,9 @@ Avoid:
 
 ## Current Conventions
 
-### API Responses
+### API contract
 
-Both Laravel and Express currently return a similar envelope:
+Laravel public API responses use this envelope:
 
 ```json
 {
@@ -95,31 +97,42 @@ Both Laravel and Express currently return a similar envelope:
 }
 ```
 
-Preserve this shape for new endpoints unless the user requests a change.
+Laravel public API field naming uses camelCase for:
 
-### API Versioning
+- request bodies
+- query params
+- response payloads
 
-Current code uses `/api/v1/...` for application endpoints.
+Database columns remain snake_case internally.
+
+### API versioning
+
+Current public routes use `/api/v1/...`.
 
 ### Auth
 
 Observed frontend auth flow:
 
 - request Sanctum CSRF cookie
-- submit username/password to Laravel
+- submit username and password to Laravel
 - rely on cookie-based authenticated requests with `withCredentials: true`
-- logout is triggered from the UserMenu and calls `POST /api/v1/auth/logout`
-- after logout, the frontend clears React Query cache, Redux user state, and axios `Authorization`
-- token storage keys are cleared if present (common `authToken`/`token`). `TODO: verify`
+- restore auth state with `GET /api/v1/auth/me`
+- logout with `POST /api/v1/auth/logout`
 
 Agents should not convert this to token-only auth without approval.
 
-### Pagination
+### Query conventions
 
-Observed shared conventions:
+Current list-style APIs use:
 
 - `page`
 - `limit`
+- `search`
+- `sortBy`
+- `sortOrder`
+
+Pagination metadata uses:
+
 - `meta.total`
 - `meta.perPage`
 - `meta.currentPage`
@@ -128,14 +141,24 @@ Observed shared conventions:
 ### Validation
 
 - Laravel uses Form Requests
+- Laravel normalizes incoming camelCase into internal snake_case before validation
 - Express uses Joi-based query validation middleware
 
-### Loading States (Frontend)
+### Frontend state
 
-- React Query loading states are the source of truth for API data fetching
-- Local component state is used for form submission loading (e.g., login)
-- Axios interceptors track global request activity
-- Redux is only for global loading UI/overlay (optional)
+- React Query is the source of truth for API data fetching
+- Redux stores auth state and small global app concerns
+- local component state is still used for local UI flows such as form submission
+
+### Frontend structure
+
+The frontend is feature-based under `apps/frontend/src/features`.
+
+Role-aware layouts currently exist for:
+
+- admin and department users
+- lecturers
+- students
 
 ## Safe Working Process
 
@@ -150,10 +173,11 @@ Observed shared conventions:
 When updating docs:
 
 - base claims on actual files in the repo
-- distinguish current runtime values from framework defaults
-- call out inconsistencies explicitly
+- distinguish current implementation from framework defaults
+- call out incomplete or placeholder areas explicitly
 - do not present inferred intent as fact
 
 ## Known Ambiguities
 
-- Legacy backend production start workflow is not defined in `package.json`. `TODO: verify`
+- Imported user password handling is development-oriented at the moment. `TODO: verify` the production-safe onboarding approach.
+- Several frontend role-based pages exist before matching backend APIs are implemented. Keep docs explicit about what is integrated versus placeholder.

@@ -1,203 +1,109 @@
-# Tasks
+# Current Tasks
 
-## Purpose
+This file tracks realistic next-step work based on the current implementation.
 
-This document lists common repository tasks based on scripts and commands already present in the codebase.
+Completed work that is already reflected in code has been removed from this list.
 
-It does not introduce new tooling or workflows.
+## High Priority
 
-## Start the Frontend
+### 1. Define the production credential flow for imported users
 
-Working directory:
+Current state:
 
-```text
-apps/frontend
-```
+- imported users can be created from legacy data
+- development currently uses simple predictable source passwords
 
-Command:
+Next step:
 
-```bash
-npm run dev
-```
+- replace the development-only password bootstrap with a production-safe onboarding flow
+- `TODO: verify` whether this should be temporary passwords, reset links, or an admin-assisted activation flow
 
-Expected default dev URL:
+### 2. Expand backend coverage for existing frontend modules
 
-- `http://localhost:5173`
+Current state:
 
-Notes:
+- authentication and tutorial periods are implemented end to end
+- several role-based frontend pages are still placeholders
 
-- frontend API base URL comes from `VITE_API_BASE_URL`
-- current frontend `.env` points to `http://localhost:8000`
+Next step:
 
-## Start the Laravel Core Backend
+- add matching backend APIs for the next approved feature modules
+- likely candidates:
+  - users
+  - reports
+  - settings
+  - tutorial scheduling
+  - lecturer assignments
+  - tutorial registration
+  - teaching schedule
+  - study schedule
 
-Working directory:
+### 3. Add more automated tests around auth and domain behavior
 
-```text
-apps/core-backend
-```
+Current state:
 
-Minimal API server:
+- the Laravel backend has feature coverage for the current auth/tutorial-period surface
+- frontend behavior is not yet covered by automated tests
 
-```bash
-php artisan serve
-```
+Next step:
 
-Expected default URL:
+- add frontend tests for auth bootstrap, route guards, and tutorial period form behavior
+- add backend tests for more policy paths, status transitions, and session edge cases
 
-- `http://localhost:8000`
+## Medium Priority
 
-Optional frontend asset watcher for the Laravel app itself:
+### 4. Harden production session and cookie deployment guidance
 
-```bash
-npm run dev
-```
+Current state:
 
-Combined workflow already defined in `composer.json`:
+- local Sanctum configuration is documented
+- production cookie/domain strategy is still environment-dependent
 
-```bash
-composer dev
-```
+Next step:
 
-Observed `composer dev` responsibilities:
+- document production values for:
+  - `FRONTEND_URL`
+  - `SANCTUM_STATEFUL_DOMAINS`
+  - `SESSION_DOMAIN`
+  - `SESSION_SAME_SITE`
+  - `SESSION_SECURE_COOKIE`
 
-- `php artisan serve`
-- `php artisan queue:listen --tries=1 --timeout=0`
-- `php artisan pail --timeout=0`
-- `npm run dev`
+### 5. Add operational documentation for the three-app deployment model
 
-## Start the Legacy Express Backend
+Current state:
 
-Working directory:
+- each app can be started independently
+- deployment and runtime wiring are not documented in one place
 
-```text
-apps/legacy-backend
-```
+Next step:
 
-Command:
+- document build and runtime expectations for:
+  - frontend hosting
+  - Laravel app serving
+  - legacy backend serving
+  - inter-service environment variables
 
-```bash
-npm run dev
-```
+### 6. Review placeholder frontend features before implementation
 
-Observed startup entry:
+Current state:
 
-- `src/app.ts`
+- route shells and layouts exist for multiple roles
+- some pages are intentionally present as placeholders
 
-Expected URL from current `.env`:
+Next step:
 
-- `http://localhost:5000`
+- confirm which role-specific modules should be implemented next
+- remove or hide any routes that are not scheduled for near-term delivery
 
-Note:
+## Low Priority
 
-- no explicit `start` production script was detected in `package.json`. `TODO: verify`
+### 7. Continue UI consistency cleanup
 
-## Run the Full Local Stack
+Current state:
 
-Suggested current order based on code dependencies:
+- tutorial period forms already use shared date and modal primitives
 
-1. Start `apps/legacy-backend`
-2. Start `apps/core-backend`
-3. Start `apps/frontend`
+Next step:
 
-Reason:
-
-- Laravel depends on the legacy Express service for some data
-- frontend depends on Laravel for auth and API calls
-
-## Authenticate Through the Frontend
-
-Observed flow:
-
-1. Open the frontend
-2. Frontend requests Sanctum CSRF cookie from Laravel
-3. Submit `username` and `password`
-4. Frontend loads current user via `/api/v1/auth/me`
-
-Relevant files:
-
-- `apps/frontend/src/api/auth.api.ts`
-- `apps/core-backend/app/Http/Controllers/Api/V1/AuthController.php`
-
-## Import Legacy Users Into Laravel
-
-Working directory:
-
-```text
-apps/core-backend
-```
-
-Command:
-
-```bash
-php artisan import:legacy-users
-```
-
-Observed prerequisites:
-
-- Laravel must be able to call the legacy backend
-- legacy backend must be running and reachable
-- Laravel service config must include the legacy backend API key
-
-Observed import targets:
-
-- students
-- lecturers
-- departments
-
-## Build the Frontend
-
-Working directory:
-
-```text
-apps/frontend
-```
-
-Command:
-
-```bash
-npm run build
-```
-
-## Build Laravel Frontend Assets
-
-Working directory:
-
-```text
-apps/core-backend
-```
-
-Command:
-
-```bash
-npm run build
-```
-
-## Lint the Frontend
-
-Working directory:
-
-```text
-apps/frontend
-```
-
-Command:
-
-```bash
-npm run lint
-```
-
-## Troubleshooting Order
-
-When a request fails, inspect in this order:
-
-1. frontend request path and base URL
-2. Laravel route and middleware
-3. Laravel legacy service config
-4. Express route and API key middleware
-5. SQL Server connectivity
-
-## Current Known Gaps
-
-- documented production startup path for Express is missing. `TODO: verify`
-- root-level unified dev orchestration command was not found. `TODO: verify`
+- apply the same simplified design system to upcoming feature screens
+- keep date display and form patterns consistent across all modules

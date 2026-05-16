@@ -1,98 +1,76 @@
 # Database
 
-## Overview
+This repository uses two data stores:
 
-This repository uses two database systems for different responsibilities:
+- MySQL for Laravel-managed application data
+- SQL Server for legacy read-only data exposed through the Express service
 
-- MySQL for the Laravel core backend
-- SQL Server for legacy academic data exposed by the Express backend
+## MySQL Ownership
 
-The repo also includes Laravel support for other connection types such as SQLite and SQL Server, but the current Laravel runtime `.env` selects MySQL.
+The Laravel application owns:
 
-## Database Ownership
-
-### Laravel / MySQL
-
-Current connection source:
-
-- `apps/core-backend/config/database.php`
-- `apps/core-backend/.env`
-
-Observed current runtime values:
-
-- `DB_CONNECTION=mysql`
-- `DB_HOST=127.0.0.1`
-- `DB_PORT=3306`
-- `DB_DATABASE=tutoring_db`
-
-Laravel is currently responsible for:
-
-- application users
+- authentication users
 - sessions
-- cache tables
-- job tables
-- Sanctum personal access tokens
+- tutorial periods
+- tutorial period status logs
+- notifications
+- framework support tables
 
-### Express / SQL Server
+## Naming Strategy
 
-Current connection source:
+Database tables and columns remain snake_case.
 
-- `apps/legacy-backend/src/config/database.ts`
-- `apps/legacy-backend/.env`
+Examples:
 
-Observed current runtime values:
+- `start_reg_date`
+- `end_study_date`
+- `created_by`
+- `password_hash`
 
-- SQL Server host from `DB_SERVER`
-- port `1433`
-- database `EDU_NUCE`
+The public Laravel API converts these to camelCase in API Resources.
 
-Express is currently responsible for:
+Examples:
 
-- read access to legacy academic tables
-- translating SQL Server rows into API response objects
+- `startRegDate`
+- `endStudyDate`
+- `createdBy`
+- `createdAt`
 
-## Laravel Schema
+This means:
 
-Observed migration files:
+- database schema stays idiomatic for Laravel and SQL
+- backend internals stay aligned with Eloquent
+- frontend consumes a consistent camelCase API contract
 
-- `0001_01_01_000000_create_users_table.php`
-- `0001_01_01_000001_create_cache_table.php`
-- `0001_01_01_000002_create_jobs_table.php`
-- `2026_05_11_162139_create_personal_access_tokens_table.php`
+## Core MySQL Tables
 
 ### `users`
 
-Columns detected:
+Primary authentication table.
+
+Important columns:
 
 - `id`
-- `username` unique
+- `username`
 - `password_hash`
 - `role`
-- `student_id` nullable
-- `lecturer_id` nullable
-- `department_id` nullable
+- `student_id`
+- `lecturer_id`
+- `department_id`
 - `created_at`
 - `updated_at`
 
-Observed model:
+Notes:
 
-- `app/Models/User.php`
-
-Important behavior:
-
-- the auth password field is mapped to `password_hash`
-- `role` is cast to `App\Enums\UserRole`
-
-Current enum values:
-
-- `1`: `ADMIN`
-- `2`: `DEPARTMENT`
-- `3`: `LECTURER`
-- `4`: `STUDENT`
+- Passwords are stored in `password_hash`.
+- User role is stored as a numeric enum value internally.
+- Imported legacy users currently use simple predictable source passwords in development. `TODO: verify` the production credential bootstrap policy before deployment.
 
 ### `sessions`
 
-Columns detected:
+Laravel session storage table.
+
+Important columns:
 
 - `id`
 - `user_id`
@@ -101,185 +79,121 @@ Columns detected:
 - `payload`
 - `last_activity`
 
-Reason:
+This table is required for the current Sanctum session-based SPA flow because the app uses `SESSION_DRIVER=database`.
 
-- Laravel session driver is currently `database`
+### `tutorial_periods`
 
-### `cache`
+Main tutoring period table.
 
-Columns detected:
-
-- `key`
-- `value`
-- `expiration`
-
-### `cache_locks`
-
-Columns detected:
-
-- `key`
-- `owner`
-- `expiration`
-
-### `jobs`
-
-Columns detected:
+Important columns:
 
 - `id`
-- `queue`
-- `payload`
-- `attempts`
-- `reserved_at`
-- `available_at`
+- `title`
+- `description`
+- `start_reg_date`
+- `end_reg_date`
+- `start_study_date`
+- `end_study_date`
+- `status`
+- `opened_at`
+- `assigned_at`
+- `started_at`
+- `closed_at`
+- `created_by`
 - `created_at`
+- `updated_at`
+- `deleted_at`
 
-### `job_batches`
+Indexes:
 
-Columns detected:
+- `status`
+- `start_reg_date, end_reg_date`
+- `start_study_date, end_study_date`
 
-- `id`
-- `name`
-- `total_jobs`
-- `pending_jobs`
-- `failed_jobs`
-- `failed_job_ids`
-- `options`
-- `cancelled_at`
-- `created_at`
-- `finished_at`
+Notes:
 
-### `failed_jobs`
+- The date range columns were originally `date` columns.
+- Migration `2026_05_16_000001_update_tutorial_period_dates_to_datetime.php` changed them to `datetime` to preserve time precision.
+- The model now casts them as `datetime`.
 
-Columns detected:
+### `tutorial_period_status_logs`
 
-- `id`
-- `uuid`
-- `connection`
-- `queue`
-- `payload`
-- `exception`
-- `failed_at`
+Audit trail for tutorial period state transitions.
 
-### `personal_access_tokens`
-
-Columns detected:
+Important columns:
 
 - `id`
-- `tokenable_type`
-- `tokenable_id`
-- `name`
-- `token`
-- `abilities`
-- `last_used_at`
-- `expires_at`
+- `tutorial_period_id`
+- `old_status`
+- `new_status`
+- `changed_by`
+- `note`
 - `created_at`
 - `updated_at`
 
-Note:
+Indexes:
 
-- Sanctum is installed, but the current frontend auth flow appears to use session/cookie auth rather than personal access tokens. `TODO: verify`
+- `tutorial_period_id`
+- `tutorial_period_id, created_at`
+- `old_status, new_status`
 
-## Legacy SQL Server Usage
+### `notifications`
 
-The repo does not contain SQL Server migration files. The following usage is inferred only from repository query code.
+Notification storage for user-facing system events.
 
-### Table: `DT_SinhVien`
+Important columns:
 
-Referenced by:
+- `id`
+- `user_id`
+- `type`
+- `title`
+- `message`
+- `related_type`
+- `related_id`
+- `is_read`
+- `read_at`
+- `created_at`
+- `updated_at`
 
-- `src/repositories/StudentRepository.ts`
+Indexes:
 
-Observed selected columns:
+- `user_id, is_read`
+- `type`
+- `related_type, related_id`
+- `read_at`
 
-- `Id`
-- `MaSinhVien`
-- `NgaySinh2`
-- `NgayNhapHoc`
-- `QuocTich`
+### Framework support tables
 
-### Table: `DM_GiangVien`
+- `cache`
+- `cache_locks`
+- `jobs`
+- `job_batches`
+- `failed_jobs`
+- `personal_access_tokens`
 
-Referenced by:
+Notes:
 
-- `src/repositories/LecturerRepository.ts`
+- `personal_access_tokens` exists because Sanctum is installed.
+- The current SPA auth flow uses sessions, not personal access tokens.
 
-Observed selected columns:
+## SQL Server Ownership
 
-- `Id`
-- `MaGiangVien`
-- `NgaySinh`
-- `IsChamDutHopDong`
+SQL Server remains outside the Laravel application schema.
 
-### Table: `TMP_DsBoMonKhoa`
+The Express legacy backend reads from SQL Server and exposes internal APIs for:
 
-Referenced by:
+- students
+- lecturers
+- departments
 
-- `src/repositories/DepartmentRepository.ts`
+Laravel consumes those endpoints and normalizes legacy data before it reaches the frontend.
 
-Observed selected columns:
+## Timezone Notes
 
-- `Id`
-- `TenBoMon`
+The Laravel app timezone is set to `Asia/Ho_Chi_Minh`.
 
-## Cross-Database Relationship Pattern
+Practical behavior:
 
-The current design links Laravel users to legacy entities by identifier fields rather than foreign keys across systems.
-
-Observed fields in Laravel `users`:
-
-- `student_id`
-- `lecturer_id`
-- `department_id`
-
-This indicates an application-level relationship to SQL Server-backed entities, not a direct DB-level join.
-
-## Legacy Import Behavior
-
-Laravel includes a legacy user import command:
-
-```bash
-php artisan import:legacy-users
-```
-
-Observed import behavior:
-
-- students are imported from legacy `/students`
-- lecturers are imported from legacy `/lecturers`
-- departments are imported from legacy `/departments`
-- Laravel usernames are derived from legacy codes or department IDs
-- passwords are derived from DOB strings or fallback values
-
-Observed default password behavior:
-
-- student/lecturer password: DOB with `/` removed when available
-- fallback password: `1`
-- department username format: `bm<department_id>`
-- department password: `1`
-
-The security and business rationale for these defaults is not documented in the repo. `TODO: verify`
-
-## Connection Notes
-
-### Laravel Supported Connections
-
-Detected in `config/database.php`:
-
-- `sqlite`
-- `mysql`
-- `mariadb`
-- `pgsql`
-- `sqlsrv`
-
-Current runtime choice from `.env`:
-
-- `mysql`
-
-### Express SQL Server Connection
-
-Detected in `src/config/database.ts`:
-
-- Knex client: `mssql`
-- `encrypt: false`
-- `trustServerCertificate: true`
-
-The intended production-grade SQL Server security settings are not documented. `TODO: verify`
+- Laravel writes application timestamps in Vietnam time
+- frontend display utilities also format dates in Vietnam time
+- MySQL `datetime` columns are timezone-naive, so application consistency depends on Laravel and the UI using the same timezone assumptions
