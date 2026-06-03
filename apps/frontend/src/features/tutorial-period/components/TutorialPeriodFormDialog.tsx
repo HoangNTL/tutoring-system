@@ -7,16 +7,22 @@ import { DatePickerField } from '@/shared/ui/date-picker-field'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/select'
 import { Spinner } from '@/shared/ui/spinner'
 import { Textarea } from '@/shared/ui/textarea'
-import type { TutorialPeriod } from '@/features/tutorial-period/types/tutorialPeriod.types'
+import type { LegacyPeriod, TutorialPeriod } from '@/features/tutorial-period/types/tutorialPeriod.types'
 import {
   getTutorialPeriodFormValues,
   tutorialPeriodFormDefaultValues,
@@ -28,6 +34,9 @@ interface TutorialPeriodFormDialogProps {
   mode: 'create' | 'edit'
   open: boolean
   tutorialPeriod: TutorialPeriod | null
+  legacyPeriods: LegacyPeriod[]
+  isLegacyPeriodsLoading: boolean
+  legacyPeriodsError?: string | null
   isSubmitting: boolean
   submitError?: string | null
   onOpenChange: (open: boolean) => void
@@ -38,6 +47,9 @@ export function TutorialPeriodFormDialog({
   mode,
   open,
   tutorialPeriod,
+  legacyPeriods,
+  isLegacyPeriodsLoading,
+  legacyPeriodsError,
   isSubmitting,
   submitError,
   onOpenChange,
@@ -62,16 +74,11 @@ export function TutorialPeriodFormDialog({
     reset(getTutorialPeriodFormValues(tutorialPeriod))
   }, [open, reset, tutorialPeriod])
 
-  const title =
-    mode === 'create' ? 'Tạo đợt phụ đạo' : 'Cập nhật đợt phụ đạo'
-  const description =
-    mode === 'create'
-      ? 'Tạo mới một đợt phụ đạo và lưu ngay trên màn hình hiện tại.'
-      : 'Cập nhật thông tin đợt phụ đạo đang ở trạng thái DRAFT.'
+  const title = mode === 'create' ? 'Tạo đợt phụ đạo' : 'Cập nhật đợt phụ đạo'
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90vh] max-w-2xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white p-0 shadow-xl">
+      <DialogContent className="flex max-h-[90vh] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white p-0 shadow-xl sm:max-w-3xl lg:max-w-4xl">
         <form
           className="flex min-h-0 flex-col"
           onSubmit={handleSubmit(async (values) => {
@@ -82,13 +89,10 @@ export function TutorialPeriodFormDialog({
             <DialogTitle className="text-xl font-semibold tracking-tight text-slate-950">
               {title}
             </DialogTitle>
-            <DialogDescription className="text-sm text-slate-500">
-              {description}
-            </DialogDescription>
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto px-6 py-5">
-            <div className="space-y-4">
+            <div className="space-y-5">
               {submitError ? (
                 <div
                   role="alert"
@@ -98,8 +102,59 @@ export function TutorialPeriodFormDialog({
                 </div>
               ) : null}
 
-              <div className="grid gap-4">
-                <div className="grid gap-2">
+              <div className="grid grid-cols-1 gap-x-5 gap-y-4 md:grid-cols-2">
+                <div className="grid gap-2 md:col-span-2">
+                  <Label
+                    htmlFor="tutorial-period-academic-period-id"
+                    className="text-sm font-medium text-slate-700"
+                  >
+                    Học kỳ
+                  </Label>
+                  <Controller
+                    control={control}
+                    name="academicPeriodId"
+                    render={({ field }) => (
+                      <Select
+                        value={field.value > 0 ? field.value.toString() : undefined}
+                        onValueChange={(value) => field.onChange(Number(value))}
+                        disabled={isSubmitting || isLegacyPeriodsLoading}
+                      >
+                        <SelectTrigger
+                          id="tutorial-period-academic-period-id"
+                          className="h-11 w-full rounded-xl border-slate-200 bg-white px-3 text-slate-900 shadow-none"
+                        >
+                          <SelectValue
+                            placeholder={
+                              isLegacyPeriodsLoading
+                                ? 'Đang tải học kỳ...'
+                                : 'Chọn học kỳ'
+                            }
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {legacyPeriods.map((legacyPeriod) => (
+                            <SelectItem
+                              key={legacyPeriod.id}
+                              value={legacyPeriod.id.toString()}
+                            >
+                              {legacyPeriod.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.academicPeriodId ? (
+                    <p className="text-sm text-red-500">
+                      {errors.academicPeriodId.message}
+                    </p>
+                  ) : null}
+                  {!errors.academicPeriodId && legacyPeriodsError ? (
+                    <p className="text-sm text-red-500">{legacyPeriodsError}</p>
+                  ) : null}
+                </div>
+
+                <div className="grid gap-2 md:col-span-2">
                   <Label
                     htmlFor="tutorial-period-title"
                     className="text-sm font-medium text-slate-700"
@@ -110,7 +165,7 @@ export function TutorialPeriodFormDialog({
                     id="tutorial-period-title"
                     placeholder="Ví dụ: Đợt phụ đạo học kỳ 1"
                     disabled={isSubmitting}
-                    className="h-10 rounded-xl border-slate-200 bg-white px-3 text-slate-900 shadow-none placeholder:text-slate-400"
+                    className="h-11 rounded-xl border-slate-200 bg-white px-3 text-slate-900 shadow-none placeholder:text-slate-400"
                     {...register('title')}
                   />
                   {errors.title ? (
@@ -118,7 +173,7 @@ export function TutorialPeriodFormDialog({
                   ) : null}
                 </div>
 
-                <div className="grid gap-2">
+                <div className="grid gap-2 md:col-span-2">
                   <Label
                     htmlFor="tutorial-period-description"
                     className="text-sm font-medium text-slate-700"
@@ -139,109 +194,107 @@ export function TutorialPeriodFormDialog({
                   ) : null}
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="grid gap-2">
-                    <Label
-                      htmlFor="tutorial-period-start-reg-date"
-                      className="text-sm font-medium text-slate-700"
-                    >
-                      Bắt đầu đăng ký
-                    </Label>
-                    <Controller
-                      control={control}
-                      name="startRegDate"
-                      render={({ field }) => (
-                        <DatePickerField
-                          id="tutorial-period-start-reg-date"
-                          value={field.value}
-                          onChange={field.onChange}
-                          placeholder="Chọn ngày"
-                          error={errors.startRegDate?.message}
-                          disabled={isSubmitting}
-                        />
-                      )}
-                    />
-                  </div>
+                <div className="grid gap-2">
+                  <Label
+                    htmlFor="tutorial-period-start-reg-date"
+                    className="text-sm font-medium text-slate-700"
+                  >
+                    Bắt đầu đăng ký
+                  </Label>
+                  <Controller
+                    control={control}
+                    name="registrationStartAt"
+                    render={({ field }) => (
+                      <DatePickerField
+                        id="tutorial-period-start-reg-date"
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Chọn ngày"
+                        error={errors.registrationStartAt?.message}
+                        disabled={isSubmitting}
+                      />
+                    )}
+                  />
+                </div>
 
-                  <div className="grid gap-2">
-                    <Label
-                      htmlFor="tutorial-period-end-reg-date"
-                      className="text-sm font-medium text-slate-700"
-                    >
-                      Kết thúc đăng ký
-                    </Label>
-                    <Controller
-                      control={control}
-                      name="endRegDate"
-                      render={({ field }) => (
-                        <DatePickerField
-                          id="tutorial-period-end-reg-date"
-                          value={field.value}
-                          onChange={field.onChange}
-                          placeholder="Chọn ngày"
-                          error={errors.endRegDate?.message}
-                          disabled={isSubmitting}
-                        />
-                      )}
-                    />
-                  </div>
+                <div className="grid gap-2">
+                  <Label
+                    htmlFor="tutorial-period-end-reg-date"
+                    className="text-sm font-medium text-slate-700"
+                  >
+                    Kết thúc đăng ký
+                  </Label>
+                  <Controller
+                    control={control}
+                    name="registrationEndAt"
+                    render={({ field }) => (
+                      <DatePickerField
+                        id="tutorial-period-end-reg-date"
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Chọn ngày"
+                        error={errors.registrationEndAt?.message}
+                        disabled={isSubmitting}
+                      />
+                    )}
+                  />
+                </div>
 
-                  <div className="grid gap-2">
-                    <Label
-                      htmlFor="tutorial-period-start-study-date"
-                      className="text-sm font-medium text-slate-700"
-                    >
-                      Bắt đầu học
-                    </Label>
-                    <Controller
-                      control={control}
-                      name="startStudyDate"
-                      render={({ field }) => (
-                        <DatePickerField
-                          id="tutorial-period-start-study-date"
-                          value={field.value}
-                          onChange={field.onChange}
-                          placeholder="Chọn ngày"
-                          error={errors.startStudyDate?.message}
-                          disabled={isSubmitting}
-                        />
-                      )}
-                    />
-                  </div>
+                <div className="grid gap-2">
+                  <Label
+                    htmlFor="tutorial-period-start-study-date"
+                    className="text-sm font-medium text-slate-700"
+                  >
+                    Bắt đầu học
+                  </Label>
+                  <Controller
+                    control={control}
+                    name="studyStartAt"
+                    render={({ field }) => (
+                      <DatePickerField
+                        id="tutorial-period-start-study-date"
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Chọn ngày"
+                        error={errors.studyStartAt?.message}
+                        disabled={isSubmitting}
+                      />
+                    )}
+                  />
+                </div>
 
-                  <div className="grid gap-2">
-                    <Label
-                      htmlFor="tutorial-period-end-study-date"
-                      className="text-sm font-medium text-slate-700"
-                    >
-                      Kết thúc học
-                    </Label>
-                    <Controller
-                      control={control}
-                      name="endStudyDate"
-                      render={({ field }) => (
-                        <DatePickerField
-                          id="tutorial-period-end-study-date"
-                          value={field.value}
-                          onChange={field.onChange}
-                          placeholder="Chọn ngày"
-                          error={errors.endStudyDate?.message}
-                          disabled={isSubmitting}
-                        />
-                      )}
-                    />
-                  </div>
+                <div className="grid gap-2">
+                  <Label
+                    htmlFor="tutorial-period-end-study-date"
+                    className="text-sm font-medium text-slate-700"
+                  >
+                    Kết thúc học
+                  </Label>
+                  <Controller
+                    control={control}
+                    name="studyEndAt"
+                    render={({ field }) => (
+                      <DatePickerField
+                        id="tutorial-period-end-study-date"
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Chọn ngày"
+                        error={errors.studyEndAt?.message}
+                        disabled={isSubmitting}
+                      />
+                    )}
+                  />
                 </div>
               </div>
             </div>
           </div>
 
-          <DialogFooter className="mx-0 mb-0 mt-auto shrink-0 rounded-none border-t border-slate-200 bg-white px-6 py-4">
+          <DialogFooter className="mx-0 mb-0 mt-auto shrink-0 justify-end rounded-none border-t border-slate-200 bg-white px-6 py-4">
             <Button
               type="button"
               variant="outline"
               disabled={isSubmitting}
-              className="min-w-24 rounded-xl border-slate-200 bg-white px-4 shadow-none"
+              className="min-w-[120px] rounded-xl border-slate-200 bg-white px-4 shadow-none"
               onClick={() => onOpenChange(false)}
             >
               Hủy
@@ -249,7 +302,7 @@ export function TutorialPeriodFormDialog({
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="min-w-40 rounded-xl bg-[#0f4c81] px-5 text-white shadow-none hover:bg-[#0c3d68]"
+              className="min-w-[120px] rounded-xl bg-[#0f4c81] px-5 text-white shadow-none hover:bg-[#0c3d68]"
             >
               {isSubmitting ? (
                 <>
@@ -257,9 +310,9 @@ export function TutorialPeriodFormDialog({
                   Đang lưu...
                 </>
               ) : mode === 'create' ? (
-                'Tạo đợt phụ đạo'
+                'Tạo'
               ) : (
-                'Lưu thay đổi'
+                'Lưu'
               )}
             </Button>
           </DialogFooter>

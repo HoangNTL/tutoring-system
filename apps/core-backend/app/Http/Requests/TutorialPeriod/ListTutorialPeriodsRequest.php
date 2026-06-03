@@ -33,11 +33,12 @@ class ListTutorialPeriodsRequest extends BaseQueryRequest
     {
         return [
             'id' => 'id',
+            'academicPeriodId' => 'academic_period_id',
             'title' => 'title',
-            'startRegDate' => 'start_reg_date',
-            'endRegDate' => 'end_reg_date',
-            'startStudyDate' => 'start_study_date',
-            'endStudyDate' => 'end_study_date',
+            'registrationStartAt' => 'registration_start_at',
+            'registrationEndAt' => 'registration_end_at',
+            'studyStartAt' => 'study_start_at',
+            'studyEndAt' => 'study_end_at',
             'status' => 'status',
             'createdAt' => 'created_at',
             'updatedAt' => 'updated_at',

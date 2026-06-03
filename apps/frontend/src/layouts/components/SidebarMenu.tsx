@@ -15,10 +15,10 @@ interface SidebarMenuProps {
 
 const linkClassName = (isActive: boolean) =>
   cn(
-    'flex w-full flex-col items-start gap-1 rounded-xl border px-3 py-3 text-left transition-all duration-150',
+    'flex w-full items-center rounded-lg border px-2.5 py-2 text-left text-sm font-medium transition-all duration-150',
     isActive
-      ? 'border-[#0f4c81]/20 bg-[#0f4c81]/8 text-slate-950 shadow-sm'
-      : 'border-transparent text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-950'
+      ? 'border-slate-200 bg-slate-100 text-slate-950 shadow-sm'
+      : 'border-transparent text-slate-700 hover:bg-slate-100 hover:text-slate-950'
   )
 
 export default function SidebarMenu({
@@ -30,42 +30,24 @@ export default function SidebarMenu({
   const sections = getNavigationSectionsForRole(role)
 
   return (
-    <aside className="w-full rounded-3xl border border-slate-200 bg-white p-4 shadow-sm lg:w-72">
-      <div className="border-b border-slate-200 pb-4">
-        <p className="text-xs font-medium uppercase tracking-[0.24em] text-slate-400">
-          Điều hướng
-        </p>
-        <p className="mt-2 text-lg font-semibold text-slate-950">
-          Khu vực quản trị
-        </p>
-        <p className="mt-1 text-sm text-slate-500">
-          Truy cập nhanh các nhóm chức năng chính.
-        </p>
-      </div>
-
-      <nav aria-label="Sidebar navigation" className="mt-4 space-y-5">
+    <aside className="flex h-full min-h-full w-full flex-col justify-between px-1 py-1 lg:w-60">
+      <nav aria-label="Sidebar navigation" className="space-y-3">
         {sections.map((section) => (
-          <section key={section.id} className="space-y-2">
-            <div className="px-1">
-              <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">
+          <section key={section.id} className="space-y-1">
+            <div className="px-1 pb-1">
+              <p className="text-xs font-medium uppercase tracking-[0.28em] text-slate-400">
                 {section.title}
-              </p>
-              <p className="mt-1 text-xs text-slate-500">
-                {section.description}
               </p>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               {section.items.map((item) => (
                 <NavLink
                   key={item.path}
                   to={item.path}
                   className={({ isActive }) => linkClassName(isActive)}
                 >
-                  <span className="text-sm font-medium">{item.title}</span>
-                  <span className="text-xs text-slate-500">
-                    {item.description}
-                  </span>
+                  <span>{item.title}</span>
                 </NavLink>
               ))}
             </div>
@@ -73,11 +55,8 @@ export default function SidebarMenu({
         ))}
       </nav>
 
-      <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">
-          Tài khoản
-        </p>
-        <p className="mt-2 text-sm font-semibold text-slate-950">
+      <div className="mt-4 border-t border-slate-200 pt-3">
+        <p className="truncate px-1 text-sm font-medium text-slate-800">
           {userName ?? 'Người dùng'}
         </p>
         <Button
@@ -85,7 +64,7 @@ export default function SidebarMenu({
           variant="outline"
           onClick={onLogout}
           disabled={isLoggingOut}
-          className="mt-4 h-10 w-full justify-center rounded-xl border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+          className="mt-2 h-8 w-full justify-center rounded-lg border-slate-200 bg-white px-3 text-slate-700 hover:bg-slate-100"
         >
           <LogOut className="size-4" />
           {isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}

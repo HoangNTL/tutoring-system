@@ -12,7 +12,6 @@ The Laravel application owns:
 - authentication users
 - sessions
 - tutorial periods
-- tutorial period status logs
 - notifications
 - framework support tables
 
@@ -22,8 +21,8 @@ Database tables and columns remain snake_case.
 
 Examples:
 
-- `start_reg_date`
-- `end_study_date`
+- `registration_start_at`
+- `study_end_at`
 - `created_by`
 - `password_hash`
 
@@ -31,8 +30,8 @@ The public Laravel API converts these to camelCase in API Resources.
 
 Examples:
 
-- `startRegDate`
-- `endStudyDate`
+- `registrationStartAt`
+- `studyEndAt`
 - `createdBy`
 - `createdAt`
 
@@ -88,17 +87,14 @@ Main tutoring period table.
 Important columns:
 
 - `id`
+- `academic_period_id`
 - `title`
 - `description`
-- `start_reg_date`
-- `end_reg_date`
-- `start_study_date`
-- `end_study_date`
+- `registration_start_at`
+- `registration_end_at`
+- `study_start_at`
+- `study_end_at`
 - `status`
-- `opened_at`
-- `assigned_at`
-- `started_at`
-- `closed_at`
 - `created_by`
 - `created_at`
 - `updated_at`
@@ -107,35 +103,28 @@ Important columns:
 Indexes:
 
 - `status`
-- `start_reg_date, end_reg_date`
-- `start_study_date, end_study_date`
+- `academic_period_id`
+- `registration_start_at, registration_end_at`
+- `study_start_at, study_end_at`
 
 Notes:
 
 - The date range columns were originally `date` columns.
 - Migration `2026_05_16_000001_update_tutorial_period_dates_to_datetime.php` changed them to `datetime` to preserve time precision.
-- The model now casts them as `datetime`.
-
-### `tutorial_period_status_logs`
-
-Audit trail for tutorial period state transitions.
-
-Important columns:
-
-- `id`
-- `tutorial_period_id`
-- `old_status`
-- `new_status`
-- `changed_by`
-- `note`
-- `created_at`
-- `updated_at`
-
-Indexes:
-
-- `tutorial_period_id`
-- `tutorial_period_id, created_at`
-- `old_status, new_status`
+- Migration `2026_06_03_000001_update_tutorial_periods_for_time_driven_status.php` renamed the tutorial period datetime columns and removed the legacy transition timestamp columns.
+- `academic_period_id` stores the selected legacy SQL Server `DM_Dot.Id` value.
+- The stored `status` column is the tutorial period workflow source of truth.
+- Current stored status values are:
+  - `DRAFT`
+  - `OPEN`
+  - `ASSIGNING`
+  - `ONGOING`
+  - `CLOSED`
+  - `CANCELLED`
+- Status is updated in two ways:
+  - manual admin actions for `DRAFT -> OPEN` and allowed cancellation
+  - scheduled Laravel automation for `OPEN -> ASSIGNING -> ONGOING -> CLOSED`
+- There is no separate computed `phase` column in MySQL.
 
 ### `notifications`
 

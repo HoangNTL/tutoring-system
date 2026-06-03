@@ -2,8 +2,11 @@ import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { CalendarSearch, CirclePlus } from 'lucide-react'
 
 import {
+  useCancelTutorialPeriodMutation,
   useCreateTutorialPeriodMutation,
   useDeleteTutorialPeriodMutation,
+  useLegacyPeriods,
+  useOpenTutorialPeriodMutation,
   useTutorialPeriods,
   useUpdateTutorialPeriodMutation,
 } from '@/features/tutorial-period/hooks'
@@ -85,6 +88,7 @@ export default function TutorialPeriodListPage() {
   const [tutorialPeriodToDelete, setTutorialPeriodToDelete] = useState<TutorialPeriod | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
 
   const deferredSearch = useDeferredValue(searchInput)
 
@@ -94,11 +98,15 @@ export default function TutorialPeriodListPage() {
     search: deferredSearch,
     status: statusFilter,
   })
+  const legacyPeriodsQuery = useLegacyPeriods()
   const createMutation = useCreateTutorialPeriodMutation()
   const updateMutation = useUpdateTutorialPeriodMutation()
   const deleteMutation = useDeleteTutorialPeriodMutation()
+  const openMutation = useOpenTutorialPeriodMutation()
+  const cancelMutation = useCancelTutorialPeriodMutation()
 
   const tutorialPeriods = tutorialPeriodsQuery.data?.data ?? []
+  const legacyPeriods = legacyPeriodsQuery.data?.data ?? []
   const paginationMeta = tutorialPeriodsQuery.data?.meta
   const lastPage = paginationMeta?.lastPage ?? 1
   const currentPage = paginationMeta?.currentPage ?? page
@@ -113,6 +121,7 @@ export default function TutorialPeriodListPage() {
 
   const openCreateDialog = () => {
     setFormError(null)
+    setActionError(null)
     setDialogMode('create')
     setSelectedTutorialPeriod(null)
     setIsFormDialogOpen(true)
@@ -120,6 +129,7 @@ export default function TutorialPeriodListPage() {
 
   const openEditDialog = (tutorialPeriod: TutorialPeriod) => {
     setFormError(null)
+    setActionError(null)
     setDialogMode('edit')
     setSelectedTutorialPeriod(tutorialPeriod)
     setIsFormDialogOpen(true)
@@ -156,6 +166,30 @@ export default function TutorialPeriodListPage() {
     }
   }
 
+  const handleOpenTutorialPeriod = async (tutorialPeriod: TutorialPeriod) => {
+    setActionError(null)
+
+    try {
+      await openMutation.mutateAsync(tutorialPeriod.id)
+    } catch (error) {
+      setActionError(
+        getApiErrorMessage(error, 'Không thể mở đợt phụ đạo. Vui lòng thử lại.')
+      )
+    }
+  }
+
+  const handleCancelTutorialPeriod = async (tutorialPeriod: TutorialPeriod) => {
+    setActionError(null)
+
+    try {
+      await cancelMutation.mutateAsync(tutorialPeriod.id)
+    } catch (error) {
+      setActionError(
+        getApiErrorMessage(error, 'Không thể hủy đợt phụ đạo. Vui lòng thử lại.')
+      )
+    }
+  }
+
   const handleDelete = async () => {
     if (!tutorialPeriodToDelete) {
       return
@@ -175,8 +209,7 @@ export default function TutorialPeriodListPage() {
 
   const canGoPrevious = page > 1
   const canGoNext = page < lastPage
-  const hasActiveFilters =
-    deferredSearch.trim().length > 0 || statusFilter !== 'ALL'
+  const hasActiveFilters = deferredSearch.trim().length > 0 || statusFilter !== 'ALL'
   const paginationItems = useMemo(
     () => buildPaginationItems(currentPage, lastPage),
     [currentPage, lastPage]
@@ -201,41 +234,34 @@ export default function TutorialPeriodListPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-sm font-medium uppercase tracking-[0.24em] text-slate-400">
-            Admin Dashboard
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+    <div className="flex min-h-full flex-col">
+      <div className="flex min-h-0 flex-1 flex-col rounded-xl border border-slate-200 bg-white px-4 py-3">
+        <div className="border-b border-slate-200 pb-3">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
             Quản lý đợt phụ đạo
           </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-            Quản lý toàn bộ đợt phụ đạo trong một màn hình, bao gồm tìm kiếm, lọc, tạo mới, cập nhật và xóa.
-          </p>
         </div>
 
-        <Button size="lg" onClick={openCreateDialog}>
-          Tạo đợt phụ đạo
-        </Button>
-      </div>
+        <div className="flex flex-col gap-3 pt-3 lg:flex-row lg:items-center lg:justify-between">
+          <TutorialPeriodFilters
+            searchInput={searchInput}
+            statusFilter={statusFilter}
+            onSearchChange={(value) => {
+              setSearchInput(value)
+              setPage(1)
+            }}
+            onStatusChange={(value) => {
+              setStatusFilter(value)
+              setPage(1)
+            }}
+          />
 
-      <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-        <TutorialPeriodFilters
-          searchInput={searchInput}
-          statusFilter={statusFilter}
-          total={paginationMeta?.total}
-          onSearchChange={(value) => {
-            setSearchInput(value)
-            setPage(1)
-          }}
-          onStatusChange={(value) => {
-            setStatusFilter(value)
-            setPage(1)
-          }}
-        />
+          <Button className="lg:min-w-24" onClick={openCreateDialog}>
+            Tạo
+          </Button>
+        </div>
 
-        <div className="mt-5">
+        <div className="mt-3 flex min-h-0 flex-1 flex-col">
           {isInitialLoading ? (
             <div className="space-y-3">
               <Skeleton className="h-14 rounded-xl" />
@@ -251,7 +277,7 @@ export default function TutorialPeriodListPage() {
               )}
             />
           ) : tutorialPeriods.length === 0 ? (
-            <Empty className="min-h-[18rem] rounded-2xl border border-dashed border-slate-200 bg-slate-50/70">
+            <Empty className="min-h-[18rem] rounded-xl border border-dashed border-slate-200 bg-slate-50/70">
               <EmptyHeader>
                 <EmptyMedia variant="icon" className="size-10 rounded-xl bg-slate-100 text-slate-600">
                   <CalendarSearch className="size-5" />
@@ -270,7 +296,7 @@ export default function TutorialPeriodListPage() {
               <EmptyContent>
                 <Button onClick={openCreateDialog}>
                   <CirclePlus className="size-4" />
-                  Tạo đợt phụ đạo
+                  Tạo
                 </Button>
               </EmptyContent>
             </Empty>
@@ -279,12 +305,18 @@ export default function TutorialPeriodListPage() {
               tutorialPeriods={tutorialPeriods}
               onEdit={openEditDialog}
               onDelete={setTutorialPeriodToDelete}
+              onOpen={(tutorialPeriod) => {
+                void handleOpenTutorialPeriod(tutorialPeriod)
+              }}
+              onCancel={(tutorialPeriod) => {
+                void handleCancelTutorialPeriod(tutorialPeriod)
+              }}
             />
           )}
         </div>
 
         {tutorialPeriods.length > 0 ? (
-          <div className="mt-5 flex flex-col gap-4 border-t border-slate-200 pt-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="mt-auto flex flex-col gap-3 border-t border-slate-200 pt-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center gap-3 text-sm text-slate-500">
               <span>
                 Trang {currentPage} / {lastPage}
@@ -355,6 +387,16 @@ export default function TutorialPeriodListPage() {
         mode={dialogMode}
         open={isFormDialogOpen}
         tutorialPeriod={dialogTutorialPeriod}
+        legacyPeriods={legacyPeriods}
+        isLegacyPeriodsLoading={legacyPeriodsQuery.isLoading}
+        legacyPeriodsError={
+          legacyPeriodsQuery.isError
+            ? getApiErrorMessage(
+                legacyPeriodsQuery.error,
+                'Không thể tải danh sách học kỳ từ hệ thống cũ.'
+              )
+            : null
+        }
         isSubmitting={isFormSubmitting}
         submitError={formError}
         onOpenChange={closeFormDialog}
@@ -364,6 +406,12 @@ export default function TutorialPeriodListPage() {
       {deleteError ? (
         <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
           {deleteError}
+        </div>
+      ) : null}
+
+      {actionError ? (
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          {actionError}
         </div>
       ) : null}
 

@@ -1,18 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import {
+  cancelTutorialPeriod,
   createTutorialPeriod,
   deleteTutorialPeriod,
   getTutorialPeriods,
+  openTutorialPeriod,
   updateTutorialPeriod,
 } from '@/features/tutorial-period/api/tutorialPeriod.api'
-import type {
-  TutorialPeriodListParams,
-} from '@/features/tutorial-period/types/tutorialPeriod.types'
+import { getLegacyPeriods } from '@/features/tutorial-period/api/legacyPeriod.api'
+import type { TutorialPeriodListParams } from '@/features/tutorial-period/types/tutorialPeriod.types'
 import type { TutorialPeriodFormValues } from '@/features/tutorial-period/schemas/tutorialPeriod.schema'
 import { useAppSelector } from '@/app/store/hooks'
 
 export const tutorialPeriodsQueryKey = ['tutorial-periods'] as const
+export const legacyPeriodsQueryKey = ['legacy-periods'] as const
 
 export const useTutorialPeriods = (params: TutorialPeriodListParams) => {
   const authStatus = useAppSelector((state) => state.auth.status)
@@ -31,6 +33,16 @@ export const useTutorialPeriods = (params: TutorialPeriodListParams) => {
   })
 }
 
+export const useLegacyPeriods = () => {
+  const authStatus = useAppSelector((state) => state.auth.status)
+
+  return useQuery({
+    queryKey: legacyPeriodsQueryKey,
+    enabled: authStatus === 'authenticated',
+    queryFn: getLegacyPeriods,
+  })
+}
+
 export const useCreateTutorialPeriodMutation = () => {
   const queryClient = useQueryClient()
 
@@ -38,6 +50,7 @@ export const useCreateTutorialPeriodMutation = () => {
     mutationFn: createTutorialPeriod,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: tutorialPeriodsQueryKey })
+      queryClient.invalidateQueries({ queryKey: legacyPeriodsQueryKey })
     },
   })
 }
@@ -55,6 +68,7 @@ export const useUpdateTutorialPeriodMutation = () => {
     }) => updateTutorialPeriod(tutorialPeriodId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: tutorialPeriodsQueryKey })
+      queryClient.invalidateQueries({ queryKey: legacyPeriodsQueryKey })
     },
   })
 }
@@ -64,6 +78,28 @@ export const useDeleteTutorialPeriodMutation = () => {
 
   return useMutation({
     mutationFn: deleteTutorialPeriod,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: tutorialPeriodsQueryKey })
+    },
+  })
+}
+
+export const useOpenTutorialPeriodMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: openTutorialPeriod,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: tutorialPeriodsQueryKey })
+    },
+  })
+}
+
+export const useCancelTutorialPeriodMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: cancelTutorialPeriod,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: tutorialPeriodsQueryKey })
     },

@@ -26,12 +26,29 @@ class TutorialPeriodPolicy
 
     public function update(User $user, TutorialPeriod $tutorialPeriod): bool
     {
-        return $user->role === UserRole::ADMIN;
+        return $user->role === UserRole::ADMIN
+            && $tutorialPeriod->status === TutorialPeriodStatus::DRAFT;
     }
 
     public function delete(User $user, TutorialPeriod $tutorialPeriod): bool
     {
         return $user->role === UserRole::ADMIN
             && $tutorialPeriod->status === TutorialPeriodStatus::DRAFT;
+    }
+
+    public function open(User $user, TutorialPeriod $tutorialPeriod): bool
+    {
+        return $user->role === UserRole::ADMIN
+            && $tutorialPeriod->status === TutorialPeriodStatus::DRAFT;
+    }
+
+    public function cancel(User $user, TutorialPeriod $tutorialPeriod): bool
+    {
+        return $user->role === UserRole::ADMIN
+            && !in_array(
+                $tutorialPeriod->status,
+                [TutorialPeriodStatus::CLOSED, TutorialPeriodStatus::CANCELLED],
+                true
+            );
     }
 }

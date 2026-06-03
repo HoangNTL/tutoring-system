@@ -23,8 +23,8 @@ export default function AdminLayout() {
     <div className="flex min-h-screen flex-col bg-[radial-gradient(circle_at_top,#dbeafe_0%,#f8fafc_30%,#f8fafc_100%)] text-slate-900">
       <Header />
 
-      <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6 lg:flex-row lg:items-start lg:px-8">
-        <div className="shrink-0 lg:sticky lg:top-6">
+      <div className="mx-auto flex w-full max-w-[1680px] flex-1 flex-col gap-4 px-2 py-4 sm:px-3 lg:flex-row lg:items-stretch lg:px-4">
+        <div className="shrink-0 self-stretch lg:sticky lg:top-4">
           <SidebarMenu
             role={user?.role}
             userName={user?.username}
@@ -33,7 +33,7 @@ export default function AdminLayout() {
           />
         </div>
 
-        <main className="min-w-0 flex-1">
+        <main className="min-w-0 flex flex-1 flex-col self-stretch">
           <Outlet />
         </main>
       </div>

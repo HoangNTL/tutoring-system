@@ -8,6 +8,7 @@ import { globalErrorHandler } from '@/middlewares/errorHandler';
 import { authApiKey } from '@/middlewares/authApiKey';
 import departmentRouter from '@/modules/departments/department.routes';
 import lecturerRouter from '@/modules/lecturers/lecturer.routes';
+import periodRouter from '@/modules/periods/period.routes';
 import studentRouter from '@/modules/students/student.routes';
 import logger from '@/shared/logger';
 
@@ -39,6 +40,7 @@ app.use(authApiKey);
 app.use('/api/v1/students', studentRouter);
 app.use('/api/v1/lecturers', lecturerRouter);
 app.use('/api/v1/departments', departmentRouter);
+app.use('/api/v1/legacy/periods', periodRouter);
 app.use(globalErrorHandler);
 
 app.listen(env.port, () => {

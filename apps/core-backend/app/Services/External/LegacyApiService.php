@@ -14,6 +14,26 @@ class LegacyApiService
     private const RETRY_TIMES = 3;
     private const RETRY_DELAY_MS = 200;
 
+    public function fetchLegacyPeriods(): array
+    {
+        $payload = $this->request('/legacy/periods');
+
+        $periods = [];
+
+        foreach ($payload as $period) {
+            if (empty($period['id'])) {
+                continue;
+            }
+
+            $periods[] = [
+                'id' => (int) $period['id'],
+                'name' => (string) ($period['name'] ?? ''),
+            ];
+        }
+
+        return $periods;
+    }
+
     public function fetchAllStudents(): array
     {
         return $this->fetchAll('/students', function (array $student): ?array {
@@ -88,6 +108,39 @@ class LegacyApiService
         } while ($page <= $payload['meta']['lastPage']);
 
         return $allItems;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function request(string $endpoint): array
+    {
+        try {
+            $response = Http::legacy()
+                ->timeout(self::TIMEOUT_SECONDS)
+                ->retry(self::RETRY_TIMES, self::RETRY_DELAY_MS)
+                ->get($endpoint)
+                ->throw();
+
+            $payload = $response->json();
+
+            return is_array($payload['data'] ?? null) ? $payload['data'] : [];
+        } catch (RequestException $exception) {
+            Log::error('Legacy API request failed', [
+                'endpoint' => $endpoint,
+                'status' => $exception->response?->status(),
+                'error' => $exception->getMessage(),
+            ]);
+
+            throw new RuntimeException('Failed to fetch data from legacy service', 0, $exception);
+        } catch (\Throwable $exception) {
+            Log::error('Legacy API transport failure', [
+                'endpoint' => $endpoint,
+                'error' => $exception->getMessage(),
+            ]);
+
+            throw new RuntimeException('Legacy service is unavailable', 0, $exception);
+        }
     }
 
     /**

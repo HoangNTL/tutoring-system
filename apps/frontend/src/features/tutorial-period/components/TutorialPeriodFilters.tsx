@@ -8,13 +8,13 @@ import {
 } from '@/shared/ui/select'
 import {
   tutorialPeriodStatuses,
+  tutorialPeriodStatusLabels,
   type TutorialPeriodStatus,
 } from '@/features/tutorial-period/types/tutorialPeriod.types'
 
 type TutorialPeriodFiltersProps = {
   searchInput: string
   statusFilter: TutorialPeriodStatus | 'ALL'
-  total?: number
   onSearchChange: (value: string) => void
   onStatusChange: (value: TutorialPeriodStatus | 'ALL') => void
 }
@@ -22,41 +22,34 @@ type TutorialPeriodFiltersProps = {
 export function TutorialPeriodFilters({
   searchInput,
   statusFilter,
-  total,
   onSearchChange,
   onStatusChange,
 }: TutorialPeriodFiltersProps) {
   return (
-    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-      <div className="flex flex-1 flex-col gap-3 md:flex-row">
-        <Input
-          value={searchInput}
-          onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Tìm theo tiêu đề đợt phụ đạo"
-          className="h-10 md:max-w-md"
-        />
+    <div className="flex min-w-0 flex-1 flex-col gap-2 md:flex-row md:items-center">
+      <Input
+        value={searchInput}
+        onChange={(event) => onSearchChange(event.target.value)}
+        placeholder="Tìm theo tiêu đề đợt phụ đạo"
+        className="h-9 md:max-w-[440px] lg:flex-1"
+      />
 
-        <Select
-          value={statusFilter}
-          onValueChange={(value) => onStatusChange(value as TutorialPeriodStatus | 'ALL')}
-        >
-          <SelectTrigger className="h-10 min-w-44">
-            <SelectValue placeholder="Lọc trạng thái" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
-            {tutorialPeriodStatuses.map((status) => (
-              <SelectItem key={status} value={status}>
-                {status}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {typeof total === 'number' ? (
-        <p className="text-sm text-slate-500">Tổng {total} đợt phụ đạo</p>
-      ) : null}
+      <Select
+        value={statusFilter}
+        onValueChange={(value) => onStatusChange(value as TutorialPeriodStatus | 'ALL')}
+      >
+        <SelectTrigger className="h-9 min-w-40 md:w-44">
+          <SelectValue placeholder="Lọc trạng thái" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
+          {tutorialPeriodStatuses.map((status) => (
+            <SelectItem key={status} value={status}>
+              {tutorialPeriodStatusLabels[status]}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   )
 }

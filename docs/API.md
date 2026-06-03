@@ -52,8 +52,8 @@ Validation errors:
   "data": null,
   "meta": null,
   "errors": {
-    "startRegDate": [
-      "The startRegDate field is required."
+    "registrationStartAt": [
+      "The registrationStartAt field is required."
     ]
   }
 }
@@ -167,30 +167,30 @@ All tutorial period routes require `auth:sanctum`.
 ```json
 {
   "id": 1,
+  "academicPeriodId": 20261,
+  "academicPeriod": {
+    "id": 20261,
+    "name": "Legacy Period 20261"
+  },
   "title": "Đợt phụ đạo học kỳ 1",
   "description": "Mô tả đợt phụ đạo",
-  "startRegDate": "2026-05-18 00:00:00",
-  "endRegDate": "2026-05-23 00:00:00",
-  "startStudyDate": "2026-06-01 00:00:00",
-  "endStudyDate": "2026-06-30 00:00:00",
+  "registrationStartAt": "2026-05-18 00:00:00",
+  "registrationEndAt": "2026-05-23 00:00:00",
+  "studyStartAt": "2026-06-01 00:00:00",
+  "studyEndAt": "2026-06-30 00:00:00",
   "status": "DRAFT",
-  "openedAt": null,
-  "assignedAt": null,
-  "startedAt": null,
-  "closedAt": null,
   "createdBy": {
     "id": 1,
-    "username": "admin",
-    "role": "ADMIN"
+    "username": "admin"
   },
   "createdAt": "2026-05-17 09:00:00",
   "updatedAt": "2026-05-17 09:00:00",
   "permissions": {
     "canEdit": true,
     "canDelete": true,
-    "canOpen": true
-  },
-  "statusLogs": []
+    "canOpen": true,
+    "canCancel": true
+  }
 }
 ```
 
@@ -208,20 +208,37 @@ Supported query params:
 Example:
 
 ```http
-GET /api/v1/tutorial-periods?page=1&limit=10&sortBy=startRegDate&sortOrder=desc&search=phu%20dao
+GET /api/v1/tutorial-periods?page=1&limit=10&sortBy=registrationStartAt&sortOrder=desc&search=phu%20dao&status=OPEN
 ```
 
 Allowed `sortBy` values:
 
 - `id`
+- `academicPeriodId`
 - `title`
-- `startRegDate`
-- `endRegDate`
-- `startStudyDate`
-- `endStudyDate`
+- `registrationStartAt`
+- `registrationEndAt`
+- `studyStartAt`
+- `studyEndAt`
 - `status`
 - `createdAt`
 - `updatedAt`
+
+Allowed `status` values:
+
+- `DRAFT`
+- `OPEN`
+- `ASSIGNING`
+- `ONGOING`
+- `CLOSED`
+- `CANCELLED`
+
+Notes:
+
+- `status` is the only workflow field exposed by the API.
+- `status` is stored in MySQL and updated manually or automatically depending on the workflow rule.
+- `academicPeriodId` stores the selected legacy `DM_Dot.Id` value.
+- `academicPeriod` is enriched by Laravel from the legacy periods API when available.
 
 Response:
 
@@ -232,30 +249,30 @@ Response:
   "data": [
     {
       "id": 1,
+      "academicPeriodId": 20261,
+      "academicPeriod": {
+        "id": 20261,
+        "name": "Legacy Period 20261"
+      },
       "title": "Đợt phụ đạo học kỳ 1",
       "description": "Mô tả đợt phụ đạo",
-      "startRegDate": "2026-05-18 00:00:00",
-      "endRegDate": "2026-05-23 00:00:00",
-      "startStudyDate": "2026-06-01 00:00:00",
-      "endStudyDate": "2026-06-30 00:00:00",
-      "status": "DRAFT",
-      "openedAt": null,
-      "assignedAt": null,
-      "startedAt": null,
-      "closedAt": null,
+      "registrationStartAt": "2026-05-18 00:00:00",
+      "registrationEndAt": "2026-05-23 00:00:00",
+      "studyStartAt": "2026-06-01 00:00:00",
+      "studyEndAt": "2026-06-30 00:00:00",
+      "status": "OPEN",
       "createdBy": {
         "id": 1,
-        "username": "admin",
-        "role": "ADMIN"
+        "username": "admin"
       },
       "createdAt": "2026-05-17 09:00:00",
       "updatedAt": "2026-05-17 09:00:00",
       "permissions": {
-        "canEdit": true,
-        "canDelete": true,
-        "canOpen": true
+        "canEdit": false,
+        "canDelete": false,
+        "canOpen": false,
+        "canCancel": true
       },
-      "statusLogs": []
     }
   ],
   "meta": {
@@ -271,23 +288,44 @@ Response:
 
 Returns a single tutorial period resource.
 
+### `GET /api/v1/legacy/periods`
+
+Returns the legacy academic period list used to populate tutorial period form options.
+
+Response:
+
+```json
+{
+  "success": true,
+  "message": "Legacy periods retrieved successfully",
+  "data": [
+    {
+      "id": 20261,
+      "name": "Legacy Period 20261"
+    }
+  ]
+}
+```
+
 ### `POST /api/v1/tutorial-periods`
 
 Request:
 
 ```json
 {
+  "academicPeriodId": 20261,
   "title": "Đợt phụ đạo học kỳ 1",
   "description": "Mô tả đợt phụ đạo",
-  "startRegDate": "2026-05-18",
-  "endRegDate": "2026-05-23",
-  "startStudyDate": "2026-06-01",
-  "endStudyDate": "2026-06-30"
+  "registrationStartAt": "2026-05-18",
+  "registrationEndAt": "2026-05-23",
+  "studyStartAt": "2026-06-01",
+  "studyEndAt": "2026-06-30"
 }
 ```
 
 Notes:
 
+- New tutorial periods are always created with stored status `DRAFT`.
 - `createdBy` is derived from the authenticated user.
 - The API accepts camelCase input and validates internally against snake_case model fields.
 
@@ -297,23 +335,25 @@ Request fields are the same as create.
 
 - `PUT` or `PATCH` can be used.
 - Update validation supports partial payloads.
+- Normal editing is allowed only while the tutorial period is in `DRAFT`.
 
-### `PATCH /api/v1/tutorial-periods/{id}/status`
+### `PATCH /api/v1/tutorial-periods/{id}/open`
 
-Request:
+Moves a tutorial period from `DRAFT` to `OPEN`.
 
-```json
-{
-  "status": "OPEN"
-}
-```
+Rules:
 
-Allowed values:
+- only `DRAFT` records can be opened
+- complete and valid registration/study dates are required
 
-- `OPEN`
-- `ASSIGNING`
-- `ONGOING`
-- `CLOSED`
+### `PATCH /api/v1/tutorial-periods/{id}/cancel`
+
+Cancels a tutorial period.
+
+Rules:
+
+- `CLOSED` and `CANCELLED` records cannot be cancelled
+- `DRAFT`, `OPEN`, `ASSIGNING`, and `ONGOING` can be cancelled
 
 ### `DELETE /api/v1/tutorial-periods/{id}`
 
@@ -339,6 +379,33 @@ Controller authorization checks currently enforce:
 - `create`
 - `update`
 - `delete`
+- `open`
+- `cancel`
+
+## Tutorial Period Status Workflow
+
+Stored statuses:
+
+- `DRAFT`
+- `OPEN`
+- `ASSIGNING`
+- `ONGOING`
+- `CLOSED`
+- `CANCELLED`
+
+Transitions:
+
+- `DRAFT --manual open--> OPEN`
+- `OPEN --auto after registrationEndAt--> ASSIGNING`
+- `ASSIGNING --auto at studyStartAt--> ONGOING`
+- `ONGOING --auto after studyEndAt--> CLOSED`
+- `DRAFT`, `OPEN`, `ASSIGNING`, and `ONGOING --manual cancel--> CANCELLED`
+
+Automatic transitions are performed by the scheduled Laravel command:
+
+```bash
+php artisan tutorial-periods:update-statuses
+```
 
 ## Internal Legacy API
 
@@ -346,6 +413,7 @@ The Express service is not a browser-facing auth API. It is used by Laravel for 
 
 Current internal endpoints:
 
+- `GET /api/v1/legacy/periods`
 - `GET /api/v1/students`
 - `GET /api/v1/lecturers`
 - `GET /api/v1/departments`

@@ -6,10 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\TutorialPeriod\ListTutorialPeriodsRequest;
 use App\Http\Requests\TutorialPeriod\StoreTutorialPeriodRequest;
 use App\Http\Requests\TutorialPeriod\UpdateTutorialPeriodRequest;
-use App\Http\Requests\TutorialPeriod\UpdateTutorialPeriodStatusRequest;
 use App\Http\Resources\TutorialPeriodResource;
 use App\Models\TutorialPeriod;
-use App\Services\TutorialPeriodService;
+use App\Services\TutorialPeriods\TutorialPeriodService;
 
 class TutorialPeriodController extends Controller
 {
@@ -80,20 +79,27 @@ class TutorialPeriodController extends Controller
         return $this->success(null, 'Tutorial period deleted successfully');
     }
 
-    public function updateStatus(UpdateTutorialPeriodStatusRequest $request, TutorialPeriod $tutorial_period)
+    public function open(TutorialPeriod $tutorial_period)
     {
-        $this->authorize('update', $tutorial_period);
+        $this->authorize('open', $tutorial_period);
 
-        $validated = $request->validated();
-        $tutorialPeriod = $this->tutorialPeriodService->updateStatus(
-            $tutorial_period->id,
-            (string) $validated['status'],
-            (int) $request->user()->id
-        );
+        $tutorialPeriod = $this->tutorialPeriodService->open($tutorial_period->id);
 
         return $this->success(
             new TutorialPeriodResource($tutorialPeriod),
-            'Tutorial period status updated successfully'
+            'Tutorial period opened successfully'
+        );
+    }
+
+    public function cancel(TutorialPeriod $tutorial_period)
+    {
+        $this->authorize('cancel', $tutorial_period);
+
+        $tutorialPeriod = $this->tutorialPeriodService->cancel($tutorial_period->id);
+
+        return $this->success(
+            new TutorialPeriodResource($tutorialPeriod),
+            'Tutorial period cancelled successfully'
         );
     }
 }

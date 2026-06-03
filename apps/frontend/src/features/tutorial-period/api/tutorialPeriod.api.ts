@@ -72,3 +72,23 @@ export const deleteTutorialPeriod = async (
 
   return response.data
 }
+
+export const openTutorialPeriod = async (
+  tutorialPeriodId: number
+): Promise<TutorialPeriodResponse> => {
+  const response = await http.patch<TutorialPeriodResponse>(
+    `${TUTORIAL_PERIODS_ENDPOINT}/${tutorialPeriodId}/open`
+  )
+
+  return response.data
+}
+
+export const cancelTutorialPeriod = async (
+  tutorialPeriodId: number
+): Promise<TutorialPeriodResponse> => {
+  const response = await http.patch<TutorialPeriodResponse>(
+    `${TUTORIAL_PERIODS_ENDPOINT}/${tutorialPeriodId}/cancel`
+  )
+
+  return response.data
+}

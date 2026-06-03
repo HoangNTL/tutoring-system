@@ -7,36 +7,56 @@ const parseDate = (value: string) => parseDateValue(value)
 
 export const tutorialPeriodFormSchema = z
   .object({
+    academicPeriodId: z
+      .number()
+      .int('Học kỳ phải là số nguyên dương')
+      .min(1, 'Học kỳ là bắt buộc'),
     title: z
       .string()
       .trim()
       .min(1, 'Tiêu đề là bắt buộc')
       .max(255, 'Tiêu đề tối đa 255 ký tự'),
-    description: z.string().trim().min(1, 'Mô tả là bắt buộc'),
-    startRegDate: z.string().min(1, 'Ngày bắt đầu đăng ký là bắt buộc'),
-    endRegDate: z.string().min(1, 'Ngày kết thúc đăng ký là bắt buộc'),
-    startStudyDate: z.string().min(1, 'Ngày bắt đầu học là bắt buộc'),
-    endStudyDate: z.string().min(1, 'Ngày kết thúc học là bắt buộc'),
+    description: z.string().trim(),
+    registrationStartAt: z.string().min(1, 'Ngày bắt đầu đăng ký là bắt buộc'),
+    registrationEndAt: z.string().min(1, 'Ngày kết thúc đăng ký là bắt buộc'),
+    studyStartAt: z.string().min(1, 'Ngày bắt đầu học là bắt buộc'),
+    studyEndAt: z.string().min(1, 'Ngày kết thúc học là bắt buộc'),
   })
   .superRefine((values, context) => {
-    const startRegDate = parseDate(values.startRegDate)
-    const endRegDate = parseDate(values.endRegDate)
-    const startStudyDate = parseDate(values.startStudyDate)
-    const endStudyDate = parseDate(values.endStudyDate)
+    const registrationStartAt = parseDate(values.registrationStartAt)
+    const registrationEndAt = parseDate(values.registrationEndAt)
+    const studyStartAt = parseDate(values.studyStartAt)
+    const studyEndAt = parseDate(values.studyEndAt)
 
-    if (startRegDate && endRegDate && startRegDate >= endRegDate) {
+    if (
+      registrationStartAt &&
+      registrationEndAt &&
+      registrationStartAt >= registrationEndAt
+    ) {
       context.addIssue({
         code: 'custom',
         message: 'Ngày bắt đầu đăng ký phải trước ngày kết thúc đăng ký',
-        path: ['endRegDate'],
+        path: ['registrationEndAt'],
       })
     }
 
-    if (startStudyDate && endStudyDate && startStudyDate > endStudyDate) {
+    if (
+      registrationEndAt &&
+      studyStartAt &&
+      registrationEndAt >= studyStartAt
+    ) {
       context.addIssue({
         code: 'custom',
-        message: 'Ngày bắt đầu học phải trước hoặc bằng ngày kết thúc học',
-        path: ['endStudyDate'],
+        message: 'Ngày kết thúc đăng ký phải trước ngày bắt đầu học',
+        path: ['studyStartAt'],
+      })
+    }
+
+    if (studyStartAt && studyEndAt && studyStartAt >= studyEndAt) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Ngày bắt đầu học phải trước ngày kết thúc học',
+        path: ['studyEndAt'],
       })
     }
   })
@@ -44,12 +64,13 @@ export const tutorialPeriodFormSchema = z
 export type TutorialPeriodFormValues = z.infer<typeof tutorialPeriodFormSchema>
 
 export const tutorialPeriodFormDefaultValues: TutorialPeriodFormValues = {
+  academicPeriodId: 0,
   title: '',
   description: '',
-  startRegDate: '',
-  endRegDate: '',
-  startStudyDate: '',
-  endStudyDate: '',
+  registrationStartAt: '',
+  registrationEndAt: '',
+  studyStartAt: '',
+  studyEndAt: '',
 }
 
 export const getTutorialPeriodFormValues = (
@@ -60,11 +81,12 @@ export const getTutorialPeriodFormValues = (
   }
 
   return {
+    academicPeriodId: tutorialPeriod.academicPeriodId ?? 0,
     title: tutorialPeriod.title,
     description: tutorialPeriod.description,
-    startRegDate: toDateValue(tutorialPeriod.startRegDate),
-    endRegDate: toDateValue(tutorialPeriod.endRegDate),
-    startStudyDate: toDateValue(tutorialPeriod.startStudyDate),
-    endStudyDate: toDateValue(tutorialPeriod.endStudyDate),
+    registrationStartAt: toDateValue(tutorialPeriod.registrationStartAt),
+    registrationEndAt: toDateValue(tutorialPeriod.registrationEndAt),
+    studyStartAt: toDateValue(tutorialPeriod.studyStartAt),
+    studyEndAt: toDateValue(tutorialPeriod.studyEndAt),
   }
 }

@@ -7,11 +7,27 @@ use App\Enums\UserRole;
 use App\Models\TutorialPeriod;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class TutorialPeriodAuthorizationTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Http::fake([
+            '*' => Http::response([
+                'success' => true,
+                'data' => [
+                    ['id' => 1001, 'name' => 'Legacy Period 1001'],
+                    ['id' => 20261, 'name' => 'Legacy Period 20261'],
+                ],
+            ], 200),
+        ]);
+    }
 
     public function test_tutorial_period_routes_require_authentication(): void
     {
@@ -41,12 +57,13 @@ class TutorialPeriodAuthorizationTest extends TestCase
         ]);
 
         TutorialPeriod::create([
+            'academic_period_id' => 1001,
             'title' => 'Spring Support',
             'description' => 'Support classes',
-            'start_reg_date' => '2026-05-01 08:00:00',
-            'end_reg_date' => '2026-05-05 17:00:00',
-            'start_study_date' => '2026-05-10 08:00:00',
-            'end_study_date' => '2026-06-10 17:00:00',
+            'registration_start_at' => '2026-05-01 08:00:00',
+            'registration_end_at' => '2026-05-05 17:00:00',
+            'study_start_at' => '2026-05-10 08:00:00',
+            'study_end_at' => '2026-06-10 17:00:00',
             'status' => TutorialPeriodStatus::DRAFT,
             'created_by' => $admin->id,
         ]);

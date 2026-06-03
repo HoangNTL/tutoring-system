@@ -6,7 +6,6 @@ use App\Enums\TutorialPeriodStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TutorialPeriod extends Model
@@ -14,22 +13,26 @@ class TutorialPeriod extends Model
     use HasFactory, SoftDeletes;
 
     /**
+     * Non-persisted legacy academic period payload for API responses.
+     *
+     * @var array{id:int,name:string}|null
+     */
+    protected ?array $academicPeriodData = null;
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
      */
     protected $fillable = [
+        'academic_period_id',
         'title',
         'description',
-        'start_reg_date',
-        'end_reg_date',
-        'start_study_date',
-        'end_study_date',
+        'registration_start_at',
+        'registration_end_at',
+        'study_start_at',
+        'study_end_at',
         'status',
-        'opened_at',
-        'assigned_at',
-        'started_at',
-        'closed_at',
         'created_by',
     ];
 
@@ -41,25 +44,33 @@ class TutorialPeriod extends Model
     protected function casts(): array
     {
         return [
-            'start_reg_date' => 'datetime',
-            'end_reg_date' => 'datetime',
-            'start_study_date' => 'datetime',
-            'end_study_date' => 'datetime',
+            'academic_period_id' => 'integer',
+            'registration_start_at' => 'datetime',
+            'registration_end_at' => 'datetime',
+            'study_start_at' => 'datetime',
+            'study_end_at' => 'datetime',
             'status' => TutorialPeriodStatus::class,
-            'opened_at' => 'datetime',
-            'assigned_at' => 'datetime',
-            'started_at' => 'datetime',
-            'closed_at' => 'datetime',
         ];
+    }
+
+    /**
+     * @param  array{id:int,name:string}|null  $academicPeriod
+     */
+    public function setAcademicPeriod(?array $academicPeriod): void
+    {
+        $this->academicPeriodData = $academicPeriod;
+    }
+
+    /**
+     * @return array{id:int,name:string}|null
+     */
+    public function getAcademicPeriodAttribute(): ?array
+    {
+        return $this->academicPeriodData;
     }
 
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
-    }
-
-    public function statusLogs(): HasMany
-    {
-        return $this->hasMany(TutorialPeriodStatusLog::class);
     }
 }

@@ -28,13 +28,6 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
-    'slack' => [
-        'notifications' => [
-            'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
-            'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
-        ],
-    ],
-
     'legacy_service' => [
         'base_url' => rtrim(env('LEGACY_BACKEND_URL', 'http://localhost:5000'), '/') . '/api/v1',
         'api_key' => env('LEGACY_BACKEND_API_KEY'),

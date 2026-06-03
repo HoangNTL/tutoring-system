@@ -15,12 +15,13 @@ class UpdateTutorialPeriodRequest extends BaseFormRequest
     public function rules(): array
     {
         return [
+            'academic_period_id' => ['sometimes', 'integer', 'min:1'],
             'title' => ['sometimes', 'string', 'max:255'],
-            'description' => ['sometimes', 'string'],
-            'start_reg_date' => ['sometimes', 'date', 'before:end_reg_date'],
-            'end_reg_date' => ['sometimes', 'date', 'after:start_reg_date'],
-            'start_study_date' => ['sometimes', 'date'],
-            'end_study_date' => ['sometimes', 'date'],
+            'description' => ['sometimes', 'nullable', 'string'],
+            'registration_start_at' => ['sometimes', 'date', 'before:registration_end_at'],
+            'registration_end_at' => ['sometimes', 'date', 'after:registration_start_at', 'before:study_start_at'],
+            'study_start_at' => ['sometimes', 'date', 'after:registration_end_at', 'before:study_end_at'],
+            'study_end_at' => ['sometimes', 'date', 'after:study_start_at'],
         ];
     }
 
@@ -32,15 +33,15 @@ class UpdateTutorialPeriodRequest extends BaseFormRequest
         $tutorialPeriod = $this->route('tutorial_period');
 
         if ($tutorialPeriod !== null) {
-            $isUpdatingStartRegDate = array_key_exists('start_reg_date', $payload) && $payload['start_reg_date'] !== null;
-            $isUpdatingEndRegDate = array_key_exists('end_reg_date', $payload) && $payload['end_reg_date'] !== null;
-
-            if ($isUpdatingStartRegDate && !$isUpdatingEndRegDate) {
-                $payload['end_reg_date'] = optional($tutorialPeriod->end_reg_date)->format('Y-m-d H:i:s');
-            }
-
-            if ($isUpdatingEndRegDate && !$isUpdatingStartRegDate) {
-                $payload['start_reg_date'] = optional($tutorialPeriod->start_reg_date)->format('Y-m-d H:i:s');
+            foreach ([
+                'registration_start_at',
+                'registration_end_at',
+                'study_start_at',
+                'study_end_at',
+            ] as $field) {
+                if (!array_key_exists($field, $payload) && $tutorialPeriod->{$field} !== null) {
+                    $payload[$field] = $tutorialPeriod->{$field}->format('Y-m-d H:i:s');
+                }
             }
         }
 
@@ -50,10 +51,11 @@ class UpdateTutorialPeriodRequest extends BaseFormRequest
     public function attributes(): array
     {
         return [
-            'start_reg_date' => 'startRegDate',
-            'end_reg_date' => 'endRegDate',
-            'start_study_date' => 'startStudyDate',
-            'end_study_date' => 'endStudyDate',
+            'academic_period_id' => 'academicPeriodId',
+            'registration_start_at' => 'registrationStartAt',
+            'registration_end_at' => 'registrationEndAt',
+            'study_start_at' => 'studyStartAt',
+            'study_end_at' => 'studyEndAt',
         ];
     }
 }

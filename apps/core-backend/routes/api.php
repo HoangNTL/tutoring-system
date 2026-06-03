@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\LegacyPeriodController;
 use App\Http\Controllers\Api\V1\TutorialPeriodController;
 use Illuminate\Support\Facades\Route;
 
@@ -14,12 +15,14 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/legacy/periods', [LegacyPeriodController::class, 'index']);
         Route::get('/tutorial-periods', [TutorialPeriodController::class, 'index']);
         Route::get('/tutorial-periods/{tutorial_period}', [TutorialPeriodController::class, 'show']);
         Route::post('/tutorial-periods', [TutorialPeriodController::class, 'store']);
+        Route::patch('/tutorial-periods/{tutorial_period}/open', [TutorialPeriodController::class, 'open']);
+        Route::patch('/tutorial-periods/{tutorial_period}/cancel', [TutorialPeriodController::class, 'cancel']);
         Route::put('/tutorial-periods/{tutorial_period}', [TutorialPeriodController::class, 'update']);
         Route::patch('/tutorial-periods/{tutorial_period}', [TutorialPeriodController::class, 'update']);
         Route::delete('/tutorial-periods/{tutorial_period}', [TutorialPeriodController::class, 'destroy']);
-        Route::patch('/tutorial-periods/{tutorial_period}/status', [TutorialPeriodController::class, 'updateStatus']);
     });
 });

@@ -41,4 +41,30 @@ class LegacyApiServiceTest extends TestCase
                 && !array_key_exists('body', $context);
         });
     }
+
+    public function test_fetch_legacy_periods_maps_to_public_contract(): void
+    {
+        Http::fake([
+            '*' => Http::response([
+                'success' => true,
+                'data' => [
+                    ['id' => 5, 'name' => 'Term 5'],
+                    ['id' => 4, 'name' => 'Term 4'],
+                ],
+            ], 200),
+        ]);
+
+        $service = app(LegacyApiService::class);
+
+        $result = $service->fetchLegacyPeriods();
+
+        $this->assertSame([
+            ['id' => 5, 'name' => 'Term 5'],
+            ['id' => 4, 'name' => 'Term 4'],
+        ], $result);
+
+        Http::assertSent(function (Request $request): bool {
+            return str_contains($request->url(), '/legacy/periods');
+        });
+    }
 }

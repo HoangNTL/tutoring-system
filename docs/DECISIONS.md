@@ -57,7 +57,7 @@ Laravel request and response contracts use camelCase.
 
 Examples:
 
-- `startRegDate`
+- `registrationStartAt`
 - `sortBy`
 - `createdBy`
 

@@ -9,4 +9,5 @@ enum TutorialPeriodStatus: int
     case ASSIGNING = 2;
     case ONGOING = 3;
     case CLOSED = 4;
+    case CANCELLED = 5;
 }
