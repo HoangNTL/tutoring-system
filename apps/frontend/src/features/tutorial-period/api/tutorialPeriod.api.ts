@@ -83,6 +83,36 @@ export const openTutorialPeriod = async (
   return response.data
 }
 
+export const moveTutorialPeriodToAssigning = async (
+  tutorialPeriodId: number
+): Promise<TutorialPeriodResponse> => {
+  const response = await http.patch<TutorialPeriodResponse>(
+    `${TUTORIAL_PERIODS_ENDPOINT}/${tutorialPeriodId}/assigning`
+  )
+
+  return response.data
+}
+
+export const moveTutorialPeriodToOngoing = async (
+  tutorialPeriodId: number
+): Promise<TutorialPeriodResponse> => {
+  const response = await http.patch<TutorialPeriodResponse>(
+    `${TUTORIAL_PERIODS_ENDPOINT}/${tutorialPeriodId}/ongoing`
+  )
+
+  return response.data
+}
+
+export const closeTutorialPeriod = async (
+  tutorialPeriodId: number
+): Promise<TutorialPeriodResponse> => {
+  const response = await http.patch<TutorialPeriodResponse>(
+    `${TUTORIAL_PERIODS_ENDPOINT}/${tutorialPeriodId}/close`
+  )
+
+  return response.data
+}
+
 export const cancelTutorialPeriod = async (
   tutorialPeriodId: number
 ): Promise<TutorialPeriodResponse> => {

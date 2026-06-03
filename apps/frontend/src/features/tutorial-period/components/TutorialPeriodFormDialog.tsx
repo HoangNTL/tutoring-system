@@ -285,6 +285,12 @@ export function TutorialPeriodFormDialog({
                     )}
                   />
                 </div>
+
+                <div className="md:col-span-2">
+                  <p className="text-sm text-slate-500">
+                    Thời gian bộ môn phân công được tính từ sau ngày kết thúc đăng ký đến trước ngày bắt đầu học.
+                  </p>
+                </div>
               </div>
             </div>
           </div>

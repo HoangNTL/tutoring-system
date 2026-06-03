@@ -3,9 +3,13 @@
 namespace App\Http\Requests\TutorialPeriod;
 
 use App\Http\Requests\BaseFormRequest;
+use Carbon\Carbon;
+use Illuminate\Validation\Validator;
 
 class StoreTutorialPeriodRequest extends BaseFormRequest
 {
+    private const DEFAULT_MINIMUM_ASSIGNMENT_DAYS = 1;
+
     public function authorize(): bool
     {
         return true;
@@ -17,10 +21,10 @@ class StoreTutorialPeriodRequest extends BaseFormRequest
             'academic_period_id' => ['required', 'integer', 'min:1'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'registration_start_at' => ['required', 'date', 'before:registration_end_at'],
-            'registration_end_at' => ['required', 'date', 'after:registration_start_at', 'before:study_start_at'],
-            'study_start_at' => ['required', 'date', 'after:registration_end_at', 'before:study_end_at'],
-            'study_end_at' => ['required', 'date', 'after:study_start_at'],
+            'registration_start_at' => ['required', 'date', 'before_or_equal:registration_end_at'],
+            'registration_end_at' => ['required', 'date', 'after_or_equal:registration_start_at', 'before:study_start_at'],
+            'study_start_at' => ['required', 'date', 'after:registration_end_at', 'before_or_equal:study_end_at'],
+            'study_end_at' => ['required', 'date', 'after_or_equal:study_start_at'],
         ];
     }
 
@@ -33,5 +37,29 @@ class StoreTutorialPeriodRequest extends BaseFormRequest
             'study_start_at' => 'studyStartAt',
             'study_end_at' => 'studyEndAt',
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $registrationEndAt = $this->input('registration_end_at');
+            $studyStartAt = $this->input('study_start_at');
+            $minimumAssignmentDays = (int) config('tutorial.minimum_assignment_days', self::DEFAULT_MINIMUM_ASSIGNMENT_DAYS);
+
+            if (!$registrationEndAt || !$studyStartAt) {
+                return;
+            }
+
+            $registrationEnd = Carbon::parse($registrationEndAt)->startOfDay();
+            $studyStart = Carbon::parse($studyStartAt)->startOfDay();
+            $minimumStudyStart = $registrationEnd->copy()->addDays($minimumAssignmentDays + 1);
+
+            if ($minimumStudyStart->gt($studyStart)) {
+                $validator->errors()->add(
+                    'study_start_at',
+                    "Cần có ít nhất {$minimumAssignmentDays} ngày trống giữa thời gian đăng ký và thời gian học để bộ môn phân công."
+                );
+            }
+        });
     }
 }

@@ -32,6 +32,9 @@ export interface TutorialPeriodPermissions {
   canEdit: boolean
   canDelete: boolean
   canOpen: boolean
+  canAssigning: boolean
+  canOngoing: boolean
+  canClose: boolean
   canCancel: boolean
 }
 

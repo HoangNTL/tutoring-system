@@ -3,9 +3,12 @@ import { CalendarSearch, CirclePlus } from 'lucide-react'
 
 import {
   useCancelTutorialPeriodMutation,
+  useCloseTutorialPeriodMutation,
   useCreateTutorialPeriodMutation,
   useDeleteTutorialPeriodMutation,
   useLegacyPeriods,
+  useMoveTutorialPeriodToAssigningMutation,
+  useMoveTutorialPeriodToOngoingMutation,
   useOpenTutorialPeriodMutation,
   useTutorialPeriods,
   useUpdateTutorialPeriodMutation,
@@ -103,6 +106,9 @@ export default function TutorialPeriodListPage() {
   const updateMutation = useUpdateTutorialPeriodMutation()
   const deleteMutation = useDeleteTutorialPeriodMutation()
   const openMutation = useOpenTutorialPeriodMutation()
+  const assigningMutation = useMoveTutorialPeriodToAssigningMutation()
+  const ongoingMutation = useMoveTutorialPeriodToOngoingMutation()
+  const closeMutation = useCloseTutorialPeriodMutation()
   const cancelMutation = useCancelTutorialPeriodMutation()
 
   const tutorialPeriods = tutorialPeriodsQuery.data?.data ?? []
@@ -186,6 +192,48 @@ export default function TutorialPeriodListPage() {
     } catch (error) {
       setActionError(
         getApiErrorMessage(error, 'Không thể hủy đợt phụ đạo. Vui lòng thử lại.')
+      )
+    }
+  }
+
+  const handleMoveToAssigning = async (tutorialPeriod: TutorialPeriod) => {
+    setActionError(null)
+
+    try {
+      await assigningMutation.mutateAsync(tutorialPeriod.id)
+    } catch (error) {
+      setActionError(
+        getApiErrorMessage(
+          error,
+          'Không thể chuyển đợt phụ đạo sang trạng thái phân công. Vui lòng thử lại.'
+        )
+      )
+    }
+  }
+
+  const handleMoveToOngoing = async (tutorialPeriod: TutorialPeriod) => {
+    setActionError(null)
+
+    try {
+      await ongoingMutation.mutateAsync(tutorialPeriod.id)
+    } catch (error) {
+      setActionError(
+        getApiErrorMessage(
+          error,
+          'Không thể chuyển đợt phụ đạo sang trạng thái đang học. Vui lòng thử lại.'
+        )
+      )
+    }
+  }
+
+  const handleCloseTutorialPeriod = async (tutorialPeriod: TutorialPeriod) => {
+    setActionError(null)
+
+    try {
+      await closeMutation.mutateAsync(tutorialPeriod.id)
+    } catch (error) {
+      setActionError(
+        getApiErrorMessage(error, 'Không thể đóng đợt phụ đạo. Vui lòng thử lại.')
       )
     }
   }
@@ -307,6 +355,15 @@ export default function TutorialPeriodListPage() {
               onDelete={setTutorialPeriodToDelete}
               onOpen={(tutorialPeriod) => {
                 void handleOpenTutorialPeriod(tutorialPeriod)
+              }}
+              onAssigning={(tutorialPeriod) => {
+                void handleMoveToAssigning(tutorialPeriod)
+              }}
+              onOngoing={(tutorialPeriod) => {
+                void handleMoveToOngoing(tutorialPeriod)
+              }}
+              onClose={(tutorialPeriod) => {
+                void handleCloseTutorialPeriod(tutorialPeriod)
               }}
               onCancel={(tutorialPeriod) => {
                 void handleCancelTutorialPeriod(tutorialPeriod)

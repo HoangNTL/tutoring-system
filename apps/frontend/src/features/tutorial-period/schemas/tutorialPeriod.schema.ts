@@ -1,5 +1,10 @@
 import { z } from 'zod'
+import { addDays } from 'date-fns'
 
+import {
+  getMinimumAssignmentDaysMessage,
+  minimumAssignmentDays,
+} from '@/features/tutorial-period/config'
 import type { TutorialPeriod } from '@/features/tutorial-period/types/tutorialPeriod.types'
 import { parseDateValue, toDateValue } from '@/shared/lib/date'
 
@@ -31,11 +36,11 @@ export const tutorialPeriodFormSchema = z
     if (
       registrationStartAt &&
       registrationEndAt &&
-      registrationStartAt >= registrationEndAt
+      registrationStartAt > registrationEndAt
     ) {
       context.addIssue({
         code: 'custom',
-        message: 'Ngày bắt đầu đăng ký phải trước ngày kết thúc đăng ký',
+        message: 'Ngày bắt đầu đăng ký không được sau ngày kết thúc đăng ký',
         path: ['registrationEndAt'],
       })
     }
@@ -43,19 +48,19 @@ export const tutorialPeriodFormSchema = z
     if (
       registrationEndAt &&
       studyStartAt &&
-      registrationEndAt >= studyStartAt
+      addDays(registrationEndAt, minimumAssignmentDays + 1) > studyStartAt
     ) {
       context.addIssue({
         code: 'custom',
-        message: 'Ngày kết thúc đăng ký phải trước ngày bắt đầu học',
+        message: getMinimumAssignmentDaysMessage(minimumAssignmentDays),
         path: ['studyStartAt'],
       })
     }
 
-    if (studyStartAt && studyEndAt && studyStartAt >= studyEndAt) {
+    if (studyStartAt && studyEndAt && studyStartAt > studyEndAt) {
       context.addIssue({
         code: 'custom',
-        message: 'Ngày bắt đầu học phải trước ngày kết thúc học',
+        message: 'Ngày bắt đầu học không được sau ngày kết thúc học',
         path: ['studyEndAt'],
       })
     }

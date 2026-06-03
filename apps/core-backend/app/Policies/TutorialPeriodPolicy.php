@@ -51,4 +51,22 @@ class TutorialPeriodPolicy
                 true
             );
     }
+
+    public function assigning(User $user, TutorialPeriod $tutorialPeriod): bool
+    {
+        return $user->role === UserRole::ADMIN
+            && $tutorialPeriod->status === TutorialPeriodStatus::OPEN;
+    }
+
+    public function ongoing(User $user, TutorialPeriod $tutorialPeriod): bool
+    {
+        return $user->role === UserRole::ADMIN
+            && $tutorialPeriod->status === TutorialPeriodStatus::ASSIGNING;
+    }
+
+    public function close(User $user, TutorialPeriod $tutorialPeriod): bool
+    {
+        return $user->role === UserRole::ADMIN
+            && $tutorialPeriod->status === TutorialPeriodStatus::ONGOING;
+    }
 }

@@ -102,4 +102,40 @@ class TutorialPeriodController extends Controller
             'Tutorial period cancelled successfully'
         );
     }
+
+    public function assigning(TutorialPeriod $tutorial_period)
+    {
+        $this->authorize('assigning', $tutorial_period);
+
+        $tutorialPeriod = $this->tutorialPeriodService->assigning($tutorial_period->id);
+
+        return $this->success(
+            new TutorialPeriodResource($tutorialPeriod),
+            'Tutorial period moved to assigning successfully'
+        );
+    }
+
+    public function ongoing(TutorialPeriod $tutorial_period)
+    {
+        $this->authorize('ongoing', $tutorial_period);
+
+        $tutorialPeriod = $this->tutorialPeriodService->ongoing($tutorial_period->id);
+
+        return $this->success(
+            new TutorialPeriodResource($tutorialPeriod),
+            'Tutorial period moved to ongoing successfully'
+        );
+    }
+
+    public function close(TutorialPeriod $tutorial_period)
+    {
+        $this->authorize('close', $tutorial_period);
+
+        $tutorialPeriod = $this->tutorialPeriodService->close($tutorial_period->id);
+
+        return $this->success(
+            new TutorialPeriodResource($tutorialPeriod),
+            'Tutorial period closed successfully'
+        );
+    }
 }

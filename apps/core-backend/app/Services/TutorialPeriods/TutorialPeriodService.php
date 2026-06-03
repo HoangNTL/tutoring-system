@@ -77,6 +77,33 @@ class TutorialPeriodService
         return $tutorialPeriod;
     }
 
+    public function assigning(int $id): TutorialPeriod
+    {
+        $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFail($id);
+        $tutorialPeriod = $this->tutorialPeriodStatusService->assigning($tutorialPeriod);
+        $this->academicPeriodResolver->enrich($tutorialPeriod);
+
+        return $tutorialPeriod;
+    }
+
+    public function ongoing(int $id): TutorialPeriod
+    {
+        $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFail($id);
+        $tutorialPeriod = $this->tutorialPeriodStatusService->ongoing($tutorialPeriod);
+        $this->academicPeriodResolver->enrich($tutorialPeriod);
+
+        return $tutorialPeriod;
+    }
+
+    public function close(int $id): TutorialPeriod
+    {
+        $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFail($id);
+        $tutorialPeriod = $this->tutorialPeriodStatusService->close($tutorialPeriod);
+        $this->academicPeriodResolver->enrich($tutorialPeriod);
+
+        return $tutorialPeriod;
+    }
+
     /**
      * @return array{open_to_assigning:int,assigning_to_ongoing:int,ongoing_to_closed:int}
      */

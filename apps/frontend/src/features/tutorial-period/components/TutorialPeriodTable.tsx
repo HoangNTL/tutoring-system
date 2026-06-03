@@ -1,8 +1,9 @@
 import { MoreHorizontal, Pencil, Play, Trash2, XCircle } from 'lucide-react'
+import { addDays, subDays } from 'date-fns'
 
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
-import { formatDate } from '@/shared/lib/date'
+import { formatDate, parseDateValue } from '@/shared/lib/date'
 import {
   Table,
   TableBody,
@@ -36,6 +37,9 @@ interface TutorialPeriodTableProps {
   onEdit: (tutorialPeriod: TutorialPeriod) => void
   onDelete: (tutorialPeriod: TutorialPeriod) => void
   onOpen: (tutorialPeriod: TutorialPeriod) => void
+  onAssigning: (tutorialPeriod: TutorialPeriod) => void
+  onOngoing: (tutorialPeriod: TutorialPeriod) => void
+  onClose: (tutorialPeriod: TutorialPeriod) => void
   onCancel: (tutorialPeriod: TutorialPeriod) => void
 }
 
@@ -44,14 +48,17 @@ export function TutorialPeriodTable({
   onEdit,
   onDelete,
   onOpen,
+  onAssigning,
+  onOngoing,
+  onClose,
   onCancel,
 }: TutorialPeriodTableProps) {
-  const formatRegistrationRange = (
-    registrationStartAt: string | null,
-    registrationEndAt: string | null
+  const formatDateRange = (
+    startAt: string | null,
+    endAt: string | null
   ) => {
-    const start = formatDate(registrationStartAt)
-    const end = formatDate(registrationEndAt)
+    const start = formatDate(startAt)
+    const end = formatDate(endAt)
 
     if (!start && !end) {
       return 'N/A'
@@ -59,6 +66,42 @@ export function TutorialPeriodTable({
 
     if (!start || !end) {
       return start || end
+    }
+
+    return `${start} - ${end}`
+  }
+
+  const formatAssignmentRange = (
+    registrationEndAt: string | null,
+    studyStartAt: string | null
+  ) => {
+    const registrationEnd = parseDateValue(registrationEndAt)
+    const studyStart = parseDateValue(studyStartAt)
+
+    if (!registrationEnd || !studyStart) {
+      return 'Sau đăng ký đến trước khi học'
+    }
+
+    const assignmentStart = addDays(registrationEnd, 1)
+    const assignmentEnd = subDays(studyStart, 1)
+
+    if (assignmentStart > assignmentEnd) {
+      return 'Sau đăng ký đến trước khi học'
+    }
+
+    const start = formatDate(assignmentStart)
+    const end = formatDate(assignmentEnd)
+
+    if (!start && !end) {
+      return 'Sau đăng ký đến trước khi học'
+    }
+
+    if (!start || !end) {
+      return start || end
+    }
+
+    if (start === end) {
+      return start
     }
 
     return `${start} - ${end}`
@@ -72,7 +115,7 @@ export function TutorialPeriodTable({
             <TableHead className="w-[32%] px-4">Tiêu đề</TableHead>
             <TableHead className="w-[14%]">Trạng thái</TableHead>
             <TableHead className="w-[18%]">Học kỳ</TableHead>
-            <TableHead className="w-[18%]">Đăng ký</TableHead>
+            <TableHead className="w-[18%]">Thời gian</TableHead>
             <TableHead className="w-[10%]">Người tạo</TableHead>
             <TableHead className="w-[8%] px-4 text-right">Thao tác</TableHead>
           </TableRow>
@@ -82,6 +125,9 @@ export function TutorialPeriodTable({
             const canEdit = tutorialPeriod.permissions?.canEdit ?? false
             const canDelete = tutorialPeriod.permissions?.canDelete ?? false
             const canOpen = tutorialPeriod.permissions?.canOpen ?? false
+            const canAssigning = tutorialPeriod.permissions?.canAssigning ?? false
+            const canOngoing = tutorialPeriod.permissions?.canOngoing ?? false
+            const canClose = tutorialPeriod.permissions?.canClose ?? false
             const canCancel = tutorialPeriod.permissions?.canCancel ?? false
 
             return (
@@ -111,12 +157,35 @@ export function TutorialPeriodTable({
                   {tutorialPeriod.academicPeriod?.name ?? 'N/A'}
                 </TableCell>
                 <TableCell className="py-3 align-top text-sm text-slate-600">
-                  <span className="whitespace-nowrap">
-                    {formatRegistrationRange(
-                      tutorialPeriod.registrationStartAt,
-                      tutorialPeriod.registrationEndAt
-                    )}
-                  </span>
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-baseline gap-x-2">
+                      <span className="text-slate-500">Đăng ký:</span>
+                      <span className="whitespace-nowrap text-slate-700">
+                        {formatDateRange(
+                          tutorialPeriod.registrationStartAt,
+                          tutorialPeriod.registrationEndAt
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap items-baseline gap-x-2">
+                      <span className="text-slate-500">Phân công:</span>
+                      <span className="whitespace-nowrap text-slate-700">
+                        {formatAssignmentRange(
+                          tutorialPeriod.registrationEndAt,
+                          tutorialPeriod.studyStartAt
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap items-baseline gap-x-2">
+                      <span className="text-slate-500">Học:</span>
+                      <span className="whitespace-nowrap text-slate-700">
+                        {formatDateRange(
+                          tutorialPeriod.studyStartAt,
+                          tutorialPeriod.studyEndAt
+                        )}
+                      </span>
+                    </div>
+                  </div>
                 </TableCell>
                 <TableCell className="py-3 align-top text-sm text-slate-600">
                   {tutorialPeriod.createdBy?.username ?? 'N/A'}
@@ -133,6 +202,42 @@ export function TutorialPeriodTable({
                       >
                         <Play />
                         Mở
+                      </Button>
+                    ) : null}
+
+                    {canAssigning ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 rounded-lg px-2.5"
+                        onClick={() => onAssigning(tutorialPeriod)}
+                      >
+                        Chuyển phân công
+                      </Button>
+                    ) : null}
+
+                    {canOngoing ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 rounded-lg px-2.5"
+                        onClick={() => onOngoing(tutorialPeriod)}
+                      >
+                        Bắt đầu học
+                      </Button>
+                    ) : null}
+
+                    {canClose ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 rounded-lg px-2.5"
+                        onClick={() => onClose(tutorialPeriod)}
+                      >
+                        Đóng đợt
                       </Button>
                     ) : null}
 
@@ -171,7 +276,7 @@ export function TutorialPeriodTable({
                                 onClick={() => onCancel(tutorialPeriod)}
                               >
                                 <XCircle className="size-4" />
-                                Hủy đợt
+                                Hủy
                               </Button>
                             ) : null}
 

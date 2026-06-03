@@ -126,6 +126,59 @@ class TutorialPeriodStatusTransitionTest extends TestCase
         $this->assertSame(TutorialPeriodStatus::CANCELLED, $tutorialPeriod->refresh()->status);
     }
 
+    public function test_open_tutorial_period_can_be_moved_to_assigning_manually(): void
+    {
+        $admin = $this->createAdmin();
+        $tutorialPeriod = $this->createTutorialPeriod($admin->id, TutorialPeriodStatus::OPEN, 'Open Period');
+
+        $this
+            ->actingAs($admin, 'web')
+            ->patchJson('/api/v1/tutorial-periods/' . $tutorialPeriod->id . '/assigning')
+            ->assertOk()
+            ->assertJsonPath('data.status', TutorialPeriodStatus::ASSIGNING->name);
+
+        $this->assertSame(TutorialPeriodStatus::ASSIGNING, $tutorialPeriod->refresh()->status);
+    }
+
+    public function test_assigning_tutorial_period_can_be_moved_to_ongoing_manually(): void
+    {
+        $admin = $this->createAdmin();
+        $tutorialPeriod = $this->createTutorialPeriod($admin->id, TutorialPeriodStatus::ASSIGNING, 'Assigning Period');
+
+        $this
+            ->actingAs($admin, 'web')
+            ->patchJson('/api/v1/tutorial-periods/' . $tutorialPeriod->id . '/ongoing')
+            ->assertOk()
+            ->assertJsonPath('data.status', TutorialPeriodStatus::ONGOING->name);
+
+        $this->assertSame(TutorialPeriodStatus::ONGOING, $tutorialPeriod->refresh()->status);
+    }
+
+    public function test_ongoing_tutorial_period_can_be_closed_manually(): void
+    {
+        $admin = $this->createAdmin();
+        $tutorialPeriod = $this->createTutorialPeriod($admin->id, TutorialPeriodStatus::ONGOING, 'Ongoing Period');
+
+        $this
+            ->actingAs($admin, 'web')
+            ->patchJson('/api/v1/tutorial-periods/' . $tutorialPeriod->id . '/close')
+            ->assertOk()
+            ->assertJsonPath('data.status', TutorialPeriodStatus::CLOSED->name);
+
+        $this->assertSame(TutorialPeriodStatus::CLOSED, $tutorialPeriod->refresh()->status);
+    }
+
+    public function test_invalid_manual_transition_is_forbidden(): void
+    {
+        $admin = $this->createAdmin();
+        $tutorialPeriod = $this->createTutorialPeriod($admin->id, TutorialPeriodStatus::DRAFT, 'Draft Period');
+
+        $this
+            ->actingAs($admin, 'web')
+            ->patchJson('/api/v1/tutorial-periods/' . $tutorialPeriod->id . '/assigning')
+            ->assertForbidden();
+    }
+
     public function test_cancelled_tutorial_period_is_ignored_by_automatic_status_updates(): void
     {
         $admin = $this->createAdmin();

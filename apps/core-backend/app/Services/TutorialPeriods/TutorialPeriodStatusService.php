@@ -12,6 +12,8 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class TutorialPeriodStatusService
 {
+    private const DEFAULT_MINIMUM_ASSIGNMENT_DAYS = 1;
+
     public function ensureDraftStatus(TutorialPeriod $tutorialPeriod, string $action): void
     {
         if ($tutorialPeriod->status !== TutorialPeriodStatus::DRAFT) {
@@ -21,21 +23,43 @@ class TutorialPeriodStatusService
 
     public function open(TutorialPeriod $tutorialPeriod): TutorialPeriod
     {
-        return DB::transaction(function () use ($tutorialPeriod): TutorialPeriod {
-            $tutorialPeriod = $this->findTutorialPeriodOrFail($tutorialPeriod->id, ['createdBy'], true);
+        return $this->transition(
+            $tutorialPeriod,
+            TutorialPeriodStatus::DRAFT,
+            TutorialPeriodStatus::OPEN,
+            'opened',
+            true
+        );
+    }
 
-            if ($tutorialPeriod->status !== TutorialPeriodStatus::DRAFT) {
-                throw new ConflictHttpException('Only tutorial periods in DRAFT status can be opened');
-            }
+    public function assigning(TutorialPeriod $tutorialPeriod): TutorialPeriod
+    {
+        return $this->transition(
+            $tutorialPeriod,
+            TutorialPeriodStatus::OPEN,
+            TutorialPeriodStatus::ASSIGNING,
+            'moved to ASSIGNING'
+        );
+    }
 
-            $this->validateOpenableDates($tutorialPeriod);
+    public function ongoing(TutorialPeriod $tutorialPeriod): TutorialPeriod
+    {
+        return $this->transition(
+            $tutorialPeriod,
+            TutorialPeriodStatus::ASSIGNING,
+            TutorialPeriodStatus::ONGOING,
+            'moved to ONGOING'
+        );
+    }
 
-            $tutorialPeriod->update([
-                'status' => TutorialPeriodStatus::OPEN->value,
-            ]);
-
-            return $tutorialPeriod->refresh()->load('createdBy');
-        });
+    public function close(TutorialPeriod $tutorialPeriod): TutorialPeriod
+    {
+        return $this->transition(
+            $tutorialPeriod,
+            TutorialPeriodStatus::ONGOING,
+            TutorialPeriodStatus::CLOSED,
+            'closed'
+        );
     }
 
     public function cancel(TutorialPeriod $tutorialPeriod): TutorialPeriod
@@ -89,6 +113,8 @@ class TutorialPeriodStatusService
 
     public function validateOpenableDates(TutorialPeriod $tutorialPeriod): void
     {
+        $minimumAssignmentDays = (int) config('tutorial.minimum_assignment_days', self::DEFAULT_MINIMUM_ASSIGNMENT_DAYS);
+
         foreach ([
             'registration_start_at',
             'registration_end_at',
@@ -101,12 +127,62 @@ class TutorialPeriodStatusService
         }
 
         if (
-            $tutorialPeriod->registration_start_at->gte($tutorialPeriod->registration_end_at) ||
-            $tutorialPeriod->registration_end_at->gte($tutorialPeriod->study_start_at) ||
-            $tutorialPeriod->study_start_at->gte($tutorialPeriod->study_end_at)
+            $tutorialPeriod->registration_start_at->gt($tutorialPeriod->registration_end_at) ||
+            $tutorialPeriod->registration_end_at->copy()->addDays($minimumAssignmentDays + 1)->gt($tutorialPeriod->study_start_at) ||
+            $tutorialPeriod->study_start_at->gt($tutorialPeriod->study_end_at)
         ) {
             throw new ConflictHttpException('Tutorial period dates are invalid for opening');
         }
+    }
+
+    /**
+     * @return array<string, bool>
+     */
+    public function getPermissions(TutorialPeriodStatus $status): array
+    {
+        return [
+            'canEdit' => $status === TutorialPeriodStatus::DRAFT,
+            'canDelete' => $status === TutorialPeriodStatus::DRAFT,
+            'canOpen' => $status === TutorialPeriodStatus::DRAFT,
+            'canAssigning' => $status === TutorialPeriodStatus::OPEN,
+            'canOngoing' => $status === TutorialPeriodStatus::ASSIGNING,
+            'canClose' => $status === TutorialPeriodStatus::ONGOING,
+            'canCancel' => !in_array(
+                $status,
+                [TutorialPeriodStatus::CLOSED, TutorialPeriodStatus::CANCELLED],
+                true
+            ),
+        ];
+    }
+
+    private function transition(
+        TutorialPeriod $tutorialPeriod,
+        TutorialPeriodStatus $from,
+        TutorialPeriodStatus $to,
+        string $action,
+        bool $validateDates = false
+    ): TutorialPeriod {
+        return DB::transaction(function () use ($tutorialPeriod, $from, $to, $action, $validateDates): TutorialPeriod {
+            $tutorialPeriod = $this->findTutorialPeriodOrFail($tutorialPeriod->id, ['createdBy'], true);
+
+            if ($tutorialPeriod->status !== $from) {
+                throw new ConflictHttpException(sprintf(
+                    'Only tutorial periods in %s status can be %s',
+                    $from->name,
+                    $action
+                ));
+            }
+
+            if ($validateDates) {
+                $this->validateOpenableDates($tutorialPeriod);
+            }
+
+            $tutorialPeriod->update([
+                'status' => $to->value,
+            ]);
+
+            return $tutorialPeriod->refresh()->load('createdBy');
+        });
     }
 
     /**

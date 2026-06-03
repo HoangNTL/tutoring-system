@@ -2,7 +2,7 @@
 
 namespace App\Http\Resources;
 
-use App\Enums\TutorialPeriodStatus;
+use App\Services\TutorialPeriods\TutorialPeriodStatusService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -38,16 +38,7 @@ class TutorialPeriodResource extends JsonResource
             }),
             'createdAt' => $this->formatDateTime($this->created_at),
             'updatedAt' => $this->formatDateTime($this->updated_at),
-            'permissions' => [
-                'canEdit' => $this->status === TutorialPeriodStatus::DRAFT,
-                'canDelete' => $this->status === TutorialPeriodStatus::DRAFT,
-                'canOpen' => $this->status === TutorialPeriodStatus::DRAFT,
-                'canCancel' => !in_array(
-                    $this->status,
-                    [TutorialPeriodStatus::CLOSED, TutorialPeriodStatus::CANCELLED],
-                    true
-                ),
-            ],
+            'permissions' => app(TutorialPeriodStatusService::class)->getPermissions($this->status),
         ];
     }
 
