@@ -25,10 +25,10 @@ interface AppMenuProps {
 const topLevelLinkClassName = (isActive: boolean) =>
   cn(
     navigationMenuTriggerStyle(),
-    'h-10 rounded-xl border border-transparent px-4 text-sm font-medium whitespace-nowrap transition-all duration-150',
+    'h-10 rounded-lg border border-transparent px-4 text-sm font-medium whitespace-nowrap transition-all duration-150',
     isActive
-      ? 'border-[#0f4c81] bg-[#0f4c81] text-white shadow-[0_10px_28px_rgba(15,76,129,0.18)] hover:bg-[#0f4c81] hover:text-white'
-      : 'border-slate-200 bg-white text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-100 hover:text-slate-950'
+      ? 'border-slate-200 bg-slate-100 text-slate-950 shadow-sm after:absolute after:right-3 after:bottom-1.5 after:left-3 after:h-0.5 after:rounded-full after:bg-[#0f4c81]'
+      : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950'
   )
 
 const submenuLinkClassName = (isActive: boolean) =>
@@ -69,12 +69,12 @@ function NavigationGroup({
 }) {
   return (
     <NavigationMenuItem>
-      <NavigationMenuTrigger
-        className={cn(
-          'h-10 rounded-xl border border-transparent px-4 text-sm font-medium whitespace-nowrap transition-all duration-150',
+        <NavigationMenuTrigger
+          className={cn(
+          'h-10 rounded-lg border border-transparent px-4 text-sm font-medium whitespace-nowrap transition-all duration-150',
           isActive
-            ? 'border-[#0f4c81] bg-[#0f4c81] text-white shadow-[0_10px_28px_rgba(15,76,129,0.18)] hover:bg-[#0f4c81] hover:text-white'
-            : 'border-slate-200 bg-white text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-100 hover:text-slate-950'
+            ? 'border-slate-200 bg-slate-100 text-slate-950 shadow-sm'
+            : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950'
         )}
       >
         {item.title}
@@ -110,7 +110,7 @@ export default function AppMenu({ role }: AppMenuProps) {
         aria-label="Main navigation"
         className="w-full max-w-full justify-start"
       >
-        <NavigationMenuList className="flex-wrap justify-start gap-2 lg:flex-nowrap">
+        <NavigationMenuList className="flex-wrap justify-start gap-1.5 lg:flex-nowrap">
           {items.map((item) =>
             item.type === 'link' ? (
               <NavigationMenuItem key={item.item.path}>

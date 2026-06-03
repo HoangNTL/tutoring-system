@@ -2,6 +2,9 @@
 
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\LegacyPeriodController;
+use App\Http\Controllers\Api\V1\StudentTutorialPeriodCourseController;
+use App\Http\Controllers\Api\V1\StudentTutorialPeriodController;
+use App\Http\Controllers\Api\V1\StudentTutorialRegistrationInfoController;
 use App\Http\Controllers\Api\V1\TutorialPeriodController;
 use App\Http\Controllers\Api\V1\UserController;
 use Illuminate\Support\Facades\Route;
@@ -17,6 +20,9 @@ Route::prefix('v1')->group(function () {
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/legacy/periods', [LegacyPeriodController::class, 'index']);
+        Route::get('/student/tutorial-periods/{tutorialPeriodId}/courses', [StudentTutorialPeriodCourseController::class, 'index']);
+        Route::get('/student/tutorial-periods/{tutorialPeriodId}/registration-info', [StudentTutorialRegistrationInfoController::class, 'show']);
+        Route::get('/student/tutorial-periods', [StudentTutorialPeriodController::class, 'index']);
         Route::get('/users', [UserController::class, 'index']);
         Route::get('/tutorial-periods', [TutorialPeriodController::class, 'index']);
         Route::get('/tutorial-periods/{tutorial_period}', [TutorialPeriodController::class, 'show']);

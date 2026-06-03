@@ -34,6 +34,21 @@ class LegacyApiService
         return $periods;
     }
 
+    public function fetchStudentCoursesByLegacyStudentId(int $studentId, int $periodId): array
+    {
+        $payload = $this->request("/legacy/students/by-id/{$studentId}/periods/{$periodId}/courses");
+
+        return $this->mapStudentCourses($payload);
+    }
+
+    public function fetchStudentCoursesByStudentCode(string $studentCode, int $periodId): array
+    {
+        $encodedStudentCode = rawurlencode($studentCode);
+        $payload = $this->request("/legacy/students/by-code/{$encodedStudentCode}/periods/{$periodId}/courses");
+
+        return $this->mapStudentCourses($payload);
+    }
+
     public function fetchAllStudents(): array
     {
         return $this->fetchAll('/students', function (array $student): ?array {
@@ -141,6 +156,32 @@ class LegacyApiService
 
             throw new RuntimeException('Legacy service is unavailable', 0, $exception);
         }
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $payload
+     * @return array<int, array{courseCode:string,courseName:string,credits:int}>
+     */
+    private function mapStudentCourses(array $payload): array
+    {
+        $courses = [];
+
+        foreach ($payload as $course) {
+            if (
+                empty($course['courseCode']) ||
+                empty($course['courseName'])
+            ) {
+                continue;
+            }
+
+            $courses[] = [
+                'courseCode' => (string) $course['courseCode'],
+                'courseName' => (string) $course['courseName'],
+                'credits' => (int) ($course['credits'] ?? 0),
+            ];
+        }
+
+        return $courses;
     }
 
     /**

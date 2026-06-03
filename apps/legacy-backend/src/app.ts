@@ -9,7 +9,7 @@ import { authApiKey } from '@/middlewares/authApiKey';
 import departmentRouter from '@/modules/departments/department.routes';
 import lecturerRouter from '@/modules/lecturers/lecturer.routes';
 import periodRouter from '@/modules/periods/period.routes';
-import studentRouter from '@/modules/students/student.routes';
+import studentRouter, { studentLegacyRouter } from '@/modules/students/student.routes';
 import logger from '@/shared/logger';
 
 const app = express();
@@ -38,6 +38,7 @@ app.use(rTracer.expressMiddleware());
 
 app.use(authApiKey);
 app.use('/api/v1/students', studentRouter);
+app.use('/api/v1/legacy/students', studentLegacyRouter);
 app.use('/api/v1/lecturers', lecturerRouter);
 app.use('/api/v1/departments', departmentRouter);
 app.use('/api/v1/legacy/periods', periodRouter);

@@ -21,6 +21,9 @@ const TeachingSchedulePage = lazy(
 const TutorialRegistrationPage = lazy(
   () => import('@/features/tutorial-registration/pages/TutorialRegistrationPage')
 )
+const TutorialRegistrationDetailPage = lazy(
+  () => import('@/features/tutorial-registration/pages/TutorialRegistrationDetailPage')
+)
 const StudySchedulePage = lazy(
   () => import('@/features/study-schedule/pages/StudySchedulePage')
 )
@@ -78,6 +81,11 @@ export const appRoutes: AppRouteDefinition[] = [
     path: '/tutorial-registration',
     allowedRoles: ['STUDENT'],
     component: TutorialRegistrationPage,
+  },
+  {
+    path: '/tutorial-registration/:tutorialPeriodId',
+    allowedRoles: ['STUDENT'],
+    component: TutorialRegistrationDetailPage,
   },
   {
     path: '/study-schedule',

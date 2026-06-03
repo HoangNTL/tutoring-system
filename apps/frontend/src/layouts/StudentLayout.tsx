@@ -22,7 +22,8 @@ export default function StudentLayout() {
       role={user?.role}
       userName={user?.username}
       title="Không gian sinh viên"
-      description="Giữ điều hướng đơn giản để sinh viên tập trung vào đăng ký phụ đạo, lịch học và thông tin cá nhân."
+      description="Giữ điều hướng đơn giản để sinh viên tập trung vào dữ liệu cần thiết."
+      showPageIntro={false}
       onLogout={handleLogout}
       isLoggingOut={logoutMutation.isPending}
     >

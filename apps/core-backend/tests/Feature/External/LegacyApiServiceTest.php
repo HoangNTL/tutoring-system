@@ -67,4 +67,68 @@ class LegacyApiServiceTest extends TestCase
             return str_contains($request->url(), '/legacy/periods');
         });
     }
+
+    public function test_fetch_student_courses_by_legacy_student_id_maps_to_public_contract(): void
+    {
+        Http::fake([
+            '*' => Http::response([
+                'success' => true,
+                'data' => [
+                    [
+                        'courseCode' => 'INT123',
+                        'courseName' => 'Cấu trúc dữ liệu',
+                        'credits' => 3,
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $service = app(LegacyApiService::class);
+
+        $result = $service->fetchStudentCoursesByLegacyStudentId(88, 296);
+
+        $this->assertSame([
+            [
+                'courseCode' => 'INT123',
+                'courseName' => 'Cấu trúc dữ liệu',
+                'credits' => 3,
+            ],
+        ], $result);
+
+        Http::assertSent(function (Request $request): bool {
+            return str_contains($request->url(), '/legacy/students/by-id/88/periods/296/courses');
+        });
+    }
+
+    public function test_fetch_student_courses_by_student_code_maps_to_public_contract(): void
+    {
+        Http::fake([
+            '*' => Http::response([
+                'success' => true,
+                'data' => [
+                    [
+                        'courseCode' => 'INT123',
+                        'courseName' => 'Cấu trúc dữ liệu',
+                        'credits' => 3,
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $service = app(LegacyApiService::class);
+
+        $result = $service->fetchStudentCoursesByStudentCode('sv001', 296);
+
+        $this->assertSame([
+            [
+                'courseCode' => 'INT123',
+                'courseName' => 'Cấu trúc dữ liệu',
+                'credits' => 3,
+            ],
+        ], $result);
+
+        Http::assertSent(function (Request $request): bool {
+            return str_contains($request->url(), '/legacy/students/by-code/sv001/periods/296/courses');
+        });
+    }
 }

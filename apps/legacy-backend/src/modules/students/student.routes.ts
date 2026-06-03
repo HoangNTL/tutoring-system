@@ -9,11 +9,22 @@ const studentRouter = Router();
 
 const studentRepository = new StudentRepository();
 const studentController = new StudentController(studentRepository);
+export const studentLegacyRouter = Router();
 
 studentRouter.get(
   '/',
   validate(studentQuerySchema),
   studentController.getAllStudents,
+);
+
+studentLegacyRouter.get(
+  '/by-id/:studentId/periods/:periodId/courses',
+  studentController.getCoursesByStudentId,
+);
+
+studentLegacyRouter.get(
+  '/by-code/:studentCode/periods/:periodId/courses',
+  studentController.getCoursesByStudentCode,
 );
 
 export default studentRouter;

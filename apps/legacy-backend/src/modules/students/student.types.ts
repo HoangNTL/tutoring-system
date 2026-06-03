@@ -7,3 +7,9 @@ export interface Student {
 }
 
 export interface StudentQueryParams extends BaseQueryParams {}
+
+export interface StudentCourse {
+  courseCode: string;
+  courseName: string;
+  credits: number;
+}

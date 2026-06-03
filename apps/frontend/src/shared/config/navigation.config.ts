@@ -82,7 +82,7 @@ export const navigationConfig: NavigationSection[] = [
         allowedRoles: ['DEPARTMENT'],
       },
       {
-        title: 'Đăng ký',
+        title: 'Đăng ký phụ đạo',
         description: 'Đăng ký lớp phụ đạo.',
         path: '/tutorial-registration',
         allowedRoles: ['STUDENT'],
