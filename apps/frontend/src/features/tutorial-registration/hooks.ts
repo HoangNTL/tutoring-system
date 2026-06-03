@@ -1,8 +1,12 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { useAppSelector } from '@/app/store/hooks'
 import { getStudentTutorialPeriods } from '@/features/tutorial-registration/api/studentTutorialPeriods.api'
 import { getStudentTutorialRegistrationInfo } from '@/features/tutorial-registration/api/studentTutorialRegistrationInfo.api'
+import {
+  cancelStudentTutorialCourse,
+  registerStudentTutorialCourse,
+} from '@/features/tutorial-registration/api/studentTutorialRegistrations.api'
 
 export const studentTutorialPeriodsQueryKey = ['student-tutorial-periods'] as const
 export const studentTutorialRegistrationInfoQueryKey = ['student-tutorial-registration-info'] as const
@@ -26,5 +30,43 @@ export const useStudentTutorialRegistrationInfo = (
     queryKey: [...studentTutorialRegistrationInfoQueryKey, tutorialPeriodId],
     enabled: authStatus === 'authenticated' && tutorialPeriodId !== null,
     queryFn: () => getStudentTutorialRegistrationInfo(tutorialPeriodId as number),
+  })
+}
+
+export const useRegisterStudentTutorialCourseMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      tutorialPeriodId,
+      courseCode,
+    }: {
+      tutorialPeriodId: number
+      courseCode: string
+    }) => registerStudentTutorialCourse(tutorialPeriodId, courseCode),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: [...studentTutorialRegistrationInfoQueryKey, variables.tutorialPeriodId],
+      })
+    },
+  })
+}
+
+export const useCancelStudentTutorialCourseMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      tutorialPeriodId,
+      courseCode,
+    }: {
+      tutorialPeriodId: number
+      courseCode: string
+    }) => cancelStudentTutorialCourse(tutorialPeriodId, courseCode),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: [...studentTutorialRegistrationInfoQueryKey, variables.tutorialPeriodId],
+      })
+    },
   })
 }

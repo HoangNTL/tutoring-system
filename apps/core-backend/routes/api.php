@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\LegacyPeriodController;
 use App\Http\Controllers\Api\V1\StudentTutorialPeriodCourseController;
 use App\Http\Controllers\Api\V1\StudentTutorialPeriodController;
+use App\Http\Controllers\Api\V1\StudentTutorialRegistrationController;
 use App\Http\Controllers\Api\V1\StudentTutorialRegistrationInfoController;
 use App\Http\Controllers\Api\V1\TutorialPeriodController;
 use App\Http\Controllers\Api\V1\UserController;
@@ -22,6 +23,8 @@ Route::prefix('v1')->group(function () {
         Route::get('/legacy/periods', [LegacyPeriodController::class, 'index']);
         Route::get('/student/tutorial-periods/{tutorialPeriodId}/courses', [StudentTutorialPeriodCourseController::class, 'index']);
         Route::get('/student/tutorial-periods/{tutorialPeriodId}/registration-info', [StudentTutorialRegistrationInfoController::class, 'show']);
+        Route::post('/student/tutorial-periods/{tutorialPeriodId}/registrations', [StudentTutorialRegistrationController::class, 'store']);
+        Route::delete('/student/tutorial-periods/{tutorialPeriodId}/registrations/{courseCode}', [StudentTutorialRegistrationController::class, 'destroy']);
         Route::get('/student/tutorial-periods', [StudentTutorialPeriodController::class, 'index']);
         Route::get('/users', [UserController::class, 'index']);
         Route::get('/tutorial-periods', [TutorialPeriodController::class, 'index']);

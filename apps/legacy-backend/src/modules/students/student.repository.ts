@@ -19,7 +19,6 @@ export class StudentRepository {
     baseQuery.whereRaw(`
       TRIM(QuocTich) <> ''
       AND QuocTich <> N'Việt Nam'
-      AND YEAR(NgayNhapHoc) + 6 > 2024
     `);
 
     const totalRes = await baseQuery
@@ -57,7 +56,11 @@ export class StudentRepository {
       .join('DM_Dot as dot', 'lhp.IDDot', 'dot.Id')
       .where('sv.Id', studentId)
       .andWhere('dot.Id', periodId)
-      .distinct('mh.MaMonHoc as courseCode', 'mh.TenMonHoc as courseName', 'mh.SoTinChi as credits')
+      .distinct(
+        'mh.MaMonHoc as courseCode',
+        'mh.TenMonHoc as courseName',
+        'mh.SoTinChi as credits',
+      )
       .orderBy('mh.TenMonHoc', 'asc');
 
     return data.map((course) => ({
@@ -78,7 +81,11 @@ export class StudentRepository {
       .join('DM_Dot as dot', 'lhp.IDDot', 'dot.Id')
       .where('sv.MaSinhVien', studentCode)
       .andWhere('dot.Id', periodId)
-      .distinct('mh.MaMonHoc as courseCode', 'mh.TenMonHoc as courseName', 'mh.SoTinChi as credits')
+      .distinct(
+        'mh.MaMonHoc as courseCode',
+        'mh.TenMonHoc as courseName',
+        'mh.SoTinChi as credits',
+      )
       .orderBy('mh.TenMonHoc', 'asc');
 
     return data.map((course) => ({

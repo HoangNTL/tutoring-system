@@ -36,6 +36,7 @@ class StudentTutorialRegistrationInfoResource extends JsonResource
                     'courseCode' => (string) ($course['courseCode'] ?? ''),
                     'courseName' => (string) ($course['courseName'] ?? ''),
                     'credits' => (int) ($course['credits'] ?? 0),
+                    'registeredAt' => $course['registeredAt'] ?? null,
                 ]
             )->values()->all(),
         ];

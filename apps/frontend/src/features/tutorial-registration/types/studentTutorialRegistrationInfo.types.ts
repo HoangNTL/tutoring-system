@@ -2,6 +2,7 @@ export type StudentTutorialCourse = {
   courseCode: string
   courseName: string
   credits: number
+  registeredAt?: string | null
 }
 
 export type StudentTutorialRegistrationSummary = {

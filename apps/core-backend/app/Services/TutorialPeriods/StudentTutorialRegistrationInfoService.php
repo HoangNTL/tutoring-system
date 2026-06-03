@@ -3,8 +3,10 @@
 namespace App\Services\TutorialPeriods;
 
 use App\Enums\TutorialPeriodStatus;
+use App\Enums\TutorialRegistrationStatus;
 use App\Enums\UserRole;
 use App\Models\TutorialPeriod;
+use App\Models\TutorialRegistration;
 use App\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -22,7 +24,7 @@ class StudentTutorialRegistrationInfoService
      * @return array{
      *   tutorialPeriod: TutorialPeriod,
      *   availableCourses: array<int, array{courseCode:string,courseName:string,credits:int}>,
-     *   registeredCourses: array<int, array{courseCode:string,courseName:string,credits:int}>
+     *   registeredCourses: array<int, array{courseCode:string,courseName:string,credits:int,registeredAt:?string}>
      * }
      */
     public function getRegistrationInfo(User $user, int $tutorialPeriodId): array
@@ -46,8 +48,20 @@ class StudentTutorialRegistrationInfoService
             $tutorialPeriodId
         );
 
-        // TODO: verify the persistence model for registered tutorial courses before loading local data.
-        $registeredCourses = [];
+        $registeredCourses = TutorialRegistration::query()
+            ->where('tutorial_period_id', $tutorialPeriod->id)
+            ->where('user_id', $user->id)
+            ->where('status', TutorialRegistrationStatus::REGISTERED)
+            ->orderBy('course_name')
+            ->get()
+            ->map(static fn (TutorialRegistration $registration): array => [
+                'courseCode' => $registration->course_code,
+                'courseName' => $registration->course_name,
+                'credits' => $registration->credits,
+                'registeredAt' => $registration->registered_at?->format('Y-m-d H:i:s'),
+            ])
+            ->values()
+            ->all();
 
         return [
             'tutorialPeriod' => $tutorialPeriod,
