@@ -56,4 +56,42 @@ export class StudentController {
 
     return successResponse(res, courses, 'Student courses fetched successfully');
   };
+
+  getStudentInfoById = async (
+    req: Request,
+    res: Response,
+  ): Promise<Response> => {
+    const studentId = Number.parseInt(String(req.params.studentId), 10);
+
+    if (!Number.isInteger(studentId) || studentId < 1) {
+      return errorResponse(res, 'Invalid studentId', 400);
+    }
+
+    const student = await this.studentRepository.getStudentInfoById(studentId);
+
+    if (!student) {
+      return errorResponse(res, 'Student not found', 404);
+    }
+
+    return successResponse(res, student, 'Student fetched successfully');
+  };
+
+  getStudentInfoByCode = async (
+    req: Request,
+    res: Response,
+  ): Promise<Response> => {
+    const studentCode = String(req.params.studentCode ?? '').trim();
+
+    if (studentCode === '') {
+      return errorResponse(res, 'Invalid studentCode', 400);
+    }
+
+    const student = await this.studentRepository.getStudentInfoByCode(studentCode);
+
+    if (!student) {
+      return errorResponse(res, 'Student not found', 404);
+    }
+
+    return successResponse(res, student, 'Student fetched successfully');
+  };
 }

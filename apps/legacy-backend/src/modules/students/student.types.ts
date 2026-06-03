@@ -13,3 +13,10 @@ export interface StudentCourse {
   courseName: string;
   credits: number;
 }
+
+export interface StudentInfo {
+  studentCode: string;
+  lastName: string;
+  firstName: string;
+  fullName: string;
+}

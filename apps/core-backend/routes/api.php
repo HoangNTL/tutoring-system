@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\DepartmentTutorialRegistrationController;
 use App\Http\Controllers\Api\V1\LegacyPeriodController;
 use App\Http\Controllers\Api\V1\StudentTutorialPeriodCourseController;
 use App\Http\Controllers\Api\V1\StudentTutorialPeriodController;
@@ -21,6 +22,9 @@ Route::prefix('v1')->group(function () {
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/legacy/periods', [LegacyPeriodController::class, 'index']);
+        Route::get('/department/tutorial-periods', [DepartmentTutorialRegistrationController::class, 'tutorialPeriods']);
+        Route::get('/department/tutorial-periods/{tutorialPeriodId}/course-registrations', [DepartmentTutorialRegistrationController::class, 'courseRegistrations']);
+        Route::get('/department/tutorial-periods/{tutorialPeriodId}/course-registrations/{courseCode}/students', [DepartmentTutorialRegistrationController::class, 'students']);
         Route::get('/student/tutorial-periods/{tutorialPeriodId}/courses', [StudentTutorialPeriodCourseController::class, 'index']);
         Route::get('/student/tutorial-periods/{tutorialPeriodId}/registration-info', [StudentTutorialRegistrationInfoController::class, 'show']);
         Route::post('/student/tutorial-periods/{tutorialPeriodId}/registrations', [StudentTutorialRegistrationController::class, 'store']);

@@ -131,4 +131,79 @@ class LegacyApiServiceTest extends TestCase
             return str_contains($request->url(), '/legacy/students/by-code/sv001/periods/296/courses');
         });
     }
+
+    public function test_fetch_student_info_by_legacy_student_id_maps_to_public_contract(): void
+    {
+        Http::fake([
+            '*' => Http::response([
+                'success' => true,
+                'data' => [
+                    'studentCode' => '5001866',
+                    'lastName' => 'Nguyễn Văn',
+                    'firstName' => 'A',
+                    'fullName' => 'Nguyễn Văn A',
+                ],
+            ], 200),
+        ]);
+
+        $service = app(LegacyApiService::class);
+
+        $result = $service->fetchStudentInfoByLegacyStudentId(88);
+
+        $this->assertSame([
+            'studentCode' => '5001866',
+            'lastName' => 'Nguyễn Văn',
+            'firstName' => 'A',
+            'fullName' => 'Nguyễn Văn A',
+        ], $result);
+
+        Http::assertSent(function (Request $request): bool {
+            return str_contains($request->url(), '/legacy/students/by-id/88');
+        });
+    }
+
+    public function test_fetch_student_info_by_student_code_maps_to_public_contract(): void
+    {
+        Http::fake([
+            '*' => Http::response([
+                'success' => true,
+                'data' => [
+                    'studentCode' => '5001866',
+                    'lastName' => 'Nguyễn Văn',
+                    'firstName' => 'A',
+                    'fullName' => 'Nguyễn Văn A',
+                ],
+            ], 200),
+        ]);
+
+        $service = app(LegacyApiService::class);
+
+        $result = $service->fetchStudentInfoByStudentCode('5001866');
+
+        $this->assertSame([
+            'studentCode' => '5001866',
+            'lastName' => 'Nguyễn Văn',
+            'firstName' => 'A',
+            'fullName' => 'Nguyễn Văn A',
+        ], $result);
+
+        Http::assertSent(function (Request $request): bool {
+            return str_contains($request->url(), '/legacy/students/by-code/5001866');
+        });
+    }
+
+    public function test_fetch_student_info_returns_null_on_not_found(): void
+    {
+        Http::fake([
+            '*' => Http::response([
+                'success' => false,
+                'message' => 'Student not found',
+            ], 404),
+        ]);
+
+        $service = app(LegacyApiService::class);
+
+        $this->assertNull($service->fetchStudentInfoByLegacyStudentId(9999));
+        $this->assertNull($service->fetchStudentInfoByStudentCode('missing'));
+    }
 }

@@ -49,6 +49,21 @@ class LegacyApiService
         return $this->mapStudentCourses($payload);
     }
 
+    public function fetchStudentInfoByLegacyStudentId(int $studentId): ?array
+    {
+        $payload = $this->requestOptional("/legacy/students/by-id/{$studentId}");
+
+        return $this->mapStudentInfo($payload);
+    }
+
+    public function fetchStudentInfoByStudentCode(string $studentCode): ?array
+    {
+        $encodedStudentCode = rawurlencode($studentCode);
+        $payload = $this->requestOptional("/legacy/students/by-code/{$encodedStudentCode}");
+
+        return $this->mapStudentInfo($payload);
+    }
+
     public function fetchAllStudents(): array
     {
         return $this->fetchAll('/students', function (array $student): ?array {
@@ -141,6 +156,10 @@ class LegacyApiService
 
             return is_array($payload['data'] ?? null) ? $payload['data'] : [];
         } catch (RequestException $exception) {
+            if ($exception->response?->status() === 404) {
+                return null;
+            }
+
             Log::error('Legacy API request failed', [
                 'endpoint' => $endpoint,
                 'status' => $exception->response?->status(),
@@ -185,6 +204,24 @@ class LegacyApiService
     }
 
     /**
+     * @param  array<string, mixed>|null  $payload
+     * @return array{studentCode:string,lastName:string,firstName:string,fullName:string}|null
+     */
+    private function mapStudentInfo(?array $payload): ?array
+    {
+        if (!is_array($payload) || empty($payload['studentCode'])) {
+            return null;
+        }
+
+        return [
+            'studentCode' => (string) $payload['studentCode'],
+            'lastName' => (string) ($payload['lastName'] ?? ''),
+            'firstName' => (string) ($payload['firstName'] ?? ''),
+            'fullName' => (string) ($payload['fullName'] ?? ''),
+        ];
+    }
+
+    /**
      * @return array{data: array<int, array<string, mixed>>, meta: array{lastPage: int}}
      */
     private function requestPage(string $endpoint, int $page, int $limit): array
@@ -222,6 +259,46 @@ class LegacyApiService
                 'endpoint' => $endpoint,
                 'page' => $page,
                 'limit' => $limit,
+                'error' => $exception->getMessage(),
+            ]);
+
+            throw new RuntimeException('Legacy service is unavailable', 0, $exception);
+        }
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function requestOptional(string $endpoint): ?array
+    {
+        try {
+            $response = Http::legacy()
+                ->timeout(self::TIMEOUT_SECONDS)
+                ->retry(self::RETRY_TIMES, self::RETRY_DELAY_MS, throw: false)
+                ->get($endpoint);
+
+            if ($response->status() === 404) {
+                return null;
+            }
+
+            if ($response->failed()) {
+                throw new RequestException($response);
+            }
+
+            $payload = $response->json();
+
+            return is_array($payload['data'] ?? null) ? $payload['data'] : null;
+        } catch (RequestException $exception) {
+            Log::error('Legacy API request failed', [
+                'endpoint' => $endpoint,
+                'status' => $exception->response?->status(),
+                'error' => $exception->getMessage(),
+            ]);
+
+            throw new RuntimeException('Failed to fetch data from legacy service', 0, $exception);
+        } catch (\Throwable $exception) {
+            Log::error('Legacy API transport failure', [
+                'endpoint' => $endpoint,
                 'error' => $exception->getMessage(),
             ]);
 

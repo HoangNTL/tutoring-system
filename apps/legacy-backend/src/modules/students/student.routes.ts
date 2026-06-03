@@ -18,6 +18,16 @@ studentRouter.get(
 );
 
 studentLegacyRouter.get(
+  '/by-id/:studentId',
+  studentController.getStudentInfoById,
+);
+
+studentLegacyRouter.get(
+  '/by-code/:studentCode',
+  studentController.getStudentInfoByCode,
+);
+
+studentLegacyRouter.get(
   '/by-id/:studentId/periods/:periodId/courses',
   studentController.getCoursesByStudentId,
 );

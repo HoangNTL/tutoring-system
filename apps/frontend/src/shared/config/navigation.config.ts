@@ -70,6 +70,12 @@ export const navigationConfig: NavigationSection[] = [
         allowedRoles: ['ADMIN'],
       },
       {
+        title: 'Môn học đăng ký',
+        description: 'Xem nhu cầu đăng ký theo môn học.',
+        path: '/department-course-registrations',
+        allowedRoles: ['DEPARTMENT'],
+      },
+      {
         title: 'Xếp lịch',
         description: 'Thiết lập lịch phụ đạo.',
         path: '/tutorial-scheduling',

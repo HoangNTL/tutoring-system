@@ -5,6 +5,7 @@ import { PaginationMeta } from '@/shared/types';
 import {
   Student,
   StudentCourse,
+  StudentInfo,
   StudentQueryParams,
 } from '@/modules/students/student.types';
 
@@ -93,5 +94,58 @@ export class StudentRepository {
       courseName: String(course.courseName ?? ''),
       credits: Number(course.credits ?? 0),
     }));
+  }
+
+  async getStudentInfoById(studentId: number): Promise<StudentInfo | null> {
+    const student = await db('DT_SinhVien')
+      .where('Id', studentId)
+      .first(
+        'MaSinhVien as studentCode',
+        'HoDem as lastName',
+        'Ten as firstName',
+      );
+
+    return this.mapStudentInfo(student);
+  }
+
+  async getStudentInfoByCode(studentCode: string): Promise<StudentInfo | null> {
+    const student = await db('DT_SinhVien')
+      .where('MaSinhVien', studentCode)
+      .first(
+        'MaSinhVien as studentCode',
+        'HoDem as lastName',
+        'Ten as firstName',
+      );
+
+    return this.mapStudentInfo(student);
+  }
+
+  private mapStudentInfo(student: unknown): StudentInfo | null {
+    if (!student || typeof student !== 'object') {
+      return null;
+    }
+
+    const data = student as {
+      studentCode?: unknown;
+      lastName?: unknown;
+      firstName?: unknown;
+    };
+
+    const studentCode = String(data.studentCode ?? '').trim();
+
+    if (studentCode === '') {
+      return null;
+    }
+
+    const lastName = String(data.lastName ?? '').trim();
+    const firstName = String(data.firstName ?? '').trim();
+    const fullName = `${lastName} ${firstName}`.trim();
+
+    return {
+      studentCode,
+      lastName,
+      firstName,
+      fullName,
+    };
   }
 }
