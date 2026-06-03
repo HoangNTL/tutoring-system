@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\LegacyPeriodController;
 use App\Http\Controllers\Api\V1\TutorialPeriodController;
+use App\Http\Controllers\Api\V1\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -16,6 +17,7 @@ Route::prefix('v1')->group(function () {
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/legacy/periods', [LegacyPeriodController::class, 'index']);
+        Route::get('/users', [UserController::class, 'index']);
         Route::get('/tutorial-periods', [TutorialPeriodController::class, 'index']);
         Route::get('/tutorial-periods/{tutorial_period}', [TutorialPeriodController::class, 'show']);
         Route::post('/tutorial-periods', [TutorialPeriodController::class, 'store']);

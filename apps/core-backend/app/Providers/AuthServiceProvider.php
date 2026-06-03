@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\User;
 use App\Models\TutorialPeriod;
+use App\Policies\UserPolicy;
 use App\Policies\TutorialPeriodPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -23,5 +25,6 @@ class AuthServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::policy(TutorialPeriod::class, TutorialPeriodPolicy::class);
+        Gate::policy(User::class, UserPolicy::class);
     }
 }
