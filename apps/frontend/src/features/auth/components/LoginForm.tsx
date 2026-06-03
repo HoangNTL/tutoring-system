@@ -1,6 +1,6 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Lock, ShieldCheck, User } from 'lucide-react'
+import { Lock, User } from 'lucide-react'
 
 import { useLoginMutation } from '@/features/auth/hooks/useLoginMutation'
 import { loginSchema, type LoginSchema } from '@/features/auth/schema/login.schema'
@@ -69,24 +69,20 @@ export default function LoginForm() {
   }
 
   return (
-    <Card className="w-full max-w-md gap-6 border-none bg-transparent py-0 shadow-none ring-0">
-      <CardHeader className="space-y-4 px-0 text-center">
-        <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-slate-100 text-[#0f4c81] shadow-inner">
-          <ShieldCheck className="size-8" />
-        </div>
-
-        <div className="space-y-2">
-          <CardTitle className="text-3xl font-semibold tracking-tight text-slate-900">
+    <Card className="w-full rounded-2xl border border-slate-200 bg-white py-0 shadow-sm">
+      <CardHeader className="space-y-1 px-6 pt-6 pb-0 text-left">
+        <div className="space-y-1.5">
+          <CardTitle className="text-2xl font-semibold tracking-tight text-slate-900">
             Đăng nhập
           </CardTitle>
 
-          <CardDescription className="text-sm leading-6 text-slate-500">
-            Nhập tài khoản được cấp để truy cập hệ thống đăng ký học phụ đạo.
+          <CardDescription className="text-sm text-slate-500">
+            Sử dụng tài khoản do nhà trường cấp.
           </CardDescription>
         </div>
       </CardHeader>
 
-      <CardContent className="px-0">
+      <CardContent className="px-6 py-6">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           <div className="space-y-2.5">
             <div className="relative">
@@ -96,7 +92,7 @@ export default function LoginForm() {
                 placeholder="Nhập mã số sinh viên hoặc tài khoản"
                 {...register('username')}
                 disabled={loginMutation.isPending}
-                className="h-12 rounded-2xl border-slate-200 bg-slate-50 pr-4 pl-11 text-sm shadow-none placeholder:text-slate-400 focus-visible:border-[#0f4c81] focus-visible:ring-[#0f4c81]/15"
+                className="h-11 rounded-xl border-slate-200 bg-slate-50 pr-4 pl-11 text-sm shadow-none placeholder:text-slate-400 focus-visible:border-[#0f4c81] focus-visible:ring-[#0f4c81]/15"
               />
             </div>
 
@@ -114,7 +110,7 @@ export default function LoginForm() {
                 placeholder="Nhập mật khẩu"
                 {...register('password')}
                 disabled={loginMutation.isPending}
-                className="h-12 rounded-2xl border-slate-200 bg-slate-50 pr-4 pl-11 text-sm shadow-none placeholder:text-slate-400 focus-visible:border-[#0f4c81] focus-visible:ring-[#0f4c81]/15"
+                className="h-11 rounded-xl border-slate-200 bg-slate-50 pr-4 pl-11 text-sm shadow-none placeholder:text-slate-400 focus-visible:border-[#0f4c81] focus-visible:ring-[#0f4c81]/15"
               />
             </div>
 
@@ -124,14 +120,14 @@ export default function LoginForm() {
           </div>
 
           {errors.root?.message ? (
-            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
               {errors.root.message}
             </div>
           ) : null}
 
           <Button
             type="submit"
-            className="h-12 w-full rounded-2xl bg-[#0f4c81] text-sm font-semibold text-white shadow-[0_12px_30px_rgba(15,76,129,0.25)] hover:bg-[#0c3f6a]"
+            className="h-11 w-full rounded-xl bg-[#0f4c81] text-sm font-semibold text-white hover:bg-[#0c3f6a]"
             disabled={loginMutation.isPending}
           >
             {loginMutation.isPending ? (
@@ -140,14 +136,6 @@ export default function LoginForm() {
               'Đăng nhập'
             )}
           </Button>
-
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm leading-6 text-slate-500">
-            <p className="font-medium text-slate-700">Lưu ý</p>
-            <p className="mt-1">
-              Sử dụng tài khoản do nhà trường cấp. Nếu không thể đăng nhập, vui
-              lòng liên hệ bộ phận phụ trách để xác minh thông tin tài khoản.
-            </p>
-          </div>
         </form>
       </CardContent>
     </Card>
