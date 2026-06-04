@@ -76,6 +76,12 @@ export const navigationConfig: NavigationSection[] = [
         allowedRoles: ['DEPARTMENT'],
       },
       {
+        title: 'Lớp phụ đạo',
+        description: 'Lập kế hoạch lớp phụ đạo.',
+        path: '/department-tutorial-classes',
+        allowedRoles: ['DEPARTMENT'],
+      },
+      {
         title: 'Xếp lịch',
         description: 'Thiết lập lịch phụ đạo.',
         path: '/tutorial-scheduling',

@@ -18,6 +18,12 @@ const DepartmentCourseRegistrationsPage = lazy(
       '@/features/department-registration/pages/DepartmentCourseRegistrationsPage'
     )
 )
+const DepartmentTutorialClassesPage = lazy(
+  () =>
+    import(
+      '@/features/department-classes/pages/DepartmentTutorialClassesPage'
+    )
+)
 const LecturerAssignmentsPage = lazy(
   () => import('@/features/lecturer-assignments/pages/LecturerAssignmentsPage')
 )
@@ -67,6 +73,11 @@ export const appRoutes: AppRouteDefinition[] = [
     path: '/department-course-registrations',
     allowedRoles: ['DEPARTMENT'],
     component: DepartmentCourseRegistrationsPage,
+  },
+  {
+    path: '/department-tutorial-classes',
+    allowedRoles: ['DEPARTMENT'],
+    component: DepartmentTutorialClassesPage,
   },
   {
     path: '/tutorial-scheduling',
