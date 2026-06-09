@@ -1,11 +1,20 @@
-import FeaturePlaceholderPage from '@/shared/ui/feature-placeholder-page'
+import { UserScheduleViewer } from '@/features/schedule-view/components/UserScheduleViewer'
+import { useStudentSchedules } from '@/features/schedule-view/hooks'
 
 export default function StudySchedulePage() {
+  const schedulesQuery = useStudentSchedules()
+
   return (
-    <FeaturePlaceholderPage
-      eyebrow="Lịch học"
+    <UserScheduleViewer
       title="Lịch học"
-      description="Khu vực này dành cho sinh viên theo dõi các buổi học phụ đạo và lịch học đã đăng ký."
+      description="Theo dõi lịch học theo tuần đã chọn từ các khung giờ hằng tuần mà bộ môn đã thiết lập cho lớp phụ đạo của bạn."
+      items={schedulesQuery.data?.data ?? []}
+      isLoading={schedulesQuery.isPending && !schedulesQuery.data}
+      isError={schedulesQuery.isError}
+      error={schedulesQuery.error}
+      emptyTitle="Chưa có lịch học."
+      emptyDescription="Lịch học sẽ hiển thị sau khi lớp phụ đạo của bạn được xếp lịch."
+      showLecturer
     />
   )
 }
