@@ -12,8 +12,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('tutorial_class_id')->constrained('tutorial_classes')->cascadeOnDelete();
             $table->unsignedBigInteger('room_id');
-            $table->string('room_code', 100)->nullable();
-            $table->string('room_name')->nullable();
+            $table->string('room_code', 100);
+            $table->string('room_name');
             $table->unsignedInteger('room_capacity')->nullable();
             $table->unsignedTinyInteger('day_of_week');
             $table->unsignedTinyInteger('start_period');

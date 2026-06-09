@@ -13,24 +13,22 @@ return new class extends Migration
     {
         Schema::create('tutorial_periods', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('academic_period_id')->nullable();
             $table->string('title');
-            $table->text('description');
-            $table->date('start_reg_date');
-            $table->date('end_reg_date');
-            $table->date('start_study_date');
-            $table->date('end_study_date');
+            $table->text('description')->nullable();
+            $table->dateTime('registration_start_at');
+            $table->dateTime('registration_end_at');
+            $table->dateTime('study_start_at');
+            $table->dateTime('study_end_at');
             $table->unsignedTinyInteger('status')->default(0);
-            $table->timestamp('opened_at')->nullable();
-            $table->timestamp('assigned_at')->nullable();
-            $table->timestamp('started_at')->nullable();
-            $table->timestamp('closed_at')->nullable();
             $table->foreignId('created_by')->constrained('users')->restrictOnDelete();
             $table->timestamps();
             $table->softDeletes();
 
+            $table->index('academic_period_id');
             $table->index('status');
-            $table->index(['start_reg_date', 'end_reg_date']);
-            $table->index(['start_study_date', 'end_study_date']);
+            $table->index(['registration_start_at', 'registration_end_at']);
+            $table->index(['study_start_at', 'study_end_at']);
         });
     }
 
