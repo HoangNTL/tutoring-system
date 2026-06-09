@@ -3,6 +3,7 @@ import { BaseQueryParams } from '@/shared/types';
 export interface Lecturer {
   id: number;
   lecturerCode: string;
+  lecturerName: string;
   dateOfBirth: string;
 }
 

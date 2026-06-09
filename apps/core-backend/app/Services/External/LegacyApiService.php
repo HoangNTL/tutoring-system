@@ -95,14 +95,66 @@ class LegacyApiService
             return [
                 'legacy_id' => (int) $lecturer['id'],
                 'username' => (string) $lecturer['lecturerCode'],
+                'code' => (string) $lecturer['lecturerCode'],
+                'name' => trim((string) ($lecturer['lecturerName'] ?? $lecturer['lecturerCode'] ?? '')),
                 'date_of_birth' => $lecturer['dateOfBirth'] ?? null,
             ];
         });
     }
 
+    public function fetchLecturersByDepartment(int $departmentId): array
+    {
+        $payload = $this->request("/legacy/departments/{$departmentId}/lecturers");
+        if (!is_array($payload)) {
+            return [];
+        }
+
+        $lecturers = [];
+
+        foreach ($payload as $lecturer) {
+            if (empty($lecturer['id']) || empty($lecturer['code'])) {
+                continue;
+            }
+
+            $lecturers[] = [
+                'id' => (int) $lecturer['id'],
+                'code' => (string) $lecturer['code'],
+                'fullName' => trim((string) ($lecturer['fullName'] ?? $lecturer['code'] ?? '')),
+                'departmentName' => (string) ($lecturer['departmentName'] ?? ''),
+            ];
+        }
+
+        return $lecturers;
+    }
+
+    public function fetchRooms(): array
+    {
+        $payload = $this->request('/legacy/rooms');
+        if (!is_array($payload)) {
+            return [];
+        }
+
+        $rooms = [];
+
+        foreach ($payload as $room) {
+            if (empty($room['id']) || empty($room['code']) || empty($room['name'])) {
+                continue;
+            }
+
+            $rooms[] = [
+                'id' => (int) $room['id'],
+                'code' => (string) $room['code'],
+                'name' => (string) $room['name'],
+                'capacity' => (int) ($room['capacity'] ?? 0),
+            ];
+        }
+
+        return $rooms;
+    }
+
     public function fetchAllDepartments(): array
     {
-        return $this->fetchAll('/departments', function (array $department): ?array {
+        return $this->fetchAll('/legacy/departments', function (array $department): ?array {
             if (empty($department['id'])) {
                 return null;
             }
@@ -154,10 +206,14 @@ class LegacyApiService
 
             $payload = $response->json();
 
+            if (!is_array($payload)) {
+                return [];
+            }
+
             return is_array($payload['data'] ?? null) ? $payload['data'] : [];
         } catch (RequestException $exception) {
             if ($exception->response?->status() === 404) {
-                return null;
+                return [];
             }
 
             Log::error('Legacy API request failed', [

@@ -4,6 +4,7 @@ import { PaginationMeta } from '@/shared/types';
 
 import {
   Department,
+  DepartmentLecturer,
   DepartmentQueryParams,
 } from '@/modules/departments/department.types';
 
@@ -19,19 +20,56 @@ export class DepartmentRepository {
       .clone()
       .clearSelect()
       .clearOrder()
-      .count('Id as total');
+      .count('IDBoMon as total');
 
     const total = Number(totalRes[0].total || 0);
 
     const data = await baseQuery
-      .orderBy('Id', 'asc')
+      .orderBy('IDBoMon', 'asc')
       .limit(limit)
       .offset((page - 1) * limit)
-      .select('Id as id', 'TenBoMon as name');
+      .select('IDBoMon as id', 'TenBoMon as name');
 
     return {
       data,
       meta: getPaginationMeta({ total, page, limit }),
     };
+  }
+
+  async getLecturersByDepartment(
+    departmentId: number,
+  ): Promise<DepartmentLecturer[]> {
+    const rows = await db('TMP_DsGVBoMon')
+      .where('IDBoMon', departmentId)
+      .orderBy('Ten', 'asc')
+      .orderBy('HoDem', 'asc')
+      .select(
+        'Id as id',
+        'MaNhanSu as code',
+        'HoDem as lastName',
+        'Ten as firstName',
+        'TenBoMon as departmentName',
+      );
+
+    return rows
+      .filter((row) => row.id !== null && row.id !== undefined)
+      .map(
+        (row): DepartmentLecturer => {
+          const code = String(row.code ?? '').trim();
+          const fullName =
+            [row.lastName, row.firstName]
+              .filter(Boolean)
+              .join(' ')
+              .trim() || code;
+
+          return {
+            id: Number(row.id),
+            code,
+            fullName,
+            departmentName: String(row.departmentName ?? '').trim(),
+          };
+        },
+      )
+      .filter((lecturer) => lecturer.id > 0 && lecturer.code !== '');
   }
 }

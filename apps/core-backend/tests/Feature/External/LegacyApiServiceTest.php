@@ -206,4 +206,104 @@ class LegacyApiServiceTest extends TestCase
         $this->assertNull($service->fetchStudentInfoByLegacyStudentId(9999));
         $this->assertNull($service->fetchStudentInfoByStudentCode('missing'));
     }
+
+    public function test_fetch_lecturers_by_department_maps_to_public_contract(): void
+    {
+        Http::fake([
+            '*' => Http::response([
+                'success' => true,
+                'data' => [
+                    [
+                        'id' => 1,
+                        'code' => 'GV001',
+                        'fullName' => 'Nguyễn Văn A',
+                        'departmentName' => 'Bộ môn Kết cấu',
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $service = app(LegacyApiService::class);
+
+        $result = $service->fetchLecturersByDepartment(10);
+
+        $this->assertSame([
+            [
+                'id' => 1,
+                'code' => 'GV001',
+                'fullName' => 'Nguyễn Văn A',
+                'departmentName' => 'Bộ môn Kết cấu',
+            ],
+        ], $result);
+
+        Http::assertSent(function (Request $request): bool {
+            return str_contains($request->url(), '/legacy/departments/10/lecturers');
+        });
+    }
+
+    public function test_fetch_all_departments_uses_legacy_departments_endpoint(): void
+    {
+        Http::fake([
+            '*' => Http::response([
+                'success' => true,
+                'data' => [
+                    ['id' => 10, 'name' => 'Bo mon Ket cau'],
+                ],
+                'meta' => [
+                    'lastPage' => 1,
+                ],
+            ], 200),
+        ]);
+
+        $service = app(LegacyApiService::class);
+
+        $result = $service->fetchAllDepartments();
+
+        $this->assertSame([
+            [
+                'legacy_id' => 10,
+                'username' => 'bm10',
+            ],
+        ], $result);
+
+        Http::assertSent(function (Request $request): bool {
+            return str_contains($request->url(), '/legacy/departments')
+                && $request['page'] === 1
+                && $request['limit'] === 100;
+        });
+    }
+
+    public function test_fetch_rooms_maps_to_public_contract(): void
+    {
+        Http::fake([
+            '*' => Http::response([
+                'success' => true,
+                'data' => [
+                    [
+                        'id' => 1,
+                        'code' => '313.H1',
+                        'name' => '313.H1',
+                        'capacity' => 60,
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $service = app(LegacyApiService::class);
+
+        $result = $service->fetchRooms();
+
+        $this->assertSame([
+            [
+                'id' => 1,
+                'code' => '313.H1',
+                'name' => '313.H1',
+                'capacity' => 60,
+            ],
+        ], $result);
+
+        Http::assertSent(function (Request $request): bool {
+            return str_contains($request->url(), '/legacy/rooms');
+        });
+    }
 }

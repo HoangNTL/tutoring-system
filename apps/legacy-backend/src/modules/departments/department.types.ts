@@ -6,3 +6,10 @@ export interface Department {
 }
 
 export interface DepartmentQueryParams extends BaseQueryParams {}
+
+export interface DepartmentLecturer {
+  id: number;
+  code: string;
+  fullName: string;
+  departmentName: string;
+}

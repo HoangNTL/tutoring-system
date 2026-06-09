@@ -35,11 +35,29 @@ export class LecturerRepository {
       .select(
         'Id as id',
         'MaGiangVien as lecturerCode',
+        'HoDem as lastName',
+        'Ten as firstName',
         'NgaySinh as dateOfBirth',
       );
 
+    const mappedData = data.map((lecturer) => {
+      const lastName = String(lecturer.lastName ?? '').trim();
+      const firstName = String(lecturer.firstName ?? '').trim();
+      const lecturerName = `${lastName} ${firstName}`.trim();
+
+      return {
+        id: Number(lecturer.id),
+        lecturerCode: String(lecturer.lecturerCode ?? '').trim(),
+        lecturerName:
+          lecturerName !== ''
+            ? lecturerName
+            : String(lecturer.lecturerCode ?? '').trim(),
+        dateOfBirth: String(lecturer.dateOfBirth ?? ''),
+      };
+    });
+
     return {
-      data,
+      data: mappedData,
       meta: getPaginationMeta({ total, page, limit }),
     };
   }

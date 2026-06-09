@@ -3,15 +3,19 @@ import { LayoutList, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 
 import {
+  useAssignDepartmentTutorialClassLecturerMutation,
   useCancelDepartmentTutorialClassMutation,
   useCreateDepartmentTutorialClassMutation,
   useDepartmentTutorialClasses,
+  useDepartmentRooms,
   useRestoreDepartmentTutorialClassMutation,
   useUpdateDepartmentTutorialClassMutation,
 } from '@/features/department-classes/hooks'
+import { AssignLecturerDialog } from '@/features/department-classes/components/AssignLecturerDialog'
 import { CancelTutorialClassDialog } from '@/features/department-classes/components/CancelTutorialClassDialog'
 import { CreateTutorialClassDialog } from '@/features/department-classes/components/CreateTutorialClassDialog'
 import { EditTutorialClassDialog } from '@/features/department-classes/components/EditTutorialClassDialog'
+import { ManageScheduleDialog } from '@/features/department-classes/components/ManageScheduleDialog'
 import { RestoreTutorialClassDialog } from '@/features/department-classes/components/RestoreTutorialClassDialog'
 import { TutorialClassesTable } from '@/features/department-classes/components/TutorialClassesTable'
 import type { DepartmentTutorialClass } from '@/features/department-classes/types/departmentTutorialClass.types'
@@ -43,6 +47,8 @@ export default function DepartmentTutorialClassesPage() {
   const [selectedTutorialPeriodId, setSelectedTutorialPeriodId] = useState<number | null>(null)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingClass, setEditingClass] = useState<DepartmentTutorialClass | null>(null)
+  const [assigningLecturerClass, setAssigningLecturerClass] = useState<DepartmentTutorialClass | null>(null)
+  const [managingScheduleClass, setManagingScheduleClass] = useState<DepartmentTutorialClass | null>(null)
   const [cancellingClass, setCancellingClass] = useState<DepartmentTutorialClass | null>(null)
   const [restoringClass, setRestoringClass] = useState<DepartmentTutorialClass | null>(null)
 
@@ -51,12 +57,15 @@ export default function DepartmentTutorialClassesPage() {
 
   const classesQuery = useDepartmentTutorialClasses(selectedTutorialPeriodId)
   const classes = classesQuery.data?.data ?? []
+  const roomsQuery = useDepartmentRooms()
+  const rooms = roomsQuery.data?.data ?? []
 
   const courseSummaryQuery = useDepartmentCourseRegistrationSummary(selectedTutorialPeriodId)
   const courseSummary = courseSummaryQuery.data?.data ?? []
 
   const createClassMutation = useCreateDepartmentTutorialClassMutation()
   const updateClassMutation = useUpdateDepartmentTutorialClassMutation()
+  const assignLecturerMutation = useAssignDepartmentTutorialClassLecturerMutation()
   const cancelClassMutation = useCancelDepartmentTutorialClassMutation()
   const restoreClassMutation = useRestoreDepartmentTutorialClassMutation()
 
@@ -170,6 +179,25 @@ export default function DepartmentTutorialClassesPage() {
     }
   }
 
+  const handleAssignLecturer = async (payload: { lecturerId: number }) => {
+    if (!assigningLecturerClass || !selectedTutorialPeriodId) {
+      return
+    }
+
+    try {
+      await assignLecturerMutation.mutateAsync({
+        classId: assigningLecturerClass.id,
+        tutorialPeriodId: selectedTutorialPeriodId,
+        payload,
+      })
+      setAssigningLecturerClass(null)
+      toast.success('Phân công giảng viên thành công.')
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Không thể phân công giảng viên.'))
+      throw error
+    }
+  }
+
   return (
     <div className="flex min-h-full flex-col">
       <div className="flex min-h-0 flex-1 flex-col rounded-xl border border-slate-200 bg-white px-4 py-3">
@@ -264,6 +292,9 @@ export default function DepartmentTutorialClassesPage() {
           ) : (
             <TutorialClassesTable
               classes={classes}
+              canManage={selectedTutorialPeriod?.status === 'ASSIGNING'}
+              onAssignLecturer={setAssigningLecturerClass}
+              onManageSchedules={setManagingScheduleClass}
               onEdit={setEditingClass}
               onCancel={setCancellingClass}
               onRestore={setRestoringClass}
@@ -289,6 +320,27 @@ export default function DepartmentTutorialClassesPage() {
           }
         }}
         onSubmit={handleUpdateClass}
+      />
+      <AssignLecturerDialog
+        tutorialClass={assigningLecturerClass}
+        isSubmitting={assignLecturerMutation.isPending}
+        onOpenChange={(open) => {
+          if (!open) {
+            setAssigningLecturerClass(null)
+          }
+        }}
+        onSubmit={handleAssignLecturer}
+      />
+      <ManageScheduleDialog
+        tutorialClass={managingScheduleClass}
+        tutorialPeriodId={selectedTutorialPeriodId}
+        rooms={rooms}
+        roomsLoading={roomsQuery.isPending}
+        onOpenChange={(open) => {
+          if (!open) {
+            setManagingScheduleClass(null)
+          }
+        }}
       />
       <CancelTutorialClassDialog
         tutorialClass={cancellingClass}

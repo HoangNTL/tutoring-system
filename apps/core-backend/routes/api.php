@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\DepartmentLecturerController;
 use App\Http\Controllers\Api\V1\DepartmentTutorialRegistrationController;
 use App\Http\Controllers\Api\V1\DepartmentTutorialClassController;
+use App\Http\Controllers\Api\V1\DepartmentRoomController;
 use App\Http\Controllers\Api\V1\LegacyPeriodController;
 use App\Http\Controllers\Api\V1\StudentTutorialPeriodCourseController;
 use App\Http\Controllers\Api\V1\StudentTutorialPeriodController;
@@ -23,14 +25,21 @@ Route::prefix('v1')->group(function () {
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/legacy/periods', [LegacyPeriodController::class, 'index']);
+        Route::get('/department/rooms', [DepartmentRoomController::class, 'index']);
+        Route::get('/department/lecturers', [DepartmentLecturerController::class, 'index']);
         Route::get('/department/tutorial-periods', [DepartmentTutorialRegistrationController::class, 'tutorialPeriods']);
         Route::get('/department/tutorial-periods/{tutorialPeriodId}/course-registrations', [DepartmentTutorialRegistrationController::class, 'courseRegistrations']);
         Route::get('/department/tutorial-periods/{tutorialPeriodId}/course-registrations/{courseCode}/students', [DepartmentTutorialRegistrationController::class, 'students']);
         Route::get('/department/tutorial-periods/{tutorialPeriodId}/classes', [DepartmentTutorialClassController::class, 'index']);
+        Route::get('/department/tutorial-periods/{tutorialPeriodId}/weekly-timetable', [DepartmentTutorialClassController::class, 'weeklyTimetable']);
         Route::post('/department/tutorial-periods/{tutorialPeriodId}/classes', [DepartmentTutorialClassController::class, 'store']);
         Route::put('/department/classes/{classId}', [DepartmentTutorialClassController::class, 'update']);
         Route::patch('/department/classes/{classId}/cancel', [DepartmentTutorialClassController::class, 'cancel']);
         Route::patch('/department/classes/{classId}/restore', [DepartmentTutorialClassController::class, 'restore']);
+        Route::patch('/department/classes/{classId}/assign-lecturer', [DepartmentTutorialClassController::class, 'assignLecturer']);
+        Route::get('/department/classes/{classId}/schedules', [DepartmentTutorialClassController::class, 'schedules']);
+        Route::post('/department/classes/{classId}/schedules', [DepartmentTutorialClassController::class, 'storeSchedule']);
+        Route::delete('/department/classes/{classId}/schedules/{scheduleId}', [DepartmentTutorialClassController::class, 'destroySchedule']);
         Route::get('/student/tutorial-periods/{tutorialPeriodId}/courses', [StudentTutorialPeriodCourseController::class, 'index']);
         Route::get('/student/tutorial-periods/{tutorialPeriodId}/registration-info', [StudentTutorialRegistrationInfoController::class, 'show']);
         Route::post('/student/tutorial-periods/{tutorialPeriodId}/registrations', [StudentTutorialRegistrationController::class, 'store']);

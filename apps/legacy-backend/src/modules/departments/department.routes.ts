@@ -15,5 +15,9 @@ departmentRouter.get(
   validate(departmentQuerySchema),
   departmentController.getAllDepartments,
 );
+departmentRouter.get(
+  '/:departmentId/lecturers',
+  departmentController.getLecturersByDepartment,
+);
 
 export default departmentRouter;
