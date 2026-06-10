@@ -2,168 +2,94 @@
 
 namespace App\Services\External;
 
-use Illuminate\Http\Client\RequestException;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
-use RuntimeException;
+use App\Contracts\Legacy\LegacyApiClient;
+use App\Services\External\Adapters\LegacyImportedUserAdapter;
+use App\Services\External\Adapters\LegacyLecturerAdapter;
+use App\Services\External\Adapters\LegacyPeriodAdapter;
+use App\Services\External\Adapters\LegacyRoomAdapter;
+use App\Services\External\Adapters\LegacyStudentCourseAdapter;
+use App\Services\External\Adapters\LegacyStudentInfoAdapter;
 
-class LegacyApiService
+class LegacyApiService implements LegacyApiClient
 {
     private const LIMIT = 100;
-    private const TIMEOUT_SECONDS = 5;
-    private const RETRY_TIMES = 3;
-    private const RETRY_DELAY_MS = 200;
+
+    public function __construct(
+        private LegacyHttpClient $httpClient,
+        private LegacyPeriodAdapter $periodAdapter,
+        private LegacyStudentCourseAdapter $studentCourseAdapter,
+        private LegacyStudentInfoAdapter $studentInfoAdapter,
+        private LegacyLecturerAdapter $lecturerAdapter,
+        private LegacyRoomAdapter $roomAdapter,
+        private LegacyImportedUserAdapter $importedUserAdapter,
+    ) {}
 
     public function fetchLegacyPeriods(): array
     {
-        $payload = $this->request('/legacy/periods');
-
-        $periods = [];
-
-        foreach ($payload as $period) {
-            if (empty($period['id'])) {
-                continue;
-            }
-
-            $periods[] = [
-                'id' => (int) $period['id'],
-                'name' => (string) ($period['name'] ?? ''),
-            ];
-        }
-
-        return $periods;
+        return $this->periodAdapter->adaptMany(
+            $this->httpClient->getCollection('/legacy/periods')
+        );
     }
 
     public function fetchStudentCoursesByLegacyStudentId(int $studentId, int $periodId): array
     {
-        $payload = $this->request("/legacy/students/by-id/{$studentId}/periods/{$periodId}/courses");
-
-        return $this->mapStudentCourses($payload);
+        return $this->studentCourseAdapter->adaptMany(
+            $this->httpClient->getCollection("/legacy/students/by-id/{$studentId}/periods/{$periodId}/courses")
+        );
     }
 
     public function fetchStudentCoursesByStudentCode(string $studentCode, int $periodId): array
     {
         $encodedStudentCode = rawurlencode($studentCode);
-        $payload = $this->request("/legacy/students/by-code/{$encodedStudentCode}/periods/{$periodId}/courses");
 
-        return $this->mapStudentCourses($payload);
+        return $this->studentCourseAdapter->adaptMany(
+            $this->httpClient->getCollection("/legacy/students/by-code/{$encodedStudentCode}/periods/{$periodId}/courses")
+        );
     }
 
     public function fetchStudentInfoByLegacyStudentId(int $studentId): ?array
     {
-        $payload = $this->requestOptional("/legacy/students/by-id/{$studentId}");
-
-        return $this->mapStudentInfo($payload);
+        return $this->studentInfoAdapter->adapt(
+            $this->httpClient->getOptionalResource("/legacy/students/by-id/{$studentId}")
+        );
     }
 
     public function fetchStudentInfoByStudentCode(string $studentCode): ?array
     {
         $encodedStudentCode = rawurlencode($studentCode);
-        $payload = $this->requestOptional("/legacy/students/by-code/{$encodedStudentCode}");
 
-        return $this->mapStudentInfo($payload);
+        return $this->studentInfoAdapter->adapt(
+            $this->httpClient->getOptionalResource("/legacy/students/by-code/{$encodedStudentCode}")
+        );
     }
 
     public function fetchAllStudents(): array
     {
-        return $this->fetchAll('/students', function (array $student): ?array {
-            if (
-                empty($student['id']) ||
-                empty($student['studentCode'])
-            ) {
-                return null;
-            }
-
-            return [
-                'legacy_id' => (int) $student['id'],
-                'username' => (string) $student['studentCode'],
-                'date_of_birth' => $student['dateOfBirth'] ?? null,
-            ];
-        });
+        return $this->fetchAll('/students', fn (array $student): ?array => $this->importedUserAdapter->adaptStudent($student));
     }
 
     public function fetchAllLecturers(): array
     {
-        return $this->fetchAll('/lecturers', function (array $lecturer): ?array {
-            if (
-                empty($lecturer['id']) ||
-                empty($lecturer['lecturerCode'])
-            ) {
-                return null;
-            }
-
-            return [
-                'legacy_id' => (int) $lecturer['id'],
-                'username' => (string) $lecturer['lecturerCode'],
-                'code' => (string) $lecturer['lecturerCode'],
-                'name' => trim((string) ($lecturer['lecturerName'] ?? $lecturer['lecturerCode'] ?? '')),
-                'date_of_birth' => $lecturer['dateOfBirth'] ?? null,
-            ];
-        });
+        return $this->fetchAll('/lecturers', fn (array $lecturer): ?array => $this->lecturerAdapter->adaptForImport($lecturer));
     }
 
     public function fetchLecturersByDepartment(int $departmentId): array
     {
-        $payload = $this->request("/legacy/departments/{$departmentId}/lecturers");
-        if (!is_array($payload)) {
-            return [];
-        }
-
-        $lecturers = [];
-
-        foreach ($payload as $lecturer) {
-            if (empty($lecturer['id']) || empty($lecturer['code'])) {
-                continue;
-            }
-
-            $lecturers[] = [
-                'id' => (int) $lecturer['id'],
-                'code' => (string) $lecturer['code'],
-                'fullName' => trim((string) ($lecturer['fullName'] ?? $lecturer['code'] ?? '')),
-                'departmentName' => (string) ($lecturer['departmentName'] ?? ''),
-            ];
-        }
-
-        return $lecturers;
+        return $this->lecturerAdapter->adaptManyForDepartment(
+            $this->httpClient->getCollection("/legacy/departments/{$departmentId}/lecturers")
+        );
     }
 
     public function fetchRooms(): array
     {
-        $payload = $this->request('/legacy/rooms');
-        if (!is_array($payload)) {
-            return [];
-        }
-
-        $rooms = [];
-
-        foreach ($payload as $room) {
-            if (empty($room['id']) || empty($room['code']) || empty($room['name'])) {
-                continue;
-            }
-
-            $rooms[] = [
-                'id' => (int) $room['id'],
-                'code' => (string) $room['code'],
-                'name' => (string) $room['name'],
-                'capacity' => (int) ($room['capacity'] ?? 0),
-            ];
-        }
-
-        return $rooms;
+        return $this->roomAdapter->adaptMany(
+            $this->httpClient->getCollection('/legacy/rooms')
+        );
     }
 
     public function fetchAllDepartments(): array
     {
-        return $this->fetchAll('/legacy/departments', function (array $department): ?array {
-            if (empty($department['id'])) {
-                return null;
-            }
-
-            return [
-                'legacy_id' => (int) $department['id'],
-                'username' => 'bm' . $department['id'],
-            ];
-        });
+        return $this->fetchAll('/legacy/departments', fn (array $department): ?array => $this->importedUserAdapter->adaptDepartment($department));
     }
 
     /**
@@ -176,7 +102,7 @@ class LegacyApiService
         $allItems = [];
 
         do {
-            $payload = $this->requestPage($endpoint, $page, self::LIMIT);
+            $payload = $this->httpClient->getPage($endpoint, $page, self::LIMIT);
 
             foreach ($payload['data'] as $item) {
                 $mapped = $mapper($item);
@@ -190,175 +116,5 @@ class LegacyApiService
         } while ($page <= $payload['meta']['lastPage']);
 
         return $allItems;
-    }
-
-    /**
-     * @return array<int, array<string, mixed>>
-     */
-    private function request(string $endpoint): array
-    {
-        try {
-            $response = Http::legacy()
-                ->timeout(self::TIMEOUT_SECONDS)
-                ->retry(self::RETRY_TIMES, self::RETRY_DELAY_MS)
-                ->get($endpoint)
-                ->throw();
-
-            $payload = $response->json();
-
-            if (!is_array($payload)) {
-                return [];
-            }
-
-            return is_array($payload['data'] ?? null) ? $payload['data'] : [];
-        } catch (RequestException $exception) {
-            if ($exception->response?->status() === 404) {
-                return [];
-            }
-
-            Log::error('Legacy API request failed', [
-                'endpoint' => $endpoint,
-                'status' => $exception->response?->status(),
-                'error' => $exception->getMessage(),
-            ]);
-
-            throw new RuntimeException('Failed to fetch data from legacy service', 0, $exception);
-        } catch (\Throwable $exception) {
-            Log::error('Legacy API transport failure', [
-                'endpoint' => $endpoint,
-                'error' => $exception->getMessage(),
-            ]);
-
-            throw new RuntimeException('Legacy service is unavailable', 0, $exception);
-        }
-    }
-
-    /**
-     * @param  array<int, array<string, mixed>>  $payload
-     * @return array<int, array{courseCode:string,courseName:string,credits:int}>
-     */
-    private function mapStudentCourses(array $payload): array
-    {
-        $courses = [];
-
-        foreach ($payload as $course) {
-            if (
-                empty($course['courseCode']) ||
-                empty($course['courseName'])
-            ) {
-                continue;
-            }
-
-            $courses[] = [
-                'courseCode' => (string) $course['courseCode'],
-                'courseName' => (string) $course['courseName'],
-                'credits' => (int) ($course['credits'] ?? 0),
-            ];
-        }
-
-        return $courses;
-    }
-
-    /**
-     * @param  array<string, mixed>|null  $payload
-     * @return array{studentCode:string,lastName:string,firstName:string,fullName:string}|null
-     */
-    private function mapStudentInfo(?array $payload): ?array
-    {
-        if (!is_array($payload) || empty($payload['studentCode'])) {
-            return null;
-        }
-
-        return [
-            'studentCode' => (string) $payload['studentCode'],
-            'lastName' => (string) ($payload['lastName'] ?? ''),
-            'firstName' => (string) ($payload['firstName'] ?? ''),
-            'fullName' => (string) ($payload['fullName'] ?? ''),
-        ];
-    }
-
-    /**
-     * @return array{data: array<int, array<string, mixed>>, meta: array{lastPage: int}}
-     */
-    private function requestPage(string $endpoint, int $page, int $limit): array
-    {
-        try {
-            $response = Http::legacy()
-                ->timeout(self::TIMEOUT_SECONDS)
-                ->retry(self::RETRY_TIMES, self::RETRY_DELAY_MS)
-                ->get($endpoint, [
-                    'page' => $page,
-                    'limit' => $limit,
-                ])
-                ->throw();
-
-            $payload = $response->json();
-
-            return [
-                'data' => is_array($payload['data'] ?? null) ? $payload['data'] : [],
-                'meta' => [
-                    'lastPage' => max((int) ($payload['meta']['lastPage'] ?? 1), 1),
-                ],
-            ];
-        } catch (RequestException $exception) {
-            Log::error('Legacy API request failed', [
-                'endpoint' => $endpoint,
-                'page' => $page,
-                'limit' => $limit,
-                'status' => $exception->response?->status(),
-                'error' => $exception->getMessage(),
-            ]);
-
-            throw new RuntimeException('Failed to fetch data from legacy service', 0, $exception);
-        } catch (\Throwable $exception) {
-            Log::error('Legacy API transport failure', [
-                'endpoint' => $endpoint,
-                'page' => $page,
-                'limit' => $limit,
-                'error' => $exception->getMessage(),
-            ]);
-
-            throw new RuntimeException('Legacy service is unavailable', 0, $exception);
-        }
-    }
-
-    /**
-     * @return array<string, mixed>|null
-     */
-    private function requestOptional(string $endpoint): ?array
-    {
-        try {
-            $response = Http::legacy()
-                ->timeout(self::TIMEOUT_SECONDS)
-                ->retry(self::RETRY_TIMES, self::RETRY_DELAY_MS, throw: false)
-                ->get($endpoint);
-
-            if ($response->status() === 404) {
-                return null;
-            }
-
-            if ($response->failed()) {
-                throw new RequestException($response);
-            }
-
-            $payload = $response->json();
-
-            return is_array($payload['data'] ?? null) ? $payload['data'] : null;
-        } catch (RequestException $exception) {
-            Log::error('Legacy API request failed', [
-                'endpoint' => $endpoint,
-                'status' => $exception->response?->status(),
-                'error' => $exception->getMessage(),
-            ]);
-
-            throw new RuntimeException('Failed to fetch data from legacy service', 0, $exception);
-        } catch (\Throwable $exception) {
-            Log::error('Legacy API transport failure', [
-                'endpoint' => $endpoint,
-                'error' => $exception->getMessage(),
-            ]);
-
-            throw new RuntimeException('Legacy service is unavailable', 0, $exception);
-        }
     }
 }

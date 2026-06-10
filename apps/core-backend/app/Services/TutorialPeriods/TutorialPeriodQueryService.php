@@ -4,15 +4,13 @@ namespace App\Services\TutorialPeriods;
 
 use App\Enums\TutorialPeriodStatus;
 use App\Models\TutorialPeriod;
-use App\Traits\PaginationHelper;
+use App\Services\Support\AbstractPaginatedQueryService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
-class TutorialPeriodQueryService
+class TutorialPeriodQueryService extends AbstractPaginatedQueryService
 {
-    use PaginationHelper;
-
     /**
      * @var list<string>
      */
@@ -33,38 +31,33 @@ class TutorialPeriodQueryService
         private TutorialPeriodAcademicPeriodResolver $academicPeriodResolver
     ) {}
 
-    public function getAll(array $filters): array
+    protected function newQuery(): Builder
     {
-        $sortBy = $this->resolveSortBy($filters['sort_column'] ?? null);
-        $sortOrder = $this->resolveSortOrder($filters['sort_order'] ?? null);
-        $page = max((int) ($filters['page'] ?? 1), 1);
-        $limit = max((int) ($filters['limit'] ?? 10), 1);
-        $search = trim((string) ($filters['search'] ?? ''));
+        return TutorialPeriod::query()->with('createdBy');
+    }
+
+    protected function allowedSortColumns(): array
+    {
+        return $this->sortableColumns;
+    }
+
+    protected function applySearch(Builder $query, string $search): void
+    {
+        $query->where('title', 'like', '%' . $search . '%');
+    }
+
+    protected function applyFilters(Builder $query, array $filters): void
+    {
         $status = $this->resolveStatusFilter($filters['status'] ?? null);
-
-        $query = TutorialPeriod::query()
-            ->with('createdBy')
-            ->orderBy($sortBy, $sortOrder);
-
-        if ($search !== '') {
-            $query->where('title', 'like', '%' . $search . '%');
-        }
 
         if ($status !== null) {
             $this->applyStatusFilter($query, $status);
         }
+    }
 
-        $paginator = $query->paginate(
-            $limit,
-            ['*'],
-            'page',
-            $page
-        );
-
-        $result = $this->formatPaginator($paginator);
+    protected function afterPaginate(array &$result): void
+    {
         $this->academicPeriodResolver->enrichCollection($result['items']);
-
-        return $result;
     }
 
     public function getById(int $id): TutorialPeriod
@@ -87,22 +80,6 @@ class TutorialPeriodQueryService
         } catch (ModelNotFoundException $exception) {
             throw new NotFoundHttpException('Tutorial period not found', $exception);
         }
-    }
-
-    private function resolveSortBy(?string $sortBy): string
-    {
-        return in_array($sortBy, $this->sortableColumns, true)
-            ? $sortBy
-            : 'id';
-    }
-
-    private function resolveSortOrder(?string $sortOrder): string
-    {
-        $normalizedSortOrder = strtolower((string) $sortOrder);
-
-        return in_array($normalizedSortOrder, ['asc', 'desc'], true)
-            ? $normalizedSortOrder
-            : 'asc';
     }
 
     private function resolveStatusFilter(?string $status): ?string

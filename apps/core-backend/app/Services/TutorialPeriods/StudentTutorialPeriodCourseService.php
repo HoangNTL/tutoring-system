@@ -2,11 +2,11 @@
 
 namespace App\Services\TutorialPeriods;
 
+use App\Contracts\Legacy\LegacyApiClient;
 use App\Enums\TutorialPeriodStatus;
 use App\Enums\UserRole;
 use App\Models\TutorialPeriod;
 use App\Models\User;
-use App\Services\External\LegacyApiService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -15,7 +15,7 @@ use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 class StudentTutorialPeriodCourseService
 {
     public function __construct(
-        private LegacyApiService $legacyApiService
+        private LegacyApiClient $legacyApiService
     ) {}
 
     /**

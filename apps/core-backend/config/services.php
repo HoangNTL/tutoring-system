@@ -31,6 +31,13 @@ return [
     'legacy_service' => [
         'base_url' => rtrim(env('LEGACY_BACKEND_URL', 'http://localhost:5000'), '/') . '/api/v1',
         'api_key' => env('LEGACY_BACKEND_API_KEY'),
+        'cache' => [
+            'periods_ttl' => 300,
+            'rooms_ttl' => 300,
+            'lecturers_ttl' => 300,
+            'courses_ttl' => 180,
+            'imports_ttl' => 600,
+        ],
     ],
 
 ];

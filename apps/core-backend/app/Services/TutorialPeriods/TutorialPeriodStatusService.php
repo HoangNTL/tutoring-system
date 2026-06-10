@@ -4,6 +4,7 @@ namespace App\Services\TutorialPeriods;
 
 use App\Enums\TutorialPeriodStatus;
 use App\Models\TutorialPeriod;
+use App\States\TutorialPeriods\TutorialPeriodStateFactory;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
@@ -14,9 +15,13 @@ class TutorialPeriodStatusService
 {
     private const DEFAULT_MINIMUM_ASSIGNMENT_DAYS = 1;
 
+    public function __construct(
+        private TutorialPeriodStateFactory $stateFactory
+    ) {}
+
     public function ensureDraftStatus(TutorialPeriod $tutorialPeriod, string $action): void
     {
-        if ($tutorialPeriod->status !== TutorialPeriodStatus::DRAFT) {
+        if (!$this->stateFactory->forTutorialPeriod($tutorialPeriod)->canEdit()) {
             throw new ConflictHttpException("Only tutorial periods in DRAFT status can be {$action}");
         }
     }
@@ -67,7 +72,7 @@ class TutorialPeriodStatusService
         return DB::transaction(function () use ($tutorialPeriod): TutorialPeriod {
             $tutorialPeriod = $this->findTutorialPeriodOrFail($tutorialPeriod->id, ['createdBy'], true);
 
-            if (in_array($tutorialPeriod->status, [TutorialPeriodStatus::CLOSED, TutorialPeriodStatus::CANCELLED], true)) {
+            if (!$this->stateFactory->forTutorialPeriod($tutorialPeriod)->canCancel()) {
                 throw new ConflictHttpException('This tutorial period cannot be cancelled');
             }
 
@@ -140,19 +145,7 @@ class TutorialPeriodStatusService
      */
     public function getPermissions(TutorialPeriodStatus $status): array
     {
-        return [
-            'canEdit' => $status === TutorialPeriodStatus::DRAFT,
-            'canDelete' => $status === TutorialPeriodStatus::DRAFT,
-            'canOpen' => $status === TutorialPeriodStatus::DRAFT,
-            'canAssigning' => $status === TutorialPeriodStatus::OPEN,
-            'canOngoing' => $status === TutorialPeriodStatus::ASSIGNING,
-            'canClose' => $status === TutorialPeriodStatus::ONGOING,
-            'canCancel' => !in_array(
-                $status,
-                [TutorialPeriodStatus::CLOSED, TutorialPeriodStatus::CANCELLED],
-                true
-            ),
-        ];
+        return $this->stateFactory->forStatus($status)->permissions();
     }
 
     private function transition(
@@ -165,7 +158,9 @@ class TutorialPeriodStatusService
         return DB::transaction(function () use ($tutorialPeriod, $from, $to, $action, $validateDates): TutorialPeriod {
             $tutorialPeriod = $this->findTutorialPeriodOrFail($tutorialPeriod->id, ['createdBy'], true);
 
-            if ($tutorialPeriod->status !== $from) {
+            $state = $this->stateFactory->forTutorialPeriod($tutorialPeriod);
+
+            if ($tutorialPeriod->status !== $from || !$state->allowsTransitionTo($to)) {
                 throw new ConflictHttpException(sprintf(
                     'Only tutorial periods in %s status can be %s',
                     $from->name,

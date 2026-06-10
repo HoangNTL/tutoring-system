@@ -48,19 +48,8 @@ class ListUsersRequest extends BaseQueryRequest
         return 'createdAt';
     }
 
-    protected function afterPrepareForValidation(): void
+    protected function defaultSortOrder(): string
     {
-        $defaultSortBy = $this->defaultSortBy();
-        $sortBy = (string) $this->input('sort_by', $defaultSortBy);
-
-        $this->merge([
-            'page' => $this->has('page') ? (int) $this->input('page') : 1,
-            'limit' => $this->has('limit') ? (int) $this->input('limit') : 10,
-            'sort_order' => strtolower((string) $this->input('sort_order', 'desc')),
-            'sort_by' => $sortBy,
-            'sort_column' => $this->sortableFields()[$sortBy]
-                ?? $this->sortableFields()[$defaultSortBy]
-                ?? 'created_at',
-        ]);
+        return 'desc';
     }
 }

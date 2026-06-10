@@ -2,11 +2,11 @@
 
 namespace App\Services\TutorialPeriods;
 
+use App\Contracts\Legacy\LegacyApiClient;
 use App\Enums\TutorialPeriodStatus;
 use App\Enums\TutorialRegistrationStatus;
 use App\Models\TutorialPeriod;
 use App\Models\TutorialRegistration;
-use App\Services\External\LegacyApiService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Throwable;
@@ -16,7 +16,7 @@ class DepartmentTutorialRegistrationService
 {
     public function __construct(
         private TutorialPeriodAcademicPeriodResolver $academicPeriodResolver,
-        private LegacyApiService $legacyApiService
+        private LegacyApiClient $legacyApiService
     ) {}
 
     /**

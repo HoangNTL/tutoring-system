@@ -34,7 +34,7 @@ class BaseQueryRequest extends BaseFormRequest
         $this->merge([
             'page' => $this->has('page') ? (int) $this->input('page') : 1,
             'limit' => $this->has('limit') ? (int) $this->input('limit') : 10,
-            'sort_order' => strtolower((string) $this->input('sort_order', 'asc')),
+            'sort_order' => strtolower((string) $this->input('sort_order', $this->defaultSortOrder())),
             'sort_by' => $sortBy,
             'sort_column' => $this->resolveSortColumn($sortBy),
         ]);
@@ -53,6 +53,11 @@ class BaseQueryRequest extends BaseFormRequest
     protected function defaultSortBy(): string
     {
         return 'id';
+    }
+
+    protected function defaultSortOrder(): string
+    {
+        return 'asc';
     }
 
     private function resolveSortColumn(string $sortBy): string

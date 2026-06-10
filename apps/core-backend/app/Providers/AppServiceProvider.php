@@ -2,11 +2,14 @@
 
 namespace App\Providers;
 
+use App\Contracts\Legacy\LegacyApiClient;
+use App\Services\External\CachedLegacyApiProxy;
+use App\Services\External\LegacyApiService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -15,7 +18,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(LegacyApiClient::class, function ($app): LegacyApiClient {
+            return new CachedLegacyApiProxy(
+                $app->make(LegacyApiService::class)
+            );
+        });
     }
 
     /**
