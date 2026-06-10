@@ -11,12 +11,14 @@ import {
 
 type RegisteredCoursesTableProps = {
   courses: StudentTutorialCourse[]
+  canCancel?: boolean
   cancellingCourseCode?: string | null
   onCancel: (courseCode: string) => void
 }
 
 export function RegisteredCoursesTable({
   courses,
+  canCancel = true,
   cancellingCourseCode = null,
   onCancel,
 }: RegisteredCoursesTableProps) {
@@ -51,10 +53,14 @@ export function RegisteredCoursesTable({
                   size="sm"
                   variant="outline"
                   className="h-8 rounded-lg px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
-                  disabled={cancellingCourseCode === course.courseCode}
+                  disabled={!canCancel || cancellingCourseCode === course.courseCode}
                   onClick={() => onCancel(course.courseCode)}
                 >
-                  {cancellingCourseCode === course.courseCode ? 'Đang hủy...' : 'Hủy'}
+                  {!canCancel
+                    ? 'Không thể hủy'
+                    : cancellingCourseCode === course.courseCode
+                      ? 'Đang hủy...'
+                      : 'Hủy'}
                 </Button>
               </TableCell>
             </TableRow>

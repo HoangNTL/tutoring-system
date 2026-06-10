@@ -44,7 +44,7 @@ class StudentTutorialPeriodListingTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_student_can_access_open_tutorial_periods(): void
+    public function test_student_can_access_visible_tutorial_periods(): void
     {
         $student = User::factory()->create([
             'role' => UserRole::STUDENT,
@@ -55,6 +55,12 @@ class StudentTutorialPeriodListingTest extends TestCase
             'Đợt phụ đạo HK1',
             296,
             '2026-05-18 08:00:00'
+        );
+        $assigningPeriod = $this->createTutorialPeriod(
+            TutorialPeriodStatus::ASSIGNING,
+            'Đợt phụ đạo HK2',
+            297,
+            '2026-05-17 08:00:00'
         );
 
         $response = $this
@@ -73,9 +79,19 @@ class StudentTutorialPeriodListingTest extends TestCase
                     'name' => 'HK1 2024-2025',
                 ],
             ]);
+
+        $response->assertJsonFragment([
+            'id' => $assigningPeriod->id,
+            'title' => 'Đợt phụ đạo HK2',
+            'status' => TutorialPeriodStatus::ASSIGNING->name,
+            'academicPeriod' => [
+                'id' => 297,
+                'name' => 'HK2 2024-2025',
+            ],
+        ]);
     }
 
-    public function test_student_only_sees_open_periods(): void
+    public function test_student_only_sees_open_assigning_ongoing_and_closed_periods(): void
     {
         $student = User::factory()->create([
             'role' => UserRole::STUDENT,
@@ -93,11 +109,29 @@ class StudentTutorialPeriodListingTest extends TestCase
             297,
             '2026-05-21 08:00:00'
         );
+        $assigningPeriod = $this->createTutorialPeriod(
+            TutorialPeriodStatus::ASSIGNING,
+            'Assigning Period',
+            297,
+            '2026-05-19 08:00:00'
+        );
+        $ongoingPeriod = $this->createTutorialPeriod(
+            TutorialPeriodStatus::ONGOING,
+            'Ongoing Period',
+            296,
+            '2026-05-18 08:00:00'
+        );
         $closedPeriod = $this->createTutorialPeriod(
             TutorialPeriodStatus::CLOSED,
             'Closed Period',
             296,
             '2026-05-22 08:00:00'
+        );
+        $cancelledPeriod = $this->createTutorialPeriod(
+            TutorialPeriodStatus::CANCELLED,
+            'Cancelled Period',
+            297,
+            '2026-05-23 08:00:00'
         );
 
         $response = $this
@@ -106,19 +140,21 @@ class StudentTutorialPeriodListingTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.id', $openPeriod->id);
+            ->assertJsonCount(4, 'data');
 
         $returnedIds = collect($response->json('data'))
             ->pluck('id')
             ->all();
 
-        $this->assertSame([$openPeriod->id], $returnedIds);
+        $this->assertContains($openPeriod->id, $returnedIds);
+        $this->assertContains($assigningPeriod->id, $returnedIds);
+        $this->assertContains($ongoingPeriod->id, $returnedIds);
+        $this->assertContains($closedPeriod->id, $returnedIds);
         $this->assertNotContains($draftPeriod->id, $returnedIds);
-        $this->assertNotContains($closedPeriod->id, $returnedIds);
+        $this->assertNotContains($cancelledPeriod->id, $returnedIds);
     }
 
-    public function test_response_does_not_include_admin_only_fields(): void
+    public function test_response_exposes_student_permissions_but_not_admin_only_fields(): void
     {
         $student = User::factory()->create([
             'role' => UserRole::STUDENT,
@@ -139,9 +175,12 @@ class StudentTutorialPeriodListingTest extends TestCase
 
         foreach ($response->json('data') as $item) {
             $this->assertArrayNotHasKey('createdBy', $item);
-            $this->assertArrayNotHasKey('permissions', $item);
             $this->assertArrayNotHasKey('createdAt', $item);
             $this->assertArrayNotHasKey('updatedAt', $item);
+            $this->assertSame(
+                ['canViewRegistrationInfo', 'canRegister', 'canCancelRegistration', 'canViewSchedule'],
+                array_keys($item['permissions'])
+            );
         }
     }
 

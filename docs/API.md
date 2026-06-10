@@ -405,6 +405,20 @@ Behavior:
 - `CLOSED` and `CANCELLED` are terminal historical records.
 - Visibility for student, department, and schedule flows still depends on the stored status value.
 
+## Student Tutorial Registration API
+
+Student tutorial registration uses separate rules for visibility and mutation:
+
+- Student can list and view tutorial registration information for statuses `OPEN`, `ASSIGNING`, `ONGOING`, and `CLOSED`.
+- Student cannot view `DRAFT` or `CANCELLED` tutorial periods from the active registration flow.
+- Student can register or cancel registration only when the tutorial period status is `OPEN`.
+- Registration info responses expose:
+  - `permissions.canViewRegistrationInfo`
+  - `permissions.canRegister`
+  - `permissions.canCancelRegistration`
+  - `permissions.canViewSchedule`
+- For `ASSIGNING`, `ONGOING`, and `CLOSED`, the registration info endpoint returns registered courses as read-only history and does not allow registration changes.
+
 ## Internal Legacy API
 
 The Express service is not a browser-facing auth API. It is used by Laravel for legacy data reads.

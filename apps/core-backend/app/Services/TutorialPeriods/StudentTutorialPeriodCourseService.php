@@ -27,7 +27,8 @@ class StudentTutorialPeriodCourseService
             throw new AccessDeniedHttpException('This action is unauthorized.');
         }
 
-        $tutorialPeriod = $this->findOpenTutorialPeriodOrFail($tutorialPeriodId);
+        $tutorialPeriod = $this->findTutorialPeriodOrFail($tutorialPeriodId);
+        $this->ensureOpenStatus($tutorialPeriod);
         $legacyPeriodId = $tutorialPeriod->academic_period_id;
 
         if ($legacyPeriodId === null) {
@@ -57,15 +58,21 @@ class StudentTutorialPeriodCourseService
         );
     }
 
-    private function findOpenTutorialPeriodOrFail(int $tutorialPeriodId): TutorialPeriod
+    private function findTutorialPeriodOrFail(int $tutorialPeriodId): TutorialPeriod
     {
         try {
             return TutorialPeriod::query()
                 ->whereKey($tutorialPeriodId)
-                ->where('status', TutorialPeriodStatus::OPEN)
                 ->firstOrFail();
         } catch (ModelNotFoundException $exception) {
             throw new NotFoundHttpException('Tutorial period not found', $exception);
+        }
+    }
+
+    private function ensureOpenStatus(TutorialPeriod $tutorialPeriod): void
+    {
+        if ($tutorialPeriod->status !== TutorialPeriodStatus::OPEN) {
+            throw new NotFoundHttpException('Tutorial period not found');
         }
     }
 }

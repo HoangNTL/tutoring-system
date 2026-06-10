@@ -43,6 +43,7 @@ export default function TutorialRegistrationDetailPage() {
 
   const registrationInfo = registrationInfoQuery.data?.data
   const tutorialPeriod = registrationInfo?.tutorialPeriod
+  const permissions = registrationInfo?.permissions
   const isInitialLoading = registrationInfoQuery.isPending && !registrationInfoQuery.data
   const subtitle = tutorialPeriod
     ? [
@@ -61,6 +62,10 @@ export default function TutorialRegistrationDetailPage() {
       ),
     [registrationInfo?.availableCourses, registeredCourseCodes]
   )
+  const isRegistrationClosed =
+    !!tutorialPeriod &&
+    tutorialPeriod.status !== 'OPEN' &&
+    (permissions?.canViewRegistrationInfo ?? false)
 
   const handleRegister = async (courseCode: string) => {
     if (!Number.isFinite(tutorialPeriodId)) {
@@ -140,20 +145,35 @@ export default function TutorialRegistrationDetailPage() {
                 </div>
               ) : null}
 
-              <div className="border-t border-slate-200 pt-4">
-                <div className="mb-3">
-                  <h3 className="text-lg font-semibold text-slate-950">
-                    Có thể đăng ký
-                  </h3>
+              {isRegistrationClosed ? (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                  Đợt phụ đạo đã kết thúc giai đoạn đăng ký. Bạn chỉ có thể xem thông tin đã đăng ký.
                 </div>
-                <AvailableCoursesTable
-                  courses={availableCourses}
-                  registeringCourseCode={registerMutation.isPending ? registerMutation.variables?.courseCode ?? null : null}
-                  onRegister={(courseCode) => {
-                    void handleRegister(courseCode)
-                  }}
-                />
-              </div>
+              ) : null}
+
+              {permissions?.canViewSchedule ? (
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                  Lịch học của bạn đã có sẵn trong hệ thống. Bạn có thể xem ở trang lịch học.
+                </div>
+              ) : null}
+
+              {permissions?.canRegister ? (
+                <div className="border-t border-slate-200 pt-4">
+                  <div className="mb-3">
+                    <h3 className="text-lg font-semibold text-slate-950">
+                      Có thể đăng ký
+                    </h3>
+                  </div>
+                  <AvailableCoursesTable
+                    courses={availableCourses}
+                    canRegister={permissions.canRegister}
+                    registeringCourseCode={registerMutation.isPending ? registerMutation.variables?.courseCode ?? null : null}
+                    onRegister={(courseCode) => {
+                      void handleRegister(courseCode)
+                    }}
+                  />
+                </div>
+              ) : null}
 
               <div className="border-t border-slate-200 pt-4">
                 <div className="mb-3">
@@ -163,6 +183,7 @@ export default function TutorialRegistrationDetailPage() {
                 </div>
                 <RegisteredCoursesTable
                   courses={registrationInfo.registeredCourses}
+                  canCancel={permissions?.canCancelRegistration ?? false}
                   cancellingCourseCode={cancelMutation.isPending ? cancelMutation.variables?.courseCode ?? null : null}
                   onCancel={(courseCode) => {
                     const course = registrationInfo.registeredCourses.find(

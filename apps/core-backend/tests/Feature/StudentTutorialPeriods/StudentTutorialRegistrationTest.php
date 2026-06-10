@@ -206,7 +206,69 @@ class StudentTutorialRegistrationTest extends TestCase
             ->postJson("/api/v1/student/tutorial-periods/{$tutorialPeriod->id}/registrations", [
                 'courseCode' => 'INT123',
             ])
-            ->assertNotFound();
+            ->assertConflict();
+    }
+
+    public function test_student_cannot_register_in_assigning_or_ongoing_periods(): void
+    {
+        Http::fake();
+
+        $student = $this->createStudent(['student_id' => 88]);
+        $assigningPeriod = $this->createTutorialPeriod(TutorialPeriodStatus::ASSIGNING, 296);
+        $ongoingPeriod = $this->createTutorialPeriod(TutorialPeriodStatus::ONGOING, 296);
+
+        $this
+            ->actingAs($student, 'web')
+            ->postJson("/api/v1/student/tutorial-periods/{$assigningPeriod->id}/registrations", [
+                'courseCode' => 'INT123',
+            ])
+            ->assertConflict();
+
+        $this
+            ->actingAs($student, 'web')
+            ->postJson("/api/v1/student/tutorial-periods/{$ongoingPeriod->id}/registrations", [
+                'courseCode' => 'INT123',
+            ])
+            ->assertConflict();
+    }
+
+    public function test_student_cannot_cancel_registration_in_assigning_or_ongoing_periods(): void
+    {
+        Http::fake();
+
+        $student = $this->createStudent(['student_id' => 88]);
+        $assigningPeriod = $this->createTutorialPeriod(TutorialPeriodStatus::ASSIGNING, 296);
+        $ongoingPeriod = $this->createTutorialPeriod(TutorialPeriodStatus::ONGOING, 296);
+
+        TutorialRegistration::create([
+            'tutorial_period_id' => $assigningPeriod->id,
+            'user_id' => $student->id,
+            'course_code' => 'INT123',
+            'course_name' => 'Cấu trúc dữ liệu',
+            'credits' => 3,
+            'status' => TutorialRegistrationStatus::REGISTERED,
+            'registered_at' => now(),
+        ]);
+
+        TutorialRegistration::create([
+            'tutorial_period_id' => $ongoingPeriod->id,
+            'user_id' => $student->id,
+            'course_code' => 'INT456',
+            'course_name' => 'Giải tích',
+            'credits' => 2,
+            'status' => TutorialRegistrationStatus::REGISTERED,
+            'registered_at' => now(),
+        ]);
+
+        $this
+            ->actingAs($student, 'web')
+            ->deleteJson("/api/v1/student/tutorial-periods/{$assigningPeriod->id}/registrations/INT123")
+            ->assertConflict();
+
+        $this
+            ->actingAs($student, 'web')
+            ->deleteJson("/api/v1/student/tutorial-periods/{$ongoingPeriod->id}/registrations/INT456")
+            ->assertConflict();
     }
 
     public function test_registration_info_endpoint_returns_registered_courses_from_database(): void

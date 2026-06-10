@@ -3,7 +3,17 @@ import { Link } from 'react-router-dom'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { formatDate } from '@/shared/lib/date'
-import type { StudentTutorialPeriod } from '@/features/tutorial-registration/types/studentTutorialPeriod.types'
+import {
+  studentTutorialPeriodStatusLabels,
+  type StudentTutorialPeriod,
+} from '@/features/tutorial-registration/types/studentTutorialPeriod.types'
+
+const statusBadgeClassNames = {
+  OPEN: 'border-sky-200 bg-sky-100 text-sky-700',
+  ASSIGNING: 'border-amber-200 bg-amber-100 text-amber-700',
+  ONGOING: 'border-emerald-200 bg-emerald-100 text-emerald-700',
+  CLOSED: 'border-slate-300 bg-slate-200 text-slate-700',
+} as const
 
 type StudentTutorialPeriodCardProps = {
   tutorialPeriod: StudentTutorialPeriod
@@ -28,9 +38,9 @@ export function StudentTutorialPeriodCard({
 
         <Badge
           variant="outline"
-          className="w-fit shrink-0 border-sky-200 bg-sky-100 text-sky-700"
+          className={`w-fit shrink-0 ${statusBadgeClassNames[tutorialPeriod.status]}`}
         >
-          Đang mở đăng ký
+          {studentTutorialPeriodStatusLabels[tutorialPeriod.status]}
         </Badge>
       </div>
 

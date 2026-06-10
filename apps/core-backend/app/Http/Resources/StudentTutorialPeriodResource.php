@@ -25,6 +25,12 @@ class StudentTutorialPeriodResource extends JsonResource
             'studyStartAt' => $this->formatDateTime($this->study_start_at),
             'studyEndAt' => $this->formatDateTime($this->study_end_at),
             'status' => $this->status?->name,
+            'permissions' => [
+                'canViewRegistrationInfo' => (bool) data_get($this->resource, 'student_permissions.canViewRegistrationInfo', false),
+                'canRegister' => (bool) data_get($this->resource, 'student_permissions.canRegister', false),
+                'canCancelRegistration' => (bool) data_get($this->resource, 'student_permissions.canCancelRegistration', false),
+                'canViewSchedule' => (bool) data_get($this->resource, 'student_permissions.canViewSchedule', false),
+            ],
         ];
     }
 

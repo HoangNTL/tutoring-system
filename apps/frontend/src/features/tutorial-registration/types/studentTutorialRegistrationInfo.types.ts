@@ -1,3 +1,8 @@
+import type {
+  StudentTutorialPeriodStatus,
+  StudentTutorialRegistrationPermissions,
+} from '@/features/tutorial-registration/types/studentTutorialPeriod.types'
+
 export type StudentTutorialCourse = {
   courseCode: string
   courseName: string
@@ -13,11 +18,12 @@ export type StudentTutorialRegistrationSummary = {
     name: string
   } | null
   registrationEndAt: string | null
-  status: 'OPEN'
+  status: StudentTutorialPeriodStatus
 }
 
 export type StudentTutorialRegistrationInfo = {
   tutorialPeriod: StudentTutorialRegistrationSummary
+  permissions: StudentTutorialRegistrationPermissions
   availableCourses: StudentTutorialCourse[]
   registeredCourses: StudentTutorialCourse[]
 }

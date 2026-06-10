@@ -21,7 +21,7 @@ class StudentTutorialPeriodController extends Controller
             throw new AccessDeniedHttpException('This action is unauthorized.');
         }
 
-        $tutorialPeriods = $this->studentTutorialPeriodService->getOpenTutorialPeriods();
+        $tutorialPeriods = $this->studentTutorialPeriodService->getVisibleTutorialPeriods($request->user());
 
         return $this->success(
             StudentTutorialPeriodResource::collection($tutorialPeriods),

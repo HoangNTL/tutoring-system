@@ -24,7 +24,8 @@ class StudentTutorialRegistrationService
     public function register(User $user, int $tutorialPeriodId, string $courseCode): TutorialRegistration
     {
         $this->ensureStudent($user);
-        $tutorialPeriod = $this->findOpenTutorialPeriodOrFail($tutorialPeriodId);
+        $tutorialPeriod = $this->findTutorialPeriodOrFail($tutorialPeriodId);
+        $this->ensureRegistrationIsOpen($tutorialPeriod);
         $normalizedCourseCode = trim($courseCode);
 
         if ($normalizedCourseCode === '') {
@@ -78,7 +79,8 @@ class StudentTutorialRegistrationService
     public function cancel(User $user, int $tutorialPeriodId, string $courseCode): TutorialRegistration
     {
         $this->ensureStudent($user);
-        $this->findOpenTutorialPeriodOrFail($tutorialPeriodId);
+        $tutorialPeriod = $this->findTutorialPeriodOrFail($tutorialPeriodId);
+        $this->ensureRegistrationIsOpen($tutorialPeriod);
         $normalizedCourseCode = trim($courseCode);
 
         if ($normalizedCourseCode === '') {
@@ -114,15 +116,21 @@ class StudentTutorialRegistrationService
         }
     }
 
-    private function findOpenTutorialPeriodOrFail(int $tutorialPeriodId): TutorialPeriod
+    private function findTutorialPeriodOrFail(int $tutorialPeriodId): TutorialPeriod
     {
         try {
             return TutorialPeriod::query()
                 ->whereKey($tutorialPeriodId)
-                ->where('status', TutorialPeriodStatus::OPEN)
                 ->firstOrFail();
         } catch (ModelNotFoundException $exception) {
             throw new NotFoundHttpException('Tutorial period not found', $exception);
+        }
+    }
+
+    private function ensureRegistrationIsOpen(TutorialPeriod $tutorialPeriod): void
+    {
+        if ($tutorialPeriod->status !== TutorialPeriodStatus::OPEN) {
+            throw new ConflictHttpException('Chỉ có thể thay đổi đăng ký khi đợt phụ đạo đang mở đăng ký.');
         }
     }
 }

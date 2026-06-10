@@ -47,9 +47,9 @@ export default function TutorialRegistrationPage() {
               <EmptyMedia variant="icon" className="size-10 rounded-xl bg-slate-100 text-slate-600">
                 <NotebookPen className="size-5" />
               </EmptyMedia>
-              <EmptyTitle>Chưa có đợt mở đăng ký</EmptyTitle>
+              <EmptyTitle>Chưa có đợt phụ đạo khả dụng</EmptyTitle>
               <EmptyDescription className="max-w-md text-sm text-slate-500">
-                Hiện chưa có đợt phụ đạo nào đang mở đăng ký.
+                Hiện chưa có đợt phụ đạo nào để xem thông tin đăng ký.
               </EmptyDescription>
             </EmptyHeader>
           </Empty>

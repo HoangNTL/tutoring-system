@@ -24,6 +24,12 @@ class StudentTutorialRegistrationInfoResource extends JsonResource
                 'registrationEndAt' => $tutorialPeriod->registration_end_at?->format('Y-m-d H:i:s'),
                 'status' => $tutorialPeriod->status?->name,
             ],
+            'permissions' => [
+                'canViewRegistrationInfo' => (bool) ($this['permissions']['canViewRegistrationInfo'] ?? false),
+                'canRegister' => (bool) ($this['permissions']['canRegister'] ?? false),
+                'canCancelRegistration' => (bool) ($this['permissions']['canCancelRegistration'] ?? false),
+                'canViewSchedule' => (bool) ($this['permissions']['canViewSchedule'] ?? false),
+            ],
             'availableCourses' => collect($this['availableCourses'] ?? [])->map(
                 static fn (array $course): array => [
                     'courseCode' => (string) ($course['courseCode'] ?? ''),

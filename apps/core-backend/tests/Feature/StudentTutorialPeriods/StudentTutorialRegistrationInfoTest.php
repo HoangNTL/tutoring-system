@@ -2,9 +2,14 @@
 
 namespace Tests\Feature\StudentTutorialPeriods;
 
+use App\Enums\TutorialClassStatus;
 use App\Enums\TutorialPeriodStatus;
+use App\Enums\TutorialRegistrationStatus;
 use App\Enums\UserRole;
+use App\Models\TutorialClass;
+use App\Models\TutorialClassSchedule;
 use App\Models\TutorialPeriod;
+use App\Models\TutorialRegistration;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
@@ -80,13 +85,156 @@ class StudentTutorialRegistrationInfoTest extends TestCase
             ->assertJsonPath('data.tutorialPeriod.title', 'Open Period')
             ->assertJsonPath('data.tutorialPeriod.academicPeriod.id', 296)
             ->assertJsonPath('data.tutorialPeriod.status', TutorialPeriodStatus::OPEN->name)
+            ->assertJsonPath('data.permissions.canViewRegistrationInfo', true)
+            ->assertJsonPath('data.permissions.canRegister', true)
+            ->assertJsonPath('data.permissions.canCancelRegistration', true)
+            ->assertJsonPath('data.permissions.canViewSchedule', false)
             ->assertJsonPath('data.availableCourses.0.courseCode', 'INT123')
             ->assertJsonPath('data.registeredCourses', []);
     }
 
-    public function test_non_open_periods_are_blocked_before_querying_legacy(): void
+    public function test_assigning_period_returns_registered_courses_but_disables_registration_actions(): void
     {
-        Http::fake();
+        Http::fake(function (Request $request) {
+            if (str_contains($request->url(), '/legacy/periods')) {
+                return Http::response([
+                    'success' => true,
+                    'data' => [
+                        ['id' => 296, 'name' => 'HK2 2024-2025'],
+                    ],
+                ], 200);
+            }
+
+            return Http::response([
+                'success' => true,
+                'data' => [
+                    [
+                        'courseCode' => 'INT123',
+                        'courseName' => 'Cấu trúc dữ liệu',
+                        'credits' => 3,
+                    ],
+                ],
+            ], 200);
+        });
+
+        $student = User::factory()->create([
+            'role' => UserRole::STUDENT,
+            'student_id' => 88,
+            'username' => 'sv0001',
+        ]);
+        $tutorialPeriod = $this->createTutorialPeriod(TutorialPeriodStatus::ASSIGNING, 296);
+
+        TutorialRegistration::create([
+            'tutorial_period_id' => $tutorialPeriod->id,
+            'user_id' => $student->id,
+            'course_code' => 'INT123',
+            'course_name' => 'Cấu trúc dữ liệu',
+            'credits' => 3,
+            'status' => TutorialRegistrationStatus::REGISTERED,
+            'registered_at' => now(),
+        ]);
+
+        $this
+            ->actingAs($student, 'web')
+            ->getJson("/api/v1/student/tutorial-periods/{$tutorialPeriod->id}/registration-info")
+            ->assertOk()
+            ->assertJsonPath('data.tutorialPeriod.status', TutorialPeriodStatus::ASSIGNING->name)
+            ->assertJsonPath('data.permissions.canRegister', false)
+            ->assertJsonPath('data.permissions.canCancelRegistration', false)
+            ->assertJsonPath('data.permissions.canViewSchedule', false)
+            ->assertJsonPath('data.registeredCourses.0.courseCode', 'INT123')
+            ->assertJsonPath('data.availableCourses', []);
+
+        Http::assertNotSent(function (Request $request): bool {
+            return str_contains($request->url(), '/legacy/students/by-id/88/periods/296/courses');
+        });
+    }
+
+    public function test_ongoing_period_can_expose_schedule_visibility_when_schedule_exists(): void
+    {
+        Http::fake(function (Request $request) {
+            if (str_contains($request->url(), '/legacy/periods')) {
+                return Http::response([
+                    'success' => true,
+                    'data' => [
+                        ['id' => 296, 'name' => 'HK2 2024-2025'],
+                    ],
+                ], 200);
+            }
+
+            return Http::response([
+                'success' => true,
+                'data' => [],
+            ], 200);
+        });
+
+        $student = User::factory()->create([
+            'role' => UserRole::STUDENT,
+            'student_id' => 88,
+            'username' => 'sv0001',
+        ]);
+        $tutorialPeriod = $this->createTutorialPeriod(TutorialPeriodStatus::ONGOING, 296);
+
+        TutorialRegistration::create([
+            'tutorial_period_id' => $tutorialPeriod->id,
+            'user_id' => $student->id,
+            'course_code' => 'INT123',
+            'course_name' => 'Cấu trúc dữ liệu',
+            'credits' => 3,
+            'status' => TutorialRegistrationStatus::REGISTERED,
+            'registered_at' => now(),
+        ]);
+
+        $tutorialClass = TutorialClass::create([
+            'tutorial_period_id' => $tutorialPeriod->id,
+            'course_code' => 'INT123',
+            'course_name' => 'Cấu trúc dữ liệu',
+            'credits' => 3,
+            'total_sessions' => 10,
+            'periods_per_session' => 2,
+            'total_periods' => 20,
+            'status' => TutorialClassStatus::SCHEDULED,
+            'created_by' => User::factory()->admin()->create()->id,
+        ]);
+
+        TutorialClassSchedule::create([
+            'tutorial_class_id' => $tutorialClass->id,
+            'room_id' => 1,
+            'room_code' => 'A101',
+            'room_name' => 'Room A101',
+            'day_of_week' => 2,
+            'start_period' => 1,
+            'end_period' => 2,
+        ]);
+
+        $this
+            ->actingAs($student, 'web')
+            ->getJson("/api/v1/student/tutorial-periods/{$tutorialPeriod->id}/registration-info")
+            ->assertOk()
+            ->assertJsonPath('data.tutorialPeriod.status', TutorialPeriodStatus::ONGOING->name)
+            ->assertJsonPath('data.permissions.canRegister', false)
+            ->assertJsonPath('data.permissions.canCancelRegistration', false)
+            ->assertJsonPath('data.permissions.canViewSchedule', true)
+            ->assertJsonPath('data.registeredCourses.0.courseCode', 'INT123');
+    }
+
+    public function test_closed_period_returns_historical_registered_courses(): void
+    {
+        Http::fake(function (Request $request) {
+            if (str_contains($request->url(), '/legacy/periods')) {
+                return Http::response([
+                    'success' => true,
+                    'data' => [
+                        ['id' => 296, 'name' => 'HK2 2024-2025'],
+                    ],
+                ], 200);
+            }
+
+            return Http::response([
+                'success' => true,
+                'data' => [],
+            ], 200);
+        });
 
         $student = User::factory()->create([
             'role' => UserRole::STUDENT,
@@ -95,12 +243,48 @@ class StudentTutorialRegistrationInfoTest extends TestCase
         ]);
         $tutorialPeriod = $this->createTutorialPeriod(TutorialPeriodStatus::CLOSED, 296);
 
+        TutorialRegistration::create([
+            'tutorial_period_id' => $tutorialPeriod->id,
+            'user_id' => $student->id,
+            'course_code' => 'INT123',
+            'course_name' => 'Cấu trúc dữ liệu',
+            'credits' => 3,
+            'status' => TutorialRegistrationStatus::REGISTERED,
+            'registered_at' => now(),
+        ]);
+
         $this
             ->actingAs($student, 'web')
             ->getJson("/api/v1/student/tutorial-periods/{$tutorialPeriod->id}/registration-info")
+            ->assertOk()
+            ->assertJsonPath('data.tutorialPeriod.status', TutorialPeriodStatus::CLOSED->name)
+            ->assertJsonPath('data.permissions.canRegister', false)
+            ->assertJsonPath('data.permissions.canCancelRegistration', false)
+            ->assertJsonPath('data.registeredCourses.0.courseCode', 'INT123')
+            ->assertJsonPath('data.availableCourses', []);
+    }
+
+    public function test_draft_and_cancelled_periods_are_not_viewable(): void
+    {
+        Http::fake();
+
+        $student = User::factory()->create([
+            'role' => UserRole::STUDENT,
+            'student_id' => 88,
+            'username' => 'sv0001',
+        ]);
+        $draftPeriod = $this->createTutorialPeriod(TutorialPeriodStatus::DRAFT, 296);
+        $cancelledPeriod = $this->createTutorialPeriod(TutorialPeriodStatus::CANCELLED, 296);
+
+        $this
+            ->actingAs($student, 'web')
+            ->getJson("/api/v1/student/tutorial-periods/{$draftPeriod->id}/registration-info")
             ->assertNotFound();
 
-        Http::assertNothingSent();
+        $this
+            ->actingAs($student, 'web')
+            ->getJson("/api/v1/student/tutorial-periods/{$cancelledPeriod->id}/registration-info")
+            ->assertNotFound();
     }
 
     public function test_student_id_is_preferred_when_available(): void
@@ -215,6 +399,7 @@ class StudentTutorialRegistrationInfoTest extends TestCase
         $response->assertOk();
 
         $tutorialPeriodPayload = $response->json('data.tutorialPeriod');
+        $permissionsPayload = $response->json('data.permissions');
         $this->assertArrayHasKey('id', $tutorialPeriodPayload);
         $this->assertArrayHasKey('title', $tutorialPeriodPayload);
         $this->assertArrayHasKey('academicPeriod', $tutorialPeriodPayload);
@@ -225,6 +410,10 @@ class StudentTutorialRegistrationInfoTest extends TestCase
         $this->assertArrayNotHasKey('academicPeriodId', $tutorialPeriodPayload);
         $this->assertArrayNotHasKey('createdBy', $tutorialPeriodPayload);
         $this->assertArrayNotHasKey('permissions', $tutorialPeriodPayload);
+        $this->assertSame(
+            ['canViewRegistrationInfo', 'canRegister', 'canCancelRegistration', 'canViewSchedule'],
+            array_keys($permissionsPayload)
+        );
 
         foreach ($response->json('data.availableCourses') as $item) {
             $this->assertSame(['courseCode', 'courseName', 'credits'], array_keys($item));
