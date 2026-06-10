@@ -77,8 +77,6 @@ Currently implemented Laravel endpoints:
 - `GET /api/v1/tutorial-periods`
 - `GET /api/v1/tutorial-periods/{id}`
 - `POST /api/v1/tutorial-periods`
-- `PATCH /api/v1/tutorial-periods/{id}/open`
-- `PATCH /api/v1/tutorial-periods/{id}/cancel`
 - `PUT /api/v1/tutorial-periods/{id}`
 - `PATCH /api/v1/tutorial-periods/{id}`
 - `DELETE /api/v1/tutorial-periods/{id}`
@@ -87,10 +85,10 @@ See [docs/API.md](docs/API.md) for request and response examples.
 
 Tutorial period workflow currently uses one stored status field:
 
-- `DRAFT --manual open--> OPEN --auto--> ASSIGNING --auto--> ONGOING --auto--> CLOSED`
-- `DRAFT`, `OPEN`, `ASSIGNING`, and `ONGOING --manual cancel--> CANCELLED`
-
-Automatic transitions run through the scheduled Laravel command `php artisan tutorial-periods:update-statuses`.
+- status is managed through the normal create and update APIs
+- `DRAFT`, `OPEN`, `ASSIGNING`, and `ONGOING` remain editable by admins
+- `CLOSED` and `CANCELLED` are terminal read-only states
+- delete is allowed only when the tutorial period has no related registrations, classes, or schedules
 
 ## Tech Stack
 

@@ -27,7 +27,7 @@ class TutorialPeriodService
     {
         $tutorialPeriod = TutorialPeriod::create([
             ...$this->extractTutorialPeriodAttributes($data),
-            'status' => TutorialPeriodStatus::DRAFT->value,
+            'status' => $this->resolveStatusValue($data['status'] ?? TutorialPeriodStatus::DRAFT),
             'created_by' => $userId,
         ]);
 
@@ -39,13 +39,13 @@ class TutorialPeriodService
 
     public function update(int $id, array $data): TutorialPeriod
     {
-        $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFail($id, ['createdBy']);
-        $this->tutorialPeriodStatusService->ensureDraftStatus($tutorialPeriod, 'edited');
+        $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFailWithCounts($id, ['createdBy']);
+        $this->tutorialPeriodStatusService->validateUpdate($tutorialPeriod, $data);
 
         $attributes = $this->extractTutorialPeriodAttributes($data);
         $tutorialPeriod->update($attributes);
 
-        $tutorialPeriod = $tutorialPeriod->refresh()->load('createdBy');
+        $tutorialPeriod = $tutorialPeriod->refresh()->load('createdBy')->loadCount(['registrations', 'classes']);
         $this->academicPeriodResolver->enrich($tutorialPeriod);
 
         return $tutorialPeriod;
@@ -53,63 +53,10 @@ class TutorialPeriodService
 
     public function delete(int $id): void
     {
-        $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFail($id);
-        $this->tutorialPeriodStatusService->ensureDraftStatus($tutorialPeriod, 'deleted');
+        $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFailWithCounts($id);
+        $this->tutorialPeriodStatusService->ensureDeletable($tutorialPeriod);
 
         $tutorialPeriod->delete();
-    }
-
-    public function open(int $id): TutorialPeriod
-    {
-        $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFail($id);
-        $tutorialPeriod = $this->tutorialPeriodStatusService->open($tutorialPeriod);
-        $this->academicPeriodResolver->enrich($tutorialPeriod);
-
-        return $tutorialPeriod;
-    }
-
-    public function cancel(int $id): TutorialPeriod
-    {
-        $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFail($id);
-        $tutorialPeriod = $this->tutorialPeriodStatusService->cancel($tutorialPeriod);
-        $this->academicPeriodResolver->enrich($tutorialPeriod);
-
-        return $tutorialPeriod;
-    }
-
-    public function assigning(int $id): TutorialPeriod
-    {
-        $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFail($id);
-        $tutorialPeriod = $this->tutorialPeriodStatusService->assigning($tutorialPeriod);
-        $this->academicPeriodResolver->enrich($tutorialPeriod);
-
-        return $tutorialPeriod;
-    }
-
-    public function ongoing(int $id): TutorialPeriod
-    {
-        $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFail($id);
-        $tutorialPeriod = $this->tutorialPeriodStatusService->ongoing($tutorialPeriod);
-        $this->academicPeriodResolver->enrich($tutorialPeriod);
-
-        return $tutorialPeriod;
-    }
-
-    public function close(int $id): TutorialPeriod
-    {
-        $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFail($id);
-        $tutorialPeriod = $this->tutorialPeriodStatusService->close($tutorialPeriod);
-        $this->academicPeriodResolver->enrich($tutorialPeriod);
-
-        return $tutorialPeriod;
-    }
-
-    /**
-     * @return array{open_to_assigning:int,assigning_to_ongoing:int,ongoing_to_closed:int}
-     */
-    public function updateExpiredStatuses(): array
-    {
-        return $this->tutorialPeriodStatusService->updateExpiredStatuses();
     }
 
     /**
@@ -127,12 +74,32 @@ class TutorialPeriodService
             'registration_end_at',
             'study_start_at',
             'study_end_at',
+            'status',
         ] as $key) {
             if (array_key_exists($key, $data)) {
-                $attributes[$key] = $data[$key];
+                $attributes[$key] = $key === 'status'
+                    ? $this->resolveStatusValue($data[$key])
+                    : $data[$key];
             }
         }
 
         return $attributes;
+    }
+
+    private function resolveStatusValue(mixed $value): mixed
+    {
+        if ($value instanceof TutorialPeriodStatus) {
+            return $value->value;
+        }
+
+        $normalized = strtoupper(trim((string) $value));
+
+        foreach (TutorialPeriodStatus::cases() as $status) {
+            if ($status->name === $normalized) {
+                return $status->value;
+            }
+        }
+
+        return $value;
     }
 }

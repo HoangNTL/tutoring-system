@@ -10,4 +10,9 @@ class ClosedTutorialPeriodState extends AbstractTutorialPeriodState
     {
         return TutorialPeriodStatus::CLOSED;
     }
+
+    public function canDelete(): bool
+    {
+        return false;
+    }
 }

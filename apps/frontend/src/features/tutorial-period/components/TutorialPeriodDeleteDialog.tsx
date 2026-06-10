@@ -30,7 +30,7 @@ export function TutorialPeriodDeleteDialog({
           <AlertDialogTitle>Xóa đợt phụ đạo</AlertDialogTitle>
           <AlertDialogDescription>
             {tutorialPeriod
-              ? `Bạn có chắc chắn muốn xóa "${tutorialPeriod.title}" không? Hành động này chỉ áp dụng cho đợt ở trạng thái DRAFT.`
+              ? `Bạn có chắc chắn muốn xóa "${tutorialPeriod.title}" không? Chỉ có thể xóa khi đợt này chưa có dữ liệu đăng ký, lớp phụ đạo, hoặc lịch học liên quan.`
               : 'Xác nhận xóa đợt phụ đạo.'}
           </AlertDialogDescription>
         </AlertDialogHeader>

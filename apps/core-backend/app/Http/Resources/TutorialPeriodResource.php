@@ -2,7 +2,7 @@
 
 namespace App\Http\Resources;
 
-use App\States\TutorialPeriods\TutorialPeriodStateFactory;
+use App\Services\TutorialPeriods\TutorialPeriodStatusService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -38,7 +38,7 @@ class TutorialPeriodResource extends JsonResource
             }),
             'createdAt' => $this->formatDateTime($this->created_at),
             'updatedAt' => $this->formatDateTime($this->updated_at),
-            'permissions' => app(TutorialPeriodStateFactory::class)->forStatus($this->status)->permissions(),
+            'permissions' => app(TutorialPeriodStatusService::class)->getPermissions($this->resource),
         ];
     }
 

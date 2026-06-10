@@ -5,7 +5,10 @@ import {
   getMinimumAssignmentDaysMessage,
   minimumAssignmentDays,
 } from '@/features/tutorial-period/config'
-import type { TutorialPeriod } from '@/features/tutorial-period/types/tutorialPeriod.types'
+import {
+  tutorialPeriodStatuses,
+  type TutorialPeriod,
+} from '@/features/tutorial-period/types/tutorialPeriod.types'
 import { parseDateValue, toDateValue } from '@/shared/lib/date'
 
 const parseDate = (value: string) => parseDateValue(value)
@@ -26,6 +29,7 @@ export const tutorialPeriodFormSchema = z
     registrationEndAt: z.string().min(1, 'Ngày kết thúc đăng ký là bắt buộc'),
     studyStartAt: z.string().min(1, 'Ngày bắt đầu học là bắt buộc'),
     studyEndAt: z.string().min(1, 'Ngày kết thúc học là bắt buộc'),
+    status: z.enum(tutorialPeriodStatuses),
   })
   .superRefine((values, context) => {
     const registrationStartAt = parseDate(values.registrationStartAt)
@@ -76,6 +80,7 @@ export const tutorialPeriodFormDefaultValues: TutorialPeriodFormValues = {
   registrationEndAt: '',
   studyStartAt: '',
   studyEndAt: '',
+  status: 'DRAFT',
 }
 
 export const getTutorialPeriodFormValues = (
@@ -93,5 +98,6 @@ export const getTutorialPeriodFormValues = (
     registrationEndAt: toDateValue(tutorialPeriod.registrationEndAt),
     studyStartAt: toDateValue(tutorialPeriod.studyStartAt),
     studyEndAt: toDateValue(tutorialPeriod.studyEndAt),
+    status: tutorialPeriod.status,
   }
 }

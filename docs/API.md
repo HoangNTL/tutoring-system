@@ -188,8 +188,18 @@ All tutorial period routes require `auth:sanctum`.
   "permissions": {
     "canEdit": true,
     "canDelete": true,
-    "canOpen": true,
-    "canCancel": true
+    "readOnly": false,
+    "editableFields": [
+      "academicPeriodId",
+      "title",
+      "description",
+      "registrationStartAt",
+      "registrationEndAt",
+      "studyStartAt",
+      "studyEndAt",
+      "status"
+    ],
+    "allowedStatuses": ["DRAFT", "OPEN", "ASSIGNING", "ONGOING", "CLOSED", "CANCELLED"]
   }
 }
 ```
@@ -236,7 +246,7 @@ Allowed `status` values:
 Notes:
 
 - `status` is the only workflow field exposed by the API.
-- `status` is stored in MySQL and updated manually or automatically depending on the workflow rule.
+- `status` is stored in MySQL and updated through the normal create or update workflow.
 - `academicPeriodId` stores the selected legacy `DM_Dot.Id` value.
 - `academicPeriod` is enriched by Laravel from the legacy periods API when available.
 
@@ -268,11 +278,21 @@ Response:
       "createdAt": "2026-05-17 09:00:00",
       "updatedAt": "2026-05-17 09:00:00",
       "permissions": {
-        "canEdit": false,
-        "canDelete": false,
-        "canOpen": false,
-        "canCancel": true
-      },
+        "canEdit": true,
+        "canDelete": true,
+        "readOnly": false,
+        "editableFields": [
+          "academicPeriodId",
+          "title",
+          "description",
+          "registrationStartAt",
+          "registrationEndAt",
+          "studyStartAt",
+          "studyEndAt",
+          "status"
+        ],
+        "allowedStatuses": ["DRAFT", "OPEN", "ASSIGNING", "ONGOING", "CLOSED", "CANCELLED"]
+      }
     }
   ],
   "meta": {
@@ -319,41 +339,29 @@ Request:
   "registrationStartAt": "2026-05-18",
   "registrationEndAt": "2026-05-23",
   "studyStartAt": "2026-06-01",
-  "studyEndAt": "2026-06-30"
+  "studyEndAt": "2026-06-30",
+  "status": "DRAFT"
 }
 ```
 
 Notes:
 
-- New tutorial periods are always created with stored status `DRAFT`.
+- `status` is optional on create and defaults to `DRAFT`.
 - `createdBy` is derived from the authenticated user.
 - The API accepts camelCase input and validates internally against snake_case model fields.
 
 ### `PUT /api/v1/tutorial-periods/{id}` or `PATCH /api/v1/tutorial-periods/{id}`
 
-Request fields are the same as create.
+Request fields are the same as create, plus:
+
+- `status`
 
 - `PUT` or `PATCH` can be used.
 - Update validation supports partial payloads.
-- Normal editing is allowed only while the tutorial period is in `DRAFT`.
-
-### `PATCH /api/v1/tutorial-periods/{id}/open`
-
-Moves a tutorial period from `DRAFT` to `OPEN`.
-
-Rules:
-
-- only `DRAFT` records can be opened
-- complete and valid registration/study dates are required
-
-### `PATCH /api/v1/tutorial-periods/{id}/cancel`
-
-Cancels a tutorial period.
-
-Rules:
-
-- `CLOSED` and `CANCELLED` records cannot be cancelled
-- `DRAFT`, `OPEN`, `ASSIGNING`, and `ONGOING` can be cancelled
+- Status changes are handled through this update endpoint.
+- `DRAFT`, `OPEN`, `ASSIGNING`, and `ONGOING` are editable.
+- `CLOSED` and `CANCELLED` are terminal read-only states and cannot be changed back.
+- Delete/update rules may be blocked when the tutorial period is terminal or when related registrations/classes/schedules already exist.
 
 ### `DELETE /api/v1/tutorial-periods/{id}`
 
@@ -379,8 +387,6 @@ Controller authorization checks currently enforce:
 - `create`
 - `update`
 - `delete`
-- `open`
-- `cancel`
 
 ## Tutorial Period Status Workflow
 
@@ -393,19 +399,11 @@ Stored statuses:
 - `CLOSED`
 - `CANCELLED`
 
-Transitions:
+Behavior:
 
-- `DRAFT --manual open--> OPEN`
-- `OPEN --auto after registrationEndAt--> ASSIGNING`
-- `ASSIGNING --auto at studyStartAt--> ONGOING`
-- `ONGOING --auto after studyEndAt--> CLOSED`
-- `DRAFT`, `OPEN`, `ASSIGNING`, and `ONGOING --manual cancel--> CANCELLED`
-
-Automatic transitions are performed by the scheduled Laravel command:
-
-```bash
-php artisan tutorial-periods:update-statuses
-```
+- `DRAFT`, `OPEN`, `ASSIGNING`, and `ONGOING` are normal editable CRUD records.
+- `CLOSED` and `CANCELLED` are terminal historical records.
+- Visibility for student, department, and schedule flows still depends on the stored status value.
 
 ## Internal Legacy API
 

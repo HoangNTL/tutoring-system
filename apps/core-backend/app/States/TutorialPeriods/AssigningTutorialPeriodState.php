@@ -11,21 +11,18 @@ class AssigningTutorialPeriodState extends AbstractTutorialPeriodState
         return TutorialPeriodStatus::ASSIGNING;
     }
 
-    public function canOngoing(): bool
+    public function canEdit(): bool
     {
         return true;
     }
 
-    public function canCancel(): bool
+    public function editableFields(): array
     {
-        return true;
+        return $this->crudEditableFields();
     }
 
-    public function allowsTransitionTo(TutorialPeriodStatus $status): bool
+    public function allowedStatuses(): array
     {
-        return in_array($status, [
-            TutorialPeriodStatus::ONGOING,
-            TutorialPeriodStatus::CANCELLED,
-        ], true);
+        return $this->allStatuses();
     }
 }

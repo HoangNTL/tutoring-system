@@ -16,26 +16,13 @@ class DraftTutorialPeriodState extends AbstractTutorialPeriodState
         return true;
     }
 
-    public function canDelete(): bool
+    public function editableFields(): array
     {
-        return true;
+        return $this->crudEditableFields();
     }
 
-    public function canOpen(): bool
+    public function allowedStatuses(): array
     {
-        return true;
-    }
-
-    public function canCancel(): bool
-    {
-        return true;
-    }
-
-    public function allowsTransitionTo(TutorialPeriodStatus $status): bool
-    {
-        return in_array($status, [
-            TutorialPeriodStatus::OPEN,
-            TutorialPeriodStatus::CANCELLED,
-        ], true);
+        return $this->allStatuses();
     }
 }

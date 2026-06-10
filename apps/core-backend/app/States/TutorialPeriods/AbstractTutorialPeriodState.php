@@ -6,6 +6,31 @@ use App\Enums\TutorialPeriodStatus;
 
 abstract class AbstractTutorialPeriodState implements TutorialPeriodState
 {
+    /**
+     * @return list<string>
+     */
+    protected function crudEditableFields(): array
+    {
+        return [
+            'academic_period_id',
+            'title',
+            'description',
+            'registration_start_at',
+            'registration_end_at',
+            'study_start_at',
+            'study_end_at',
+            'status',
+        ];
+    }
+
+    /**
+     * @return list<TutorialPeriodStatus>
+     */
+    protected function allStatuses(): array
+    {
+        return TutorialPeriodStatus::cases();
+    }
+
     public function canEdit(): bool
     {
         return false;
@@ -13,49 +38,16 @@ abstract class AbstractTutorialPeriodState implements TutorialPeriodState
 
     public function canDelete(): bool
     {
-        return false;
+        return true;
     }
 
-    public function canOpen(): bool
+    public function editableFields(): array
     {
-        return false;
+        return [];
     }
 
-    public function canAssigning(): bool
+    public function allowedStatuses(): array
     {
-        return false;
-    }
-
-    public function canOngoing(): bool
-    {
-        return false;
-    }
-
-    public function canClose(): bool
-    {
-        return false;
-    }
-
-    public function canCancel(): bool
-    {
-        return false;
-    }
-
-    public function allowsTransitionTo(TutorialPeriodStatus $status): bool
-    {
-        return false;
-    }
-
-    public function permissions(): array
-    {
-        return [
-            'canEdit' => $this->canEdit(),
-            'canDelete' => $this->canDelete(),
-            'canOpen' => $this->canOpen(),
-            'canAssigning' => $this->canAssigning(),
-            'canOngoing' => $this->canOngoing(),
-            'canClose' => $this->canClose(),
-            'canCancel' => $this->canCancel(),
-        ];
+        return [$this->status()];
     }
 }

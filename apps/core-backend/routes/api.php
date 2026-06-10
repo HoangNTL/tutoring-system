@@ -53,11 +53,6 @@ Route::prefix('v1')->group(function () {
         Route::get('/tutorial-periods', [TutorialPeriodController::class, 'index']);
         Route::get('/tutorial-periods/{tutorial_period}', [TutorialPeriodController::class, 'show']);
         Route::post('/tutorial-periods', [TutorialPeriodController::class, 'store']);
-        Route::patch('/tutorial-periods/{tutorial_period}/open', [TutorialPeriodController::class, 'open']);
-        Route::patch('/tutorial-periods/{tutorial_period}/assigning', [TutorialPeriodController::class, 'assigning']);
-        Route::patch('/tutorial-periods/{tutorial_period}/ongoing', [TutorialPeriodController::class, 'ongoing']);
-        Route::patch('/tutorial-periods/{tutorial_period}/close', [TutorialPeriodController::class, 'close']);
-        Route::patch('/tutorial-periods/{tutorial_period}/cancel', [TutorialPeriodController::class, 'cancel']);
         Route::put('/tutorial-periods/{tutorial_period}', [TutorialPeriodController::class, 'update']);
         Route::patch('/tutorial-periods/{tutorial_period}', [TutorialPeriodController::class, 'update']);
         Route::delete('/tutorial-periods/{tutorial_period}', [TutorialPeriodController::class, 'destroy']);

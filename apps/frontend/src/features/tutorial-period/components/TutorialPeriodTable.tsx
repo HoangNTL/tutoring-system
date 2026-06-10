@@ -1,9 +1,8 @@
-import { MoreHorizontal, Pencil, Play, Trash2, XCircle } from 'lucide-react'
-import { addDays, subDays } from 'date-fns'
+import { Pencil, Trash2 } from 'lucide-react'
 
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
-import { formatDate, parseDateValue } from '@/shared/lib/date'
+import { formatDate } from '@/shared/lib/date'
 import {
   Table,
   TableBody,
@@ -13,11 +12,6 @@ import {
   TableRow,
 } from '@/shared/ui/table'
 import { cn } from '@/shared/lib/utils'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/shared/ui/popover'
 import {
   tutorialPeriodStatusLabels,
   type TutorialPeriod,
@@ -36,22 +30,12 @@ interface TutorialPeriodTableProps {
   tutorialPeriods: TutorialPeriod[]
   onEdit: (tutorialPeriod: TutorialPeriod) => void
   onDelete: (tutorialPeriod: TutorialPeriod) => void
-  onOpen: (tutorialPeriod: TutorialPeriod) => void
-  onAssigning: (tutorialPeriod: TutorialPeriod) => void
-  onOngoing: (tutorialPeriod: TutorialPeriod) => void
-  onClose: (tutorialPeriod: TutorialPeriod) => void
-  onCancel: (tutorialPeriod: TutorialPeriod) => void
 }
 
 export function TutorialPeriodTable({
   tutorialPeriods,
   onEdit,
   onDelete,
-  onOpen,
-  onAssigning,
-  onOngoing,
-  onClose,
-  onCancel,
 }: TutorialPeriodTableProps) {
   const formatDateRange = (
     startAt: string | null,
@@ -71,52 +55,16 @@ export function TutorialPeriodTable({
     return `${start} - ${end}`
   }
 
-  const formatAssignmentRange = (
-    registrationEndAt: string | null,
-    studyStartAt: string | null
-  ) => {
-    const registrationEnd = parseDateValue(registrationEndAt)
-    const studyStart = parseDateValue(studyStartAt)
-
-    if (!registrationEnd || !studyStart) {
-      return 'Sau đăng ký đến trước khi học'
-    }
-
-    const assignmentStart = addDays(registrationEnd, 1)
-    const assignmentEnd = subDays(studyStart, 1)
-
-    if (assignmentStart > assignmentEnd) {
-      return 'Sau đăng ký đến trước khi học'
-    }
-
-    const start = formatDate(assignmentStart)
-    const end = formatDate(assignmentEnd)
-
-    if (!start && !end) {
-      return 'Sau đăng ký đến trước khi học'
-    }
-
-    if (!start || !end) {
-      return start || end
-    }
-
-    if (start === end) {
-      return start
-    }
-
-    return `${start} - ${end}`
-  }
-
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
       <Table>
         <TableHeader className="bg-slate-50">
           <TableRow>
-            <TableHead className="w-[32%] px-4">Tiêu đề</TableHead>
-            <TableHead className="w-[14%]">Trạng thái</TableHead>
-            <TableHead className="w-[18%]">Học kỳ</TableHead>
-            <TableHead className="w-[18%]">Thời gian</TableHead>
-            <TableHead className="w-[10%]">Người tạo</TableHead>
+            <TableHead className="w-[22%] px-4">Học kỳ</TableHead>
+            <TableHead className="w-[24%]">Tiêu đề</TableHead>
+            <TableHead className="w-[18%]">Thời gian đăng ký</TableHead>
+            <TableHead className="w-[18%]">Thời gian học</TableHead>
+            <TableHead className="w-[10%]">Trạng thái</TableHead>
             <TableHead className="w-[8%] px-4 text-right">Thao tác</TableHead>
           </TableRow>
         </TableHeader>
@@ -124,14 +72,12 @@ export function TutorialPeriodTable({
           {tutorialPeriods.map((tutorialPeriod) => {
             const canEdit = tutorialPeriod.permissions?.canEdit ?? false
             const canDelete = tutorialPeriod.permissions?.canDelete ?? false
-            const canOpen = tutorialPeriod.permissions?.canOpen ?? false
-            const canAssigning = tutorialPeriod.permissions?.canAssigning ?? false
-            const canOngoing = tutorialPeriod.permissions?.canOngoing ?? false
-            const canClose = tutorialPeriod.permissions?.canClose ?? false
-            const canCancel = tutorialPeriod.permissions?.canCancel ?? false
 
             return (
               <TableRow key={tutorialPeriod.id}>
+                <TableCell className="px-4 py-3 align-top text-sm text-slate-600">
+                  {tutorialPeriod.academicPeriod?.name ?? 'N/A'}
+                </TableCell>
                 <TableCell className="px-4 py-3 align-top">
                   <div className="space-y-0.5">
                     <p className="font-medium text-slate-900">
@@ -141,6 +87,22 @@ export function TutorialPeriodTable({
                       {tutorialPeriod.description}
                     </p>
                   </div>
+                </TableCell>
+                <TableCell className="py-3 align-top text-sm text-slate-600">
+                  <span className="whitespace-nowrap text-slate-700">
+                    {formatDateRange(
+                      tutorialPeriod.registrationStartAt,
+                      tutorialPeriod.registrationEndAt
+                    )}
+                  </span>
+                </TableCell>
+                <TableCell className="py-3 align-top text-sm text-slate-600">
+                  <span className="whitespace-nowrap text-slate-700">
+                    {formatDateRange(
+                      tutorialPeriod.studyStartAt,
+                      tutorialPeriod.studyEndAt
+                    )}
+                  </span>
                 </TableCell>
                 <TableCell className="py-3 align-top">
                   <Badge
@@ -153,94 +115,8 @@ export function TutorialPeriodTable({
                     {tutorialPeriodStatusLabels[tutorialPeriod.status]}
                   </Badge>
                 </TableCell>
-                <TableCell className="py-3 align-top text-sm text-slate-600">
-                  {tutorialPeriod.academicPeriod?.name ?? 'N/A'}
-                </TableCell>
-                <TableCell className="py-3 align-top text-sm text-slate-600">
-                  <div className="space-y-1">
-                    <div className="flex flex-wrap items-baseline gap-x-2">
-                      <span className="text-slate-500">Đăng ký:</span>
-                      <span className="whitespace-nowrap text-slate-700">
-                        {formatDateRange(
-                          tutorialPeriod.registrationStartAt,
-                          tutorialPeriod.registrationEndAt
-                        )}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap items-baseline gap-x-2">
-                      <span className="text-slate-500">Phân công:</span>
-                      <span className="whitespace-nowrap text-slate-700">
-                        {formatAssignmentRange(
-                          tutorialPeriod.registrationEndAt,
-                          tutorialPeriod.studyStartAt
-                        )}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap items-baseline gap-x-2">
-                      <span className="text-slate-500">Học:</span>
-                      <span className="whitespace-nowrap text-slate-700">
-                        {formatDateRange(
-                          tutorialPeriod.studyStartAt,
-                          tutorialPeriod.studyEndAt
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell className="py-3 align-top text-sm text-slate-600">
-                  {tutorialPeriod.createdBy?.username ?? 'N/A'}
-                </TableCell>
                 <TableCell className="px-4 py-3 align-top">
                   <div className="flex justify-end gap-1.5">
-                    {canOpen ? (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="h-8 rounded-lg px-2.5"
-                        onClick={() => onOpen(tutorialPeriod)}
-                      >
-                        <Play />
-                        Mở
-                      </Button>
-                    ) : null}
-
-                    {canAssigning ? (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="h-8 rounded-lg px-2.5"
-                        onClick={() => onAssigning(tutorialPeriod)}
-                      >
-                        Chuyển phân công
-                      </Button>
-                    ) : null}
-
-                    {canOngoing ? (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="h-8 rounded-lg px-2.5"
-                        onClick={() => onOngoing(tutorialPeriod)}
-                      >
-                        Bắt đầu học
-                      </Button>
-                    ) : null}
-
-                    {canClose ? (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="h-8 rounded-lg px-2.5"
-                        onClick={() => onClose(tutorialPeriod)}
-                      >
-                        Đóng đợt
-                      </Button>
-                    ) : null}
-
                     {canEdit ? (
                       <Button
                         type="button"
@@ -254,46 +130,17 @@ export function TutorialPeriodTable({
                       </Button>
                     ) : null}
 
-                    {canCancel || canDelete ? (
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8 rounded-lg border-slate-200 text-slate-600"
-                          >
-                            <MoreHorizontal className="size-4" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent align="end" className="w-44 p-1.5">
-                          <div className="space-y-1">
-                            {canCancel ? (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                className="h-9 w-full justify-start rounded-md px-2 text-red-600 hover:bg-red-50 hover:text-red-700"
-                                onClick={() => onCancel(tutorialPeriod)}
-                              >
-                                <XCircle className="size-4" />
-                                Hủy
-                              </Button>
-                            ) : null}
-
-                            {canDelete ? (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                className="h-9 w-full justify-start rounded-md px-2 text-red-600 hover:bg-red-50 hover:text-red-700"
-                                onClick={() => onDelete(tutorialPeriod)}
-                              >
-                                <Trash2 className="size-4" />
-                                Xóa
-                              </Button>
-                            ) : null}
-                          </div>
-                        </PopoverContent>
-                      </Popover>
+                    {canDelete ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 rounded-lg border-red-200 px-2.5 text-red-600 hover:bg-red-50 hover:text-red-700"
+                        onClick={() => onDelete(tutorialPeriod)}
+                      >
+                        <Trash2 />
+                        Xóa
+                      </Button>
                     ) : null}
                   </div>
                 </TableCell>

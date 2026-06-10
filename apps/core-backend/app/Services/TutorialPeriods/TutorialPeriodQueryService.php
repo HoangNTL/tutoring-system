@@ -33,7 +33,9 @@ class TutorialPeriodQueryService extends AbstractPaginatedQueryService
 
     protected function newQuery(): Builder
     {
-        return TutorialPeriod::query()->with('createdBy');
+        return TutorialPeriod::query()
+            ->with('createdBy')
+            ->withCount(['registrations', 'classes']);
     }
 
     protected function allowedSortColumns(): array
@@ -62,7 +64,7 @@ class TutorialPeriodQueryService extends AbstractPaginatedQueryService
 
     public function getById(int $id): TutorialPeriod
     {
-        $tutorialPeriod = $this->findOrFail($id, ['createdBy']);
+        $tutorialPeriod = $this->findOrFailWithCounts($id, ['createdBy']);
         $this->academicPeriodResolver->enrich($tutorialPeriod);
 
         return $tutorialPeriod;
@@ -76,6 +78,21 @@ class TutorialPeriodQueryService extends AbstractPaginatedQueryService
         try {
             return TutorialPeriod::query()
                 ->with($relations)
+                ->findOrFail($id);
+        } catch (ModelNotFoundException $exception) {
+            throw new NotFoundHttpException('Tutorial period not found', $exception);
+        }
+    }
+
+    /**
+     * @param  array<int, string>  $relations
+     */
+    public function findOrFailWithCounts(int $id, array $relations = []): TutorialPeriod
+    {
+        try {
+            return TutorialPeriod::query()
+                ->with($relations)
+                ->withCount(['registrations', 'classes'])
                 ->findOrFail($id);
         } catch (ModelNotFoundException $exception) {
             throw new NotFoundHttpException('Tutorial period not found', $exception);

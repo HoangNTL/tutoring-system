@@ -22,7 +22,12 @@ import {
 } from '@/shared/ui/select'
 import { Spinner } from '@/shared/ui/spinner'
 import { Textarea } from '@/shared/ui/textarea'
-import type { LegacyPeriod, TutorialPeriod } from '@/features/tutorial-period/types/tutorialPeriod.types'
+import {
+  tutorialPeriodStatuses,
+  tutorialPeriodStatusLabels,
+  type LegacyPeriod,
+  type TutorialPeriod,
+} from '@/features/tutorial-period/types/tutorialPeriod.types'
 import {
   getTutorialPeriodFormValues,
   tutorialPeriodFormDefaultValues,
@@ -66,6 +71,12 @@ export function TutorialPeriodFormDialog({
     defaultValues: tutorialPeriodFormDefaultValues,
   })
 
+  const editableFields = new Set(tutorialPeriod?.permissions?.editableFields ?? [])
+  const allowedStatuses =
+    mode === 'create'
+      ? tutorialPeriodStatuses
+      : tutorialPeriod?.permissions?.allowedStatuses ?? []
+
   useEffect(() => {
     if (!open) {
       return
@@ -74,7 +85,13 @@ export function TutorialPeriodFormDialog({
     reset(getTutorialPeriodFormValues(tutorialPeriod))
   }, [open, reset, tutorialPeriod])
 
-  const title = mode === 'create' ? 'Tạo đợt phụ đạo' : 'Cập nhật đợt phụ đạo'
+  const title =
+    mode === 'create'
+      ? 'Tạo đợt phụ đạo'
+      : 'Cập nhật đợt phụ đạo'
+
+  const canEditField = (field: keyof TutorialPeriodFormValues) =>
+    mode === 'create' || editableFields.has(field)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -117,7 +134,11 @@ export function TutorialPeriodFormDialog({
                       <Select
                         value={field.value > 0 ? field.value.toString() : undefined}
                         onValueChange={(value) => field.onChange(Number(value))}
-                        disabled={isSubmitting || isLegacyPeriodsLoading}
+                        disabled={
+                          isSubmitting ||
+                          isLegacyPeriodsLoading ||
+                          !canEditField('academicPeriodId')
+                        }
                       >
                         <SelectTrigger
                           id="tutorial-period-academic-period-id"
@@ -164,7 +185,7 @@ export function TutorialPeriodFormDialog({
                   <Input
                     id="tutorial-period-title"
                     placeholder="Ví dụ: Đợt phụ đạo học kỳ 1"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !canEditField('title')}
                     className="h-11 rounded-xl border-slate-200 bg-white px-3 text-slate-900 shadow-none placeholder:text-slate-400"
                     {...register('title')}
                   />
@@ -183,7 +204,7 @@ export function TutorialPeriodFormDialog({
                   <Textarea
                     id="tutorial-period-description"
                     placeholder="Tóm tắt ngắn gọn cho đợt phụ đạo"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !canEditField('description')}
                     className="min-h-28 rounded-xl border-slate-200 bg-white px-3 py-2.5 leading-6 shadow-none placeholder:text-slate-400"
                     {...register('description')}
                   />
@@ -211,7 +232,7 @@ export function TutorialPeriodFormDialog({
                         onChange={field.onChange}
                         placeholder="Chọn ngày"
                         error={errors.registrationStartAt?.message}
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || !canEditField('registrationStartAt')}
                       />
                     )}
                   />
@@ -234,7 +255,7 @@ export function TutorialPeriodFormDialog({
                         onChange={field.onChange}
                         placeholder="Chọn ngày"
                         error={errors.registrationEndAt?.message}
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || !canEditField('registrationEndAt')}
                       />
                     )}
                   />
@@ -257,7 +278,7 @@ export function TutorialPeriodFormDialog({
                         onChange={field.onChange}
                         placeholder="Chọn ngày"
                         error={errors.studyStartAt?.message}
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || !canEditField('studyStartAt')}
                       />
                     )}
                   />
@@ -280,10 +301,47 @@ export function TutorialPeriodFormDialog({
                         onChange={field.onChange}
                         placeholder="Chọn ngày"
                         error={errors.studyEndAt?.message}
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || !canEditField('studyEndAt')}
                       />
                     )}
                   />
+                </div>
+
+                <div className="grid gap-2 md:col-span-2">
+                  <Label
+                    htmlFor="tutorial-period-status"
+                    className="text-sm font-medium text-slate-700"
+                  >
+                    Trạng thái
+                  </Label>
+                  <Controller
+                    control={control}
+                    name="status"
+                    render={({ field }) => (
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        disabled={isSubmitting || !canEditField('status')}
+                      >
+                        <SelectTrigger
+                          id="tutorial-period-status"
+                          className="h-11 w-full rounded-xl border-slate-200 bg-white px-3 text-slate-900 shadow-none"
+                        >
+                          <SelectValue placeholder="Chọn trạng thái" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {allowedStatuses.map((status) => (
+                            <SelectItem key={status} value={status}>
+                              {tutorialPeriodStatusLabels[status]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.status ? (
+                    <p className="text-sm text-red-500">{errors.status.message}</p>
+                  ) : null}
                 </div>
 
                 <div className="md:col-span-2">

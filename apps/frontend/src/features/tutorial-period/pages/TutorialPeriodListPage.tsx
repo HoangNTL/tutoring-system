@@ -2,14 +2,9 @@ import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { CalendarSearch, CirclePlus } from 'lucide-react'
 
 import {
-  useCancelTutorialPeriodMutation,
-  useCloseTutorialPeriodMutation,
   useCreateTutorialPeriodMutation,
   useDeleteTutorialPeriodMutation,
   useLegacyPeriods,
-  useMoveTutorialPeriodToAssigningMutation,
-  useMoveTutorialPeriodToOngoingMutation,
-  useOpenTutorialPeriodMutation,
   useTutorialPeriods,
   useUpdateTutorialPeriodMutation,
 } from '@/features/tutorial-period/hooks'
@@ -91,7 +86,6 @@ export default function TutorialPeriodListPage() {
   const [tutorialPeriodToDelete, setTutorialPeriodToDelete] = useState<TutorialPeriod | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
-  const [actionError, setActionError] = useState<string | null>(null)
 
   const deferredSearch = useDeferredValue(searchInput)
 
@@ -105,11 +99,6 @@ export default function TutorialPeriodListPage() {
   const createMutation = useCreateTutorialPeriodMutation()
   const updateMutation = useUpdateTutorialPeriodMutation()
   const deleteMutation = useDeleteTutorialPeriodMutation()
-  const openMutation = useOpenTutorialPeriodMutation()
-  const assigningMutation = useMoveTutorialPeriodToAssigningMutation()
-  const ongoingMutation = useMoveTutorialPeriodToOngoingMutation()
-  const closeMutation = useCloseTutorialPeriodMutation()
-  const cancelMutation = useCancelTutorialPeriodMutation()
 
   const tutorialPeriods = tutorialPeriodsQuery.data?.data ?? []
   const legacyPeriods = legacyPeriodsQuery.data?.data ?? []
@@ -121,13 +110,12 @@ export default function TutorialPeriodListPage() {
   const isFormSubmitting = createMutation.isPending || updateMutation.isPending
 
   const dialogTutorialPeriod = useMemo(
-    () => (dialogMode === 'edit' ? selectedTutorialPeriod : null),
+    () => (dialogMode === 'create' ? null : selectedTutorialPeriod),
     [dialogMode, selectedTutorialPeriod]
   )
 
   const openCreateDialog = () => {
     setFormError(null)
-    setActionError(null)
     setDialogMode('create')
     setSelectedTutorialPeriod(null)
     setIsFormDialogOpen(true)
@@ -135,7 +123,6 @@ export default function TutorialPeriodListPage() {
 
   const openEditDialog = (tutorialPeriod: TutorialPeriod) => {
     setFormError(null)
-    setActionError(null)
     setDialogMode('edit')
     setSelectedTutorialPeriod(tutorialPeriod)
     setIsFormDialogOpen(true)
@@ -154,10 +141,10 @@ export default function TutorialPeriodListPage() {
   const handleSubmitForm = async (values: TutorialPeriodFormValues) => {
     setFormError(null)
 
-    try {
+      try {
       if (dialogMode === 'create') {
         await createMutation.mutateAsync(values)
-      } else if (selectedTutorialPeriod) {
+      } else if (dialogMode === 'edit' && selectedTutorialPeriod) {
         await updateMutation.mutateAsync({
           tutorialPeriodId: selectedTutorialPeriod.id,
           payload: values,
@@ -168,72 +155,6 @@ export default function TutorialPeriodListPage() {
     } catch (error) {
       setFormError(
         getApiErrorMessage(error, 'Không thể lưu đợt phụ đạo. Vui lòng thử lại.')
-      )
-    }
-  }
-
-  const handleOpenTutorialPeriod = async (tutorialPeriod: TutorialPeriod) => {
-    setActionError(null)
-
-    try {
-      await openMutation.mutateAsync(tutorialPeriod.id)
-    } catch (error) {
-      setActionError(
-        getApiErrorMessage(error, 'Không thể mở đợt phụ đạo. Vui lòng thử lại.')
-      )
-    }
-  }
-
-  const handleCancelTutorialPeriod = async (tutorialPeriod: TutorialPeriod) => {
-    setActionError(null)
-
-    try {
-      await cancelMutation.mutateAsync(tutorialPeriod.id)
-    } catch (error) {
-      setActionError(
-        getApiErrorMessage(error, 'Không thể hủy đợt phụ đạo. Vui lòng thử lại.')
-      )
-    }
-  }
-
-  const handleMoveToAssigning = async (tutorialPeriod: TutorialPeriod) => {
-    setActionError(null)
-
-    try {
-      await assigningMutation.mutateAsync(tutorialPeriod.id)
-    } catch (error) {
-      setActionError(
-        getApiErrorMessage(
-          error,
-          'Không thể chuyển đợt phụ đạo sang trạng thái phân công. Vui lòng thử lại.'
-        )
-      )
-    }
-  }
-
-  const handleMoveToOngoing = async (tutorialPeriod: TutorialPeriod) => {
-    setActionError(null)
-
-    try {
-      await ongoingMutation.mutateAsync(tutorialPeriod.id)
-    } catch (error) {
-      setActionError(
-        getApiErrorMessage(
-          error,
-          'Không thể chuyển đợt phụ đạo sang trạng thái đang học. Vui lòng thử lại.'
-        )
-      )
-    }
-  }
-
-  const handleCloseTutorialPeriod = async (tutorialPeriod: TutorialPeriod) => {
-    setActionError(null)
-
-    try {
-      await closeMutation.mutateAsync(tutorialPeriod.id)
-    } catch (error) {
-      setActionError(
-        getApiErrorMessage(error, 'Không thể đóng đợt phụ đạo. Vui lòng thử lại.')
       )
     }
   }
@@ -353,21 +274,6 @@ export default function TutorialPeriodListPage() {
               tutorialPeriods={tutorialPeriods}
               onEdit={openEditDialog}
               onDelete={setTutorialPeriodToDelete}
-              onOpen={(tutorialPeriod) => {
-                void handleOpenTutorialPeriod(tutorialPeriod)
-              }}
-              onAssigning={(tutorialPeriod) => {
-                void handleMoveToAssigning(tutorialPeriod)
-              }}
-              onOngoing={(tutorialPeriod) => {
-                void handleMoveToOngoing(tutorialPeriod)
-              }}
-              onClose={(tutorialPeriod) => {
-                void handleCloseTutorialPeriod(tutorialPeriod)
-              }}
-              onCancel={(tutorialPeriod) => {
-                void handleCancelTutorialPeriod(tutorialPeriod)
-              }}
             />
           )}
         </div>
@@ -463,12 +369,6 @@ export default function TutorialPeriodListPage() {
       {deleteError ? (
         <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
           {deleteError}
-        </div>
-      ) : null}
-
-      {actionError ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-          {actionError}
         </div>
       ) : null}
 

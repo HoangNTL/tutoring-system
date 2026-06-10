@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\TutorialPeriod;
 
+use App\Enums\TutorialPeriodStatus;
 use App\Http\Requests\BaseFormRequest;
 use Carbon\Carbon;
 use Illuminate\Validation\Validator;
@@ -25,6 +26,10 @@ class StoreTutorialPeriodRequest extends BaseFormRequest
             'registration_end_at' => ['required', 'date', 'after_or_equal:registration_start_at', 'before:study_start_at'],
             'study_start_at' => ['required', 'date', 'after:registration_end_at', 'before_or_equal:study_end_at'],
             'study_end_at' => ['required', 'date', 'after_or_equal:study_start_at'],
+            'status' => ['sometimes', 'string', 'in:' . implode(',', array_map(
+                static fn (TutorialPeriodStatus $status): string => $status->name,
+                TutorialPeriodStatus::cases()
+            ))],
         ];
     }
 
@@ -36,6 +41,7 @@ class StoreTutorialPeriodRequest extends BaseFormRequest
             'registration_end_at' => 'registrationEndAt',
             'study_start_at' => 'studyStartAt',
             'study_end_at' => 'studyEndAt',
+            'status' => 'status',
         ];
     }
 

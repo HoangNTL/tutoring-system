@@ -1,14 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import {
-  cancelTutorialPeriod,
-  closeTutorialPeriod,
   createTutorialPeriod,
   deleteTutorialPeriod,
   getTutorialPeriods,
-  moveTutorialPeriodToAssigning,
-  moveTutorialPeriodToOngoing,
-  openTutorialPeriod,
   updateTutorialPeriod,
 } from '@/features/tutorial-period/api/tutorialPeriod.api'
 import { getLegacyPeriods } from '@/features/tutorial-period/api/legacyPeriod.api'
@@ -81,61 +76,6 @@ export const useDeleteTutorialPeriodMutation = () => {
 
   return useMutation({
     mutationFn: deleteTutorialPeriod,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: tutorialPeriodsQueryKey })
-    },
-  })
-}
-
-export const useOpenTutorialPeriodMutation = () => {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: openTutorialPeriod,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: tutorialPeriodsQueryKey })
-    },
-  })
-}
-
-export const useCancelTutorialPeriodMutation = () => {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: cancelTutorialPeriod,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: tutorialPeriodsQueryKey })
-    },
-  })
-}
-
-export const useMoveTutorialPeriodToAssigningMutation = () => {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: moveTutorialPeriodToAssigning,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: tutorialPeriodsQueryKey })
-    },
-  })
-}
-
-export const useMoveTutorialPeriodToOngoingMutation = () => {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: moveTutorialPeriodToOngoing,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: tutorialPeriodsQueryKey })
-    },
-  })
-}
-
-export const useCloseTutorialPeriodMutation = () => {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: closeTutorialPeriod,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: tutorialPeriodsQueryKey })
     },

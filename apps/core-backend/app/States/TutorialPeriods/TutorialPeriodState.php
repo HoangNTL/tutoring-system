@@ -12,20 +12,13 @@ interface TutorialPeriodState
 
     public function canDelete(): bool;
 
-    public function canOpen(): bool;
-
-    public function canAssigning(): bool;
-
-    public function canOngoing(): bool;
-
-    public function canClose(): bool;
-
-    public function canCancel(): bool;
-
-    public function allowsTransitionTo(TutorialPeriodStatus $status): bool;
+    /**
+     * @return list<string>
+     */
+    public function editableFields(): array;
 
     /**
-     * @return array<string, bool>
+     * @return list<TutorialPeriodStatus>
      */
-    public function permissions(): array;
+    public function allowedStatuses(): array;
 }

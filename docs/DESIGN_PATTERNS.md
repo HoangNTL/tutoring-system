@@ -84,13 +84,8 @@ classDiagram
         +status()
         +canEdit()
         +canDelete()
-        +canOpen()
-        +canAssigning()
-        +canOngoing()
-        +canClose()
-        +canCancel()
-        +allowsTransitionTo(status)
-        +permissions()
+        +editableFields()
+        +allowedStatuses()
     }
 
     class TutorialPeriodStateFactory {
