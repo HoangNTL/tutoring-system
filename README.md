@@ -151,6 +151,8 @@ npm install
 npm run dev
 ```
 
+If you do not have SQL Server locally yet, set `ALLOW_START_WITHOUT_DB=true` in `apps/legacy-backend/.env`. The legacy service will still boot and return empty fallback data for legacy-backed endpoints so the rest of the stack can run.
+
 For a production-style legacy backend start:
 
 ```bash

@@ -2,11 +2,11 @@
 
 namespace App\Services\TutorialPeriods;
 
+use App\Contracts\LegacyDataGateway;
 use App\Enums\TutorialPeriodStatus;
 use App\Enums\TutorialRegistrationStatus;
 use App\Models\TutorialPeriod;
 use App\Models\TutorialRegistration;
-use App\Services\External\LegacyApiService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Throwable;
@@ -16,7 +16,7 @@ class DepartmentTutorialRegistrationService
 {
     public function __construct(
         private TutorialPeriodAcademicPeriodResolver $academicPeriodResolver,
-        private LegacyApiService $legacyApiService
+        private LegacyDataGateway $legacyDataGateway
     ) {}
 
     /**
@@ -137,7 +137,7 @@ class DepartmentTutorialRegistrationService
     private function fetchLegacyStudentInfoById(int $studentId): ?array
     {
         try {
-            return $this->legacyApiService->fetchStudentInfoByLegacyStudentId($studentId);
+            return $this->legacyDataGateway->fetchStudentInfoByLegacyStudentId($studentId);
         } catch (Throwable) {
             return null;
         }
@@ -149,7 +149,7 @@ class DepartmentTutorialRegistrationService
     private function fetchLegacyStudentInfoByCode(string $studentCode): ?array
     {
         try {
-            return $this->legacyApiService->fetchStudentInfoByStudentCode($studentCode);
+            return $this->legacyDataGateway->fetchStudentInfoByStudentCode($studentCode);
         } catch (Throwable) {
             return null;
         }

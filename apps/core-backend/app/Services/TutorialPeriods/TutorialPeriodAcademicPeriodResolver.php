@@ -2,15 +2,15 @@
 
 namespace App\Services\TutorialPeriods;
 
+use App\Contracts\LegacyDataGateway;
 use App\Models\TutorialPeriod;
-use App\Services\External\LegacyApiService;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class TutorialPeriodAcademicPeriodResolver
 {
     public function __construct(
-        private LegacyApiService $legacyApiService
+        private LegacyDataGateway $legacyDataGateway
     ) {}
 
     public function enrich(TutorialPeriod $tutorialPeriod): void
@@ -46,7 +46,7 @@ class TutorialPeriodAcademicPeriodResolver
         }
 
         try {
-            $periodsById = collect($this->legacyApiService->fetchLegacyPeriods())
+            $periodsById = collect($this->legacyDataGateway->fetchLegacyPeriods())
                 ->keyBy('id');
         } catch (Throwable $exception) {
             Log::warning('Failed to enrich tutorial periods with legacy academic period data', [

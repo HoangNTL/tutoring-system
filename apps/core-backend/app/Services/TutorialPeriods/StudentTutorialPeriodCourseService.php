@@ -2,11 +2,11 @@
 
 namespace App\Services\TutorialPeriods;
 
+use App\Contracts\LegacyDataGateway;
 use App\Enums\TutorialPeriodStatus;
 use App\Enums\UserRole;
 use App\Models\TutorialPeriod;
 use App\Models\User;
-use App\Services\External\LegacyApiService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -15,7 +15,7 @@ use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 class StudentTutorialPeriodCourseService
 {
     public function __construct(
-        private LegacyApiService $legacyApiService
+        private LegacyDataGateway $legacyDataGateway
     ) {}
 
     /**
@@ -37,7 +37,7 @@ class StudentTutorialPeriodCourseService
         }
 
         if ($user->student_id !== null) {
-            return $this->legacyApiService->fetchStudentCoursesByLegacyStudentId(
+            return $this->legacyDataGateway->fetchStudentCoursesByLegacyStudentId(
                 (int) $user->student_id,
                 (int) $legacyPeriodId
             );
@@ -51,7 +51,7 @@ class StudentTutorialPeriodCourseService
             );
         }
 
-        return $this->legacyApiService->fetchStudentCoursesByStudentCode(
+        return $this->legacyDataGateway->fetchStudentCoursesByStudentCode(
             $studentCode,
             (int) $legacyPeriodId
         );

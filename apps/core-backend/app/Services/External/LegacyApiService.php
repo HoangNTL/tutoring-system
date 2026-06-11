@@ -2,12 +2,13 @@
 
 namespace App\Services\External;
 
+use App\Contracts\LegacyDataGateway;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
-class LegacyApiService
+class LegacyApiService implements LegacyDataGateway
 {
     private const LIMIT = 100;
     private const TIMEOUT_SECONDS = 5;
