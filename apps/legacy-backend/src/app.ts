@@ -13,6 +13,7 @@ import studentRouter, { studentLegacyRouter } from '@/modules/students/student.r
 import logger from '@/shared/logger';
 
 const app = express();
+const host = '127.0.0.1';
 
 app.use(express.json());
 
@@ -44,6 +45,6 @@ app.use('/api/v1/departments', departmentRouter);
 app.use('/api/v1/legacy/periods', periodRouter);
 app.use(globalErrorHandler);
 
-app.listen(env.port, () => {
-  logger.info(`Server is running on port ${env.port}`);
+app.listen(env.port, host, () => {
+  logger.info(`Server is running on http://${host}:${env.port}`);
 });

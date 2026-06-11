@@ -28,6 +28,18 @@ const toNumber = (value: string | undefined, fallback: number): number => {
     : fallback;
 };
 
+const toOptionalNumber = (value: string | undefined): number | null => {
+  if (value === undefined || value.trim() === '') {
+    return null;
+  }
+
+  const parsedValue = Number(value);
+
+  return Number.isFinite(parsedValue) && parsedValue > 0
+    ? parsedValue
+    : null;
+};
+
 export const env = {
   nodeEnv: process.env.NODE_ENV || 'development',
   port: toNumber(process.env.PORT, 5000),
@@ -36,10 +48,11 @@ export const env = {
   coreBackendApiKey: process.env.CORE_BACKEND_API_KEY || '',
   db: {
     host: process.env.DB_SERVER || 'localhost',
+    instance: process.env.DB_INSTANCE || '',
     user: process.env.DB_USER || '',
     password: process.env.DB_PASSWORD || '',
     database: process.env.DB_DATABASE || '',
-    port: toNumber(process.env.DB_PORT, 1433),
+    port: toOptionalNumber(process.env.DB_PORT),
   },
 };
 
