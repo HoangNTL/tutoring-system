@@ -136,22 +136,81 @@ class TutorialPeriodStatusService
     }
 
     /**
+     * Check if tutorial period can be edited (must be in DRAFT status)
+     */
+    public function canEdit(TutorialPeriod $tutorialPeriod): bool
+    {
+        return $tutorialPeriod->status === TutorialPeriodStatus::DRAFT;
+    }
+
+    /**
+     * Check if tutorial period can be deleted (must be in DRAFT status)
+     */
+    public function canDelete(TutorialPeriod $tutorialPeriod): bool
+    {
+        return $tutorialPeriod->status === TutorialPeriodStatus::DRAFT;
+    }
+
+    /**
+     * Check if tutorial period can be opened (must be in DRAFT status)
+     */
+    public function canOpen(TutorialPeriod $tutorialPeriod): bool
+    {
+        return $tutorialPeriod->status === TutorialPeriodStatus::DRAFT;
+    }
+
+    /**
+     * Check if tutorial period can transition to ASSIGNING (must be in OPEN status)
+     */
+    public function canAssigning(TutorialPeriod $tutorialPeriod): bool
+    {
+        return $tutorialPeriod->status === TutorialPeriodStatus::OPEN;
+    }
+
+    /**
+     * Check if tutorial period can transition to ONGOING (must be in ASSIGNING status)
+     */
+    public function canOngoing(TutorialPeriod $tutorialPeriod): bool
+    {
+        return $tutorialPeriod->status === TutorialPeriodStatus::ASSIGNING;
+    }
+
+    /**
+     * Check if tutorial period can transition to CLOSED (must be in ONGOING status)
+     */
+    public function canClose(TutorialPeriod $tutorialPeriod): bool
+    {
+        return $tutorialPeriod->status === TutorialPeriodStatus::ONGOING;
+    }
+
+    /**
+     * Check if tutorial period can be cancelled (cannot be CLOSED or CANCELLED)
+     */
+    public function canCancel(TutorialPeriod $tutorialPeriod): bool
+    {
+        return !in_array(
+            $tutorialPeriod->status,
+            [TutorialPeriodStatus::CLOSED, TutorialPeriodStatus::CANCELLED],
+            true
+        );
+    }
+
+    /**
      * @return array<string, bool>
      */
     public function getPermissions(TutorialPeriodStatus $status): array
     {
+        // This method now delegates to status-specific checks for consistency
+        $mockPeriod = new TutorialPeriod(['status' => $status]);
+
         return [
-            'canEdit' => $status === TutorialPeriodStatus::DRAFT,
-            'canDelete' => $status === TutorialPeriodStatus::DRAFT,
-            'canOpen' => $status === TutorialPeriodStatus::DRAFT,
-            'canAssigning' => $status === TutorialPeriodStatus::OPEN,
-            'canOngoing' => $status === TutorialPeriodStatus::ASSIGNING,
-            'canClose' => $status === TutorialPeriodStatus::ONGOING,
-            'canCancel' => !in_array(
-                $status,
-                [TutorialPeriodStatus::CLOSED, TutorialPeriodStatus::CANCELLED],
-                true
-            ),
+            'canEdit' => $this->canEdit($mockPeriod),
+            'canDelete' => $this->canDelete($mockPeriod),
+            'canOpen' => $this->canOpen($mockPeriod),
+            'canAssigning' => $this->canAssigning($mockPeriod),
+            'canOngoing' => $this->canOngoing($mockPeriod),
+            'canClose' => $this->canClose($mockPeriod),
+            'canCancel' => $this->canCancel($mockPeriod),
         ];
     }
 

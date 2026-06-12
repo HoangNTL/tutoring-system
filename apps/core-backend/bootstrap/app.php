@@ -7,6 +7,7 @@ use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
+use Illuminate\Http\Middleware\HandleCors;
 
 if (!function_exists('transformValidationErrorsToCamelCaseOnce')) {
     function transformValidationErrorsToCamelCaseOnce(array $errors): array
@@ -33,6 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->api(prepend: [
+            HandleCors::class,
             EnsureFrontendRequestsAreStateful::class,
         ]);
 
