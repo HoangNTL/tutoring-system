@@ -68,5 +68,15 @@ export class LecturerRepository {
       data: mappedData,
       meta: getPaginationMeta({ total, page, limit }),
     };
+    } catch (error) {
+      if (shouldUseDatabaseFallback()) {
+        return {
+          data: [],
+          meta: getPaginationMeta({ total: 0, page, limit }),
+        };
+      }
+
+      throw error;
+    }
   }
 }

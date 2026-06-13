@@ -2,7 +2,7 @@
 
 namespace App\Services\TutorialPeriods;
 
-use App\Contracts\Legacy\LegacyApiClient;
+use App\Contracts\LegacyDataGateway;
 use App\Models\TutorialPeriod;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -10,7 +10,7 @@ use Throwable;
 class TutorialPeriodAcademicPeriodResolver
 {
     public function __construct(
-        private LegacyApiClient $legacyApiService
+        private LegacyDataGateway $legacyDataGateway
     ) {}
 
     public function enrich(TutorialPeriod $tutorialPeriod): void

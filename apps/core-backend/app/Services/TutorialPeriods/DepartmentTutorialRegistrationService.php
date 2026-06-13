@@ -2,7 +2,7 @@
 
 namespace App\Services\TutorialPeriods;
 
-use App\Contracts\Legacy\LegacyApiClient;
+use App\Contracts\LegacyDataGateway;
 use App\Enums\TutorialPeriodStatus;
 use App\Enums\TutorialRegistrationStatus;
 use App\Models\TutorialPeriod;
@@ -16,7 +16,7 @@ class DepartmentTutorialRegistrationService
 {
     public function __construct(
         private TutorialPeriodAcademicPeriodResolver $academicPeriodResolver,
-        private LegacyApiClient $legacyApiService
+        private LegacyDataGateway $legacyDataGateway
     ) {}
 
     /**

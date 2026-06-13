@@ -80,4 +80,113 @@ class TutorialPeriodController extends Controller
 
         return $this->success(null, 'Tutorial period deleted successfully');
     }
+
+    public function open(TutorialPeriod $tutorial_period)
+    {
+        $this->authorize('open', $tutorial_period);
+
+        $tutorialPeriod = $this->tutorialPeriodService->open($tutorial_period->id);
+
+        return $this->success(
+            new TutorialPeriodResource($tutorialPeriod),
+            'Tutorial period opened successfully'
+        );
+    }
+
+    public function cancel(TutorialPeriod $tutorial_period)
+    {
+        $this->authorize('cancel', $tutorial_period);
+
+        $tutorialPeriod = $this->tutorialPeriodService->cancel($tutorial_period->id);
+
+        return $this->success(
+            new TutorialPeriodResource($tutorialPeriod),
+            'Tutorial period cancelled successfully'
+        );
+    }
+
+    public function assigning(TutorialPeriod $tutorial_period)
+    {
+        $this->authorize('assigning', $tutorial_period);
+
+        $tutorialPeriod = $this->tutorialPeriodService->assigning($tutorial_period->id);
+
+        return $this->success(
+            new TutorialPeriodResource($tutorialPeriod),
+            'Tutorial period moved to assigning successfully'
+        );
+    }
+
+    public function ongoing(TutorialPeriod $tutorial_period)
+    {
+        $this->authorize('ongoing', $tutorial_period);
+
+        $tutorialPeriod = $this->tutorialPeriodService->ongoing($tutorial_period->id);
+
+        return $this->success(
+            new TutorialPeriodResource($tutorialPeriod),
+            'Tutorial period moved to ongoing successfully'
+        );
+    }
+
+    public function close(TutorialPeriod $tutorial_period)
+    {
+        $this->authorize('close', $tutorial_period);
+
+        $tutorialPeriod = $this->tutorialPeriodService->close($tutorial_period->id);
+
+        return $this->success(
+            new TutorialPeriodResource($tutorialPeriod),
+            'Tutorial period closed successfully'
+        );
+    }
+
+    public function revertToDraft(TutorialPeriod $tutorial_period)
+    {
+        $this->authorize('revertToDraft', $tutorial_period);
+
+        $tutorialPeriod = $this->tutorialPeriodService->revertToDraft($tutorial_period->id);
+
+        return $this->success(
+            new TutorialPeriodResource($tutorialPeriod),
+            'Tutorial period reverted to draft successfully'
+        );
+    }
+
+    public function reopenRegistration(TutorialPeriod $tutorial_period)
+    {
+        $this->authorize('reopenRegistration', $tutorial_period);
+
+        $tutorialPeriod = $this->tutorialPeriodService->reopenRegistration($tutorial_period->id);
+
+        return $this->success(
+            new TutorialPeriodResource($tutorialPeriod),
+            'Tutorial period reopened for registration successfully'
+        );
+    }
+
+    public function restore(Request $request, TutorialPeriod $tutorial_period)
+    {
+        $this->authorize('restore', $tutorial_period);
+
+        $targetStatusName = $request->input('targetStatus', 'DRAFT');
+        $targetStatus = TutorialPeriodStatus::tryFrom(
+            match (strtoupper($targetStatusName)) {
+                'DRAFT' => TutorialPeriodStatus::DRAFT->value,
+                'OPEN' => TutorialPeriodStatus::OPEN->value,
+                default => -1,
+            }
+        );
+
+        if ($targetStatus === null) {
+            return $this->error('targetStatus must be DRAFT or OPEN', 422);
+        }
+
+        $tutorialPeriod = $this->tutorialPeriodService->restore($tutorial_period->id, $targetStatus);
+
+        return $this->success(
+            new TutorialPeriodResource($tutorialPeriod),
+            'Tutorial period restored successfully'
+        );
+    }
 }

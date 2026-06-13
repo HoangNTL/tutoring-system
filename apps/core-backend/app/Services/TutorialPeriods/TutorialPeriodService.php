@@ -45,18 +45,8 @@ class TutorialPeriodService
 
         $wasOpen = $tutorialPeriod->status === TutorialPeriodStatus::OPEN;
 
-        $editableFields = $this->tutorialPeriodStatusService->getEditableFields($tutorialPeriod->status);
-
-        if (empty($editableFields)) {
-            throw new ConflictHttpException('This tutorial period cannot be edited in its current status');
-        }
-
-        $allAttributes = $this->extractTutorialPeriodAttributes($data);
-        $attributes = array_intersect_key($allAttributes, array_flip($editableFields));
-
-        if (!empty($attributes)) {
-            $tutorialPeriod->update($attributes);
-        }
+        $attributes = $this->extractTutorialPeriodAttributes($data);
+        $tutorialPeriod->update($attributes);
 
         $tutorialPeriod = $tutorialPeriod->refresh()->load('createdBy')->loadCount(['registrations', 'classes']);
         $this->academicPeriodResolver->enrich($tutorialPeriod);
@@ -76,6 +66,50 @@ class TutorialPeriodService
         $tutorialPeriod->delete();
     }
 
+    public function open(int $id): TutorialPeriod
+    {
+        $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFail($id);
+        $tutorialPeriod = $this->tutorialPeriodStatusService->open($tutorialPeriod);
+        $this->academicPeriodResolver->enrich($tutorialPeriod);
+
+        return $tutorialPeriod;
+    }
+
+    public function cancel(int $id): TutorialPeriod
+    {
+        $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFail($id);
+        $tutorialPeriod = $this->tutorialPeriodStatusService->cancel($tutorialPeriod);
+        $this->academicPeriodResolver->enrich($tutorialPeriod);
+
+        return $tutorialPeriod;
+    }
+
+    public function assigning(int $id): TutorialPeriod
+    {
+        $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFail($id);
+        $tutorialPeriod = $this->tutorialPeriodStatusService->assigning($tutorialPeriod);
+        $this->academicPeriodResolver->enrich($tutorialPeriod);
+
+        return $tutorialPeriod;
+    }
+
+    public function ongoing(int $id): TutorialPeriod
+    {
+        $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFail($id);
+        $tutorialPeriod = $this->tutorialPeriodStatusService->ongoing($tutorialPeriod);
+        $this->academicPeriodResolver->enrich($tutorialPeriod);
+
+        return $tutorialPeriod;
+    }
+
+    public function close(int $id): TutorialPeriod
+    {
+        $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFail($id);
+        $tutorialPeriod = $this->tutorialPeriodStatusService->close($tutorialPeriod);
+        $this->academicPeriodResolver->enrich($tutorialPeriod);
+
+        return $tutorialPeriod;
+    }
 
     public function revertToDraft(int $id): TutorialPeriod
     {

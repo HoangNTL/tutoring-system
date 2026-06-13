@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Contracts\Legacy\LegacyApiClient;
+use App\Services\LegacyImport\LegacyUserImportSourceFactory;
 use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 class LegacyImportService
 {
     public function __construct(
-        private LegacyApiClient $legacyApiService
+        private LegacyUserImportSourceFactory $sourceFactory
     ) {}
 
     private function formatDevPassword(?string $dateOfBirth): string

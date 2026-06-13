@@ -107,7 +107,7 @@ class TutorialPeriodStatusTransitionTest extends TestCase
     public function test_open_can_be_reverted_to_draft(): void
     {
         $admin = $this->createAdmin();
-        $tutorialPeriod = $this->createTutorialPeriod($admin->id, TutorialPeriodStatus::OPEN, 'Open Period');
+        $tutorialPeriod = $this->createTutorialPeriod($admin->id, TutorialPeriodStatus::OPEN);
 
         $this
             ->actingAs($admin, 'web')
@@ -121,7 +121,7 @@ class TutorialPeriodStatusTransitionTest extends TestCase
     public function test_assigning_can_be_reverted_to_open(): void
     {
         $admin = $this->createAdmin();
-        $tutorialPeriod = $this->createTutorialPeriod($admin->id, TutorialPeriodStatus::ASSIGNING, 'Assigning Period');
+        $tutorialPeriod = $this->createTutorialPeriod($admin->id, TutorialPeriodStatus::ASSIGNING);
 
         $this
             ->actingAs($admin, 'web')
@@ -137,7 +137,7 @@ class TutorialPeriodStatusTransitionTest extends TestCase
         $admin = $this->createAdmin();
         
         // Test restore to DRAFT
-        $tp1 = $this->createTutorialPeriod($admin->id, TutorialPeriodStatus::CANCELLED, 'Cancelled Period 1');
+        $tp1 = $this->createTutorialPeriod($admin->id, TutorialPeriodStatus::CANCELLED);
         $this
             ->actingAs($admin, 'web')
             ->patchJson('/api/v1/tutorial-periods/' . $tp1->id . '/restore', ['targetStatus' => 'DRAFT'])
@@ -146,7 +146,7 @@ class TutorialPeriodStatusTransitionTest extends TestCase
         $this->assertSame(TutorialPeriodStatus::DRAFT, $tp1->refresh()->status);
 
         // Test restore to OPEN
-        $tp2 = $this->createTutorialPeriod($admin->id, TutorialPeriodStatus::CANCELLED, 'Cancelled Period 2');
+        $tp2 = $this->createTutorialPeriod($admin->id, TutorialPeriodStatus::CANCELLED);
         $this
             ->actingAs($admin, 'web')
             ->patchJson('/api/v1/tutorial-periods/' . $tp2->id . '/restore', ['targetStatus' => 'OPEN'])
@@ -158,7 +158,7 @@ class TutorialPeriodStatusTransitionTest extends TestCase
     public function test_cannot_restore_if_has_entered_ongoing(): void
     {
         $admin = $this->createAdmin();
-        $tutorialPeriod = $this->createTutorialPeriod($admin->id, TutorialPeriodStatus::CANCELLED, 'Cancelled Period');
+        $tutorialPeriod = $this->createTutorialPeriod($admin->id, TutorialPeriodStatus::CANCELLED);
         $tutorialPeriod->update(['has_entered_ongoing' => true]);
 
         $this
@@ -172,7 +172,7 @@ class TutorialPeriodStatusTransitionTest extends TestCase
     public function test_has_entered_ongoing_flag_is_set_when_ongoing_is_reached(): void
     {
         $admin = $this->createAdmin();
-        $tutorialPeriod = $this->createTutorialPeriod($admin->id, TutorialPeriodStatus::ASSIGNING, 'Assigning Period');
+        $tutorialPeriod = $this->createTutorialPeriod($admin->id, TutorialPeriodStatus::ASSIGNING);
         
         $this->assertFalse($tutorialPeriod->refresh()->has_entered_ongoing);
 

@@ -14,14 +14,15 @@ export class DepartmentRepository {
   ): Promise<{ data: Department[]; meta: PaginationMeta }> {
     const { page, limit } = params;
 
-    if (shouldUseDatabaseFallback()) {
-      return {
-        data: [],
-        meta: getPaginationMeta({ total: 0, page, limit }),
-      };
-    }
+    try {
+      if (shouldUseDatabaseFallback()) {
+        return {
+          data: [],
+          meta: getPaginationMeta({ total: 0, page, limit }),
+        };
+      }
 
-    const baseQuery = db('TMP_DsBoMonKhoa');
+      const baseQuery = db('TMP_DsBoMonKhoa');
 
     const totalRes = await baseQuery
       .clone()
