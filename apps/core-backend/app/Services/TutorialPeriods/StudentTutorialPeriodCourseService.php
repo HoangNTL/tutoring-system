@@ -38,7 +38,7 @@ class StudentTutorialPeriodCourseService
         }
 
         if ($user->student_id !== null) {
-            return $this->legacyApiService->fetchStudentCoursesByLegacyStudentId(
+            return $this->legacyDataGateway->fetchStudentCoursesByLegacyStudentId(
                 (int) $user->student_id,
                 (int) $legacyPeriodId
             );
@@ -52,7 +52,7 @@ class StudentTutorialPeriodCourseService
             );
         }
 
-        return $this->legacyApiService->fetchStudentCoursesByStudentCode(
+        return $this->legacyDataGateway->fetchStudentCoursesByStudentCode(
             $studentCode,
             (int) $legacyPeriodId
         );

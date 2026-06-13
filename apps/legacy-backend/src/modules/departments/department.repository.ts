@@ -1,4 +1,4 @@
-import { db } from '@/config/database';
+import { db, shouldUseDatabaseFallback } from '@/config/database';
 import { getPaginationMeta } from '@/shared/pagination';
 import { PaginationMeta } from '@/shared/types';
 
@@ -14,6 +14,13 @@ export class DepartmentRepository {
   ): Promise<{ data: Department[]; meta: PaginationMeta }> {
     const { page, limit } = params;
 
+    if (shouldUseDatabaseFallback()) {
+      return {
+        data: [],
+        meta: getPaginationMeta({ total: 0, page, limit }),
+      };
+    }
+
     const baseQuery = db('TMP_DsBoMonKhoa');
 
     const totalRes = await baseQuery
@@ -22,7 +29,7 @@ export class DepartmentRepository {
       .clearOrder()
       .count('IDBoMon as total');
 
-    const total = Number(totalRes[0].total || 0);
+      const total = Number(totalRes[0].total || 0);
 
     const data = await baseQuery
       .orderBy('IDBoMon', 'asc')
@@ -30,10 +37,20 @@ export class DepartmentRepository {
       .offset((page - 1) * limit)
       .select('IDBoMon as id', 'TenBoMon as name');
 
-    return {
-      data,
-      meta: getPaginationMeta({ total, page, limit }),
-    };
+      return {
+        data,
+        meta: getPaginationMeta({ total, page, limit }),
+      };
+    } catch (error) {
+      if (shouldUseDatabaseFallback()) {
+        return {
+          data: [],
+          meta: getPaginationMeta({ total: 0, page, limit }),
+        };
+      }
+
+      throw error;
+    }
   }
 
   async getLecturersByDepartment(

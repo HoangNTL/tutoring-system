@@ -32,4 +32,23 @@ class TutorialPeriodPolicy
     {
         return $user->role === UserRole::ADMIN;
     }
+
+    public function revertToDraft(User $user, TutorialPeriod $tutorialPeriod): bool
+    {
+        return $user->role === UserRole::ADMIN
+            && $tutorialPeriod->status === TutorialPeriodStatus::OPEN;
+    }
+
+    public function reopenRegistration(User $user, TutorialPeriod $tutorialPeriod): bool
+    {
+        return $user->role === UserRole::ADMIN
+            && $tutorialPeriod->status === TutorialPeriodStatus::ASSIGNING;
+    }
+
+    public function restore(User $user, TutorialPeriod $tutorialPeriod): bool
+    {
+        return $user->role === UserRole::ADMIN
+            && $tutorialPeriod->status === TutorialPeriodStatus::CANCELLED
+            && !$tutorialPeriod->has_entered_ongoing;
+    }
 }

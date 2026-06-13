@@ -7,8 +7,10 @@ use App\Http\Requests\TutorialPeriod\ListTutorialPeriodsRequest;
 use App\Http\Requests\TutorialPeriod\StoreTutorialPeriodRequest;
 use App\Http\Requests\TutorialPeriod\UpdateTutorialPeriodRequest;
 use App\Http\Resources\TutorialPeriodResource;
+use App\Enums\TutorialPeriodStatus;
 use App\Models\TutorialPeriod;
 use App\Services\TutorialPeriods\TutorialPeriodService;
+use Illuminate\Http\Request;
 
 class TutorialPeriodController extends Controller
 {

@@ -13,6 +13,57 @@ class TutorialPeriodStatusService
         private TutorialPeriodStateFactory $stateFactory
     ) {}
 
+    public function revertToDraft(TutorialPeriod $tutorialPeriod): TutorialPeriod
+    {
+        return $this->transition(
+            $tutorialPeriod,
+            TutorialPeriodStatus::OPEN,
+            TutorialPeriodStatus::DRAFT,
+            'reverted to DRAFT'
+        );
+    }
+
+    public function reopenRegistration(TutorialPeriod $tutorialPeriod): TutorialPeriod
+    {
+        return $this->transition(
+            $tutorialPeriod,
+            TutorialPeriodStatus::ASSIGNING,
+            TutorialPeriodStatus::OPEN,
+            'reopened for registration'
+        );
+    }
+
+    public function restore(TutorialPeriod $tutorialPeriod, TutorialPeriodStatus $targetStatus): TutorialPeriod
+    {
+        $allowedTargets = [TutorialPeriodStatus::DRAFT, TutorialPeriodStatus::OPEN];
+
+        if (!in_array($targetStatus, $allowedTargets, true)) {
+            throw new ConflictHttpException('Cancelled tutorial periods can only be restored to DRAFT or OPEN');
+        }
+
+        return DB::transaction(function () use ($tutorialPeriod, $targetStatus): TutorialPeriod {
+            $tutorialPeriod = $this->findTutorialPeriodOrFail($tutorialPeriod->id, ['createdBy'], true);
+
+            if ($tutorialPeriod->status !== TutorialPeriodStatus::CANCELLED) {
+                throw new ConflictHttpException('Only cancelled tutorial periods can be restored');
+            }
+
+            if ($tutorialPeriod->has_entered_ongoing) {
+                throw new ConflictHttpException('Cannot restore a tutorial period that has entered ONGOING status');
+            }
+
+            if ($targetStatus === TutorialPeriodStatus::OPEN) {
+                $this->validateOpenableDates($tutorialPeriod);
+            }
+
+            $tutorialPeriod->update([
+                'status' => $targetStatus->value,
+            ]);
+
+            return $tutorialPeriod->refresh()->load('createdBy');
+        });
+    }
+
     /**
      * @param  array<string, mixed>  $data
      */
@@ -65,6 +116,13 @@ class TutorialPeriodStatusService
             'allowedStatuses' => array_map(
                 static fn (TutorialPeriodStatus $status): string => $status->name,
                 $state->allowedStatuses()
+            ),
+            'canRevertToDraft' => $status === TutorialPeriodStatus::OPEN,
+            'canReopenRegistration' => $status === TutorialPeriodStatus::ASSIGNING,
+            'canRestore' => $status === TutorialPeriodStatus::CANCELLED && !$tutorialPeriod->has_entered_ongoing,
+            'editableFields' => array_map(
+                fn (string $field) => Str::camel($field),
+                $this->getEditableFields($status)
             ),
         ];
     }

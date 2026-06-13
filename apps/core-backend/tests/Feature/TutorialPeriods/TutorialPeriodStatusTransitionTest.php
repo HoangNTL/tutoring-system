@@ -104,6 +104,87 @@ class TutorialPeriodStatusTransitionTest extends TestCase
             ->assertConflict();
     }
 
+    public function test_open_can_be_reverted_to_draft(): void
+    {
+        $admin = $this->createAdmin();
+        $tutorialPeriod = $this->createTutorialPeriod($admin->id, TutorialPeriodStatus::OPEN, 'Open Period');
+
+        $this
+            ->actingAs($admin, 'web')
+            ->patchJson('/api/v1/tutorial-periods/' . $tutorialPeriod->id . '/revert-to-draft')
+            ->assertOk()
+            ->assertJsonPath('data.status', TutorialPeriodStatus::DRAFT->name);
+
+        $this->assertSame(TutorialPeriodStatus::DRAFT, $tutorialPeriod->refresh()->status);
+    }
+
+    public function test_assigning_can_be_reverted_to_open(): void
+    {
+        $admin = $this->createAdmin();
+        $tutorialPeriod = $this->createTutorialPeriod($admin->id, TutorialPeriodStatus::ASSIGNING, 'Assigning Period');
+
+        $this
+            ->actingAs($admin, 'web')
+            ->patchJson('/api/v1/tutorial-periods/' . $tutorialPeriod->id . '/reopen-registration')
+            ->assertOk()
+            ->assertJsonPath('data.status', TutorialPeriodStatus::OPEN->name);
+
+        $this->assertSame(TutorialPeriodStatus::OPEN, $tutorialPeriod->refresh()->status);
+    }
+
+    public function test_cancelled_can_be_restored_to_draft_or_open(): void
+    {
+        $admin = $this->createAdmin();
+        
+        // Test restore to DRAFT
+        $tp1 = $this->createTutorialPeriod($admin->id, TutorialPeriodStatus::CANCELLED, 'Cancelled Period 1');
+        $this
+            ->actingAs($admin, 'web')
+            ->patchJson('/api/v1/tutorial-periods/' . $tp1->id . '/restore', ['targetStatus' => 'DRAFT'])
+            ->assertOk()
+            ->assertJsonPath('data.status', TutorialPeriodStatus::DRAFT->name);
+        $this->assertSame(TutorialPeriodStatus::DRAFT, $tp1->refresh()->status);
+
+        // Test restore to OPEN
+        $tp2 = $this->createTutorialPeriod($admin->id, TutorialPeriodStatus::CANCELLED, 'Cancelled Period 2');
+        $this
+            ->actingAs($admin, 'web')
+            ->patchJson('/api/v1/tutorial-periods/' . $tp2->id . '/restore', ['targetStatus' => 'OPEN'])
+            ->assertOk()
+            ->assertJsonPath('data.status', TutorialPeriodStatus::OPEN->name);
+        $this->assertSame(TutorialPeriodStatus::OPEN, $tp2->refresh()->status);
+    }
+
+    public function test_cannot_restore_if_has_entered_ongoing(): void
+    {
+        $admin = $this->createAdmin();
+        $tutorialPeriod = $this->createTutorialPeriod($admin->id, TutorialPeriodStatus::CANCELLED, 'Cancelled Period');
+        $tutorialPeriod->update(['has_entered_ongoing' => true]);
+
+        $this
+            ->actingAs($admin, 'web')
+            ->patchJson('/api/v1/tutorial-periods/' . $tutorialPeriod->id . '/restore', ['targetStatus' => 'DRAFT'])
+            ->assertForbidden();
+
+        $this->assertSame(TutorialPeriodStatus::CANCELLED, $tutorialPeriod->refresh()->status);
+    }
+
+    public function test_has_entered_ongoing_flag_is_set_when_ongoing_is_reached(): void
+    {
+        $admin = $this->createAdmin();
+        $tutorialPeriod = $this->createTutorialPeriod($admin->id, TutorialPeriodStatus::ASSIGNING, 'Assigning Period');
+        
+        $this->assertFalse($tutorialPeriod->refresh()->has_entered_ongoing);
+
+        $this
+            ->actingAs($admin, 'web')
+            ->patchJson('/api/v1/tutorial-periods/' . $tutorialPeriod->id . '/ongoing')
+            ->assertOk()
+            ->assertJsonPath('data.status', TutorialPeriodStatus::ONGOING->name);
+
+        $this->assertTrue($tutorialPeriod->refresh()->has_entered_ongoing);
+    }
+
     private function createAdmin(): User
     {
         return User::create([

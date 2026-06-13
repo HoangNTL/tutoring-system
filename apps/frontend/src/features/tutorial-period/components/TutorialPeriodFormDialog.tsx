@@ -60,6 +60,15 @@ export function TutorialPeriodFormDialog({
   onOpenChange,
   onSubmit,
 }: TutorialPeriodFormDialogProps) {
+  const editableFields = mode === 'create'
+    ? null
+    : tutorialPeriod?.permissions?.editableFields ?? []
+
+  const isFieldLocked = (fieldName: string) => {
+    if (mode === 'create' || editableFields === null) return false
+    return !editableFields.includes(fieldName)
+  }
+
   const {
     control,
     register,

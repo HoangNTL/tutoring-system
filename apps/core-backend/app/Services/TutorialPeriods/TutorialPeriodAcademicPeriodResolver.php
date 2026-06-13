@@ -46,7 +46,7 @@ class TutorialPeriodAcademicPeriodResolver
         }
 
         try {
-            $periodsById = collect($this->legacyApiService->fetchLegacyPeriods())
+            $periodsById = collect($this->legacyDataGateway->fetchLegacyPeriods())
                 ->keyBy('id');
         } catch (Throwable $exception) {
             Log::warning('Failed to enrich tutorial periods with legacy academic period data', [

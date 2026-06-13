@@ -13,7 +13,7 @@ class LegacyPeriodController extends Controller
 
     public function index()
     {
-        $periods = $this->legacyApiService->fetchLegacyPeriods();
+        $periods = $this->legacyDataGateway->fetchLegacyPeriods();
 
         return $this->success($periods, 'Legacy periods retrieved successfully');
     }

@@ -26,58 +26,41 @@ class LegacyImportService
 
     public function importStudents(): void
     {
-        $students = $this->legacyApiService->fetchAllStudents();
-        Log::info("Fetched " . count($students) . " students from legacy API.");
-
-        foreach ($students as $student) {
-            $user = User::firstOrNew([
-                'username' => $student['username']
-            ]);
-
-            $this->synchronizeImportedUser(
-                $user,
-                UserRole::STUDENT,
-                'student_id',
-                $student['legacy_id'],
-                $this->formatDevPassword($student['date_of_birth'] ?? null)
-            );
-        }
+        $this->importRole(UserRole::STUDENT);
     }
 
     public function importLecturers(): void
     {
-        $lecturers = $this->legacyApiService->fetchAllLecturers();
-
-        foreach ($lecturers as $lecturer) {
-            $user = User::firstOrNew([
-                'username' => $lecturer['username']
-            ]);
-
-            $this->synchronizeImportedUser(
-                $user,
-                UserRole::LECTURER,
-                'lecturer_id',
-                $lecturer['legacy_id'],
-                $this->formatDevPassword($lecturer['date_of_birth'] ?? null)
-            );
-        }
+        $this->importRole(UserRole::LECTURER);
     }
 
     public function importDepartments(): void
     {
-        $departments = $this->legacyApiService->fetchAllDepartments();
+        $this->importRole(UserRole::DEPARTMENT);
+    }
 
-        foreach ($departments as $department) {
+    public function importRole(UserRole $role): void
+    {
+        $source = $this->sourceFactory->make($role);
+        $records = $source->records();
+
+        Log::info(sprintf(
+            'Fetched %d %s from legacy API.',
+            count($records),
+            strtolower($role->name)
+        ));
+
+        foreach ($records as $record) {
             $user = User::firstOrNew([
-                'username' => $department['username']
+                'username' => $record['username'],
             ]);
 
             $this->synchronizeImportedUser(
                 $user,
-                UserRole::DEPARTMENT,
-                'department_id',
-                $department['legacy_id'],
-                $this->formatDevPassword(null)
+                $source->role(),
+                $source->legacyColumn(),
+                $record['legacyId'],
+                $this->formatDevPassword($record['passwordSeed'])
             );
         }
     }

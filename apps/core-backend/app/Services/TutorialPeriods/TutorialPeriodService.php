@@ -45,8 +45,18 @@ class TutorialPeriodService
 
         $wasOpen = $tutorialPeriod->status === TutorialPeriodStatus::OPEN;
 
-        $attributes = $this->extractTutorialPeriodAttributes($data);
-        $tutorialPeriod->update($attributes);
+        $editableFields = $this->tutorialPeriodStatusService->getEditableFields($tutorialPeriod->status);
+
+        if (empty($editableFields)) {
+            throw new ConflictHttpException('This tutorial period cannot be edited in its current status');
+        }
+
+        $allAttributes = $this->extractTutorialPeriodAttributes($data);
+        $attributes = array_intersect_key($allAttributes, array_flip($editableFields));
+
+        if (!empty($attributes)) {
+            $tutorialPeriod->update($attributes);
+        }
 
         $tutorialPeriod = $tutorialPeriod->refresh()->load('createdBy')->loadCount(['registrations', 'classes']);
         $this->academicPeriodResolver->enrich($tutorialPeriod);
@@ -66,6 +76,33 @@ class TutorialPeriodService
         $tutorialPeriod->delete();
     }
 
+
+    public function revertToDraft(int $id): TutorialPeriod
+    {
+        $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFail($id);
+        $tutorialPeriod = $this->tutorialPeriodStatusService->revertToDraft($tutorialPeriod);
+        $this->academicPeriodResolver->enrich($tutorialPeriod);
+
+        return $tutorialPeriod;
+    }
+
+    public function reopenRegistration(int $id): TutorialPeriod
+    {
+        $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFail($id);
+        $tutorialPeriod = $this->tutorialPeriodStatusService->reopenRegistration($tutorialPeriod);
+        $this->academicPeriodResolver->enrich($tutorialPeriod);
+
+        return $tutorialPeriod;
+    }
+
+    public function restore(int $id, TutorialPeriodStatus $targetStatus): TutorialPeriod
+    {
+        $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFail($id);
+        $tutorialPeriod = $this->tutorialPeriodStatusService->restore($tutorialPeriod, $targetStatus);
+        $this->academicPeriodResolver->enrich($tutorialPeriod);
+
+        return $tutorialPeriod;
+    }
 
     /**
      * @return array{open_to_assigning:int,assigning_to_ongoing:int,ongoing_to_closed:int}
