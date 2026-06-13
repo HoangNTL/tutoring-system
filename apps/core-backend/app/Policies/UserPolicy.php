@@ -16,4 +16,9 @@ class UserPolicy
     {
         return $user->role === UserRole::ADMIN;
     }
+
+    public function viewLecturers(User $user): bool
+    {
+        return $user->role === UserRole::DEPARTMENT;
+    }
 }

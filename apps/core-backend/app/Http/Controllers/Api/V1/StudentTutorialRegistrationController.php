@@ -4,46 +4,68 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Student\RegisterTutorialCourseRequest;
+use App\Models\TutorialRegistration;
 use App\Services\TutorialPeriods\StudentTutorialRegistrationService;
 use Illuminate\Http\Request;
 
 class StudentTutorialRegistrationController extends Controller
 {
     public function __construct(
-        private StudentTutorialRegistrationService $studentTutorialRegistrationService
+        private StudentTutorialRegistrationService $studentTutorialRegistrationService,
     ) {}
 
-    public function store(RegisterTutorialCourseRequest $request, int $tutorialPeriodId)
-    {
+    public function store(
+        RegisterTutorialCourseRequest $request,
+        int $tutorialPeriodId,
+    ) {
+        $this->authorize("register", TutorialRegistration::class);
+
         $registration = $this->studentTutorialRegistrationService->register(
             $request->user(),
             $tutorialPeriodId,
-            (string) $request->validated('course_code')
+            (string) $request->validated("course_code"),
         );
 
-        return $this->success([
-            'courseCode' => $registration->course_code,
-            'courseName' => $registration->course_name,
-            'credits' => $registration->credits,
-            'registeredAt' => $registration->registered_at?->format('Y-m-d H:i:s'),
-            'status' => $registration->status?->value,
-        ], 'Course registered successfully', null, 201);
+        return $this->success(
+            [
+                "courseCode" => $registration->course_code,
+                "courseName" => $registration->course_name,
+                "credits" => $registration->credits,
+                "registeredAt" => $registration->registered_at?->format(
+                    "Y-m-d H:i:s",
+                ),
+                "status" => $registration->status?->value,
+            ],
+            "Course registered successfully",
+            null,
+            201,
+        );
     }
 
-    public function destroy(Request $request, int $tutorialPeriodId, string $courseCode)
-    {
+    public function destroy(
+        Request $request,
+        int $tutorialPeriodId,
+        string $courseCode,
+    ) {
+        $this->authorize("cancel", TutorialRegistration::class);
+
         $registration = $this->studentTutorialRegistrationService->cancel(
             $request->user(),
             $tutorialPeriodId,
-            $courseCode
+            $courseCode,
         );
 
-        return $this->success([
-            'courseCode' => $registration->course_code,
-            'courseName' => $registration->course_name,
-            'credits' => $registration->credits,
-            'cancelledAt' => $registration->cancelled_at?->format('Y-m-d H:i:s'),
-            'status' => $registration->status?->value,
-        ], 'Course registration cancelled successfully');
+        return $this->success(
+            [
+                "courseCode" => $registration->course_code,
+                "courseName" => $registration->course_name,
+                "credits" => $registration->credits,
+                "cancelledAt" => $registration->cancelled_at?->format(
+                    "Y-m-d H:i:s",
+                ),
+                "status" => $registration->status?->value,
+            ],
+            "Course registration cancelled successfully",
+        );
     }
 }

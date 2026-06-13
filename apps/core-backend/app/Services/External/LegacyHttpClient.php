@@ -35,11 +35,19 @@ class LegacyHttpClient
 
             $this->logRequestFailure($endpoint, $exception);
 
-            throw new RuntimeException('Failed to fetch data from legacy service', 0, $exception);
+            throw new RuntimeException(
+                "Failed to fetch data from legacy service",
+                0,
+                $exception,
+            );
         } catch (\Throwable $exception) {
             $this->logTransportFailure($endpoint, $exception);
 
-            throw new RuntimeException('Legacy service is unavailable', 0, $exception);
+            throw new RuntimeException(
+                "Legacy service is unavailable",
+                0,
+                $exception,
+            );
         }
     }
 
@@ -64,15 +72,23 @@ class LegacyHttpClient
 
             $payload = $response->json();
 
-            return is_array($payload['data'] ?? null) ? $payload['data'] : null;
+            return is_array($payload["data"] ?? null) ? $payload["data"] : null;
         } catch (RequestException $exception) {
             $this->logRequestFailure($endpoint, $exception);
 
-            throw new RuntimeException('Failed to fetch data from legacy service', 0, $exception);
+            throw new RuntimeException(
+                "Failed to fetch data from legacy service",
+                0,
+                $exception,
+            );
         } catch (\Throwable $exception) {
             $this->logTransportFailure($endpoint, $exception);
 
-            throw new RuntimeException('Legacy service is unavailable', 0, $exception);
+            throw new RuntimeException(
+                "Legacy service is unavailable",
+                0,
+                $exception,
+            );
         }
     }
 
@@ -86,38 +102,49 @@ class LegacyHttpClient
                 ->timeout(self::TIMEOUT_SECONDS)
                 ->retry(self::RETRY_TIMES, self::RETRY_DELAY_MS)
                 ->get($endpoint, [
-                    'page' => $page,
-                    'limit' => $limit,
+                    "page" => $page,
+                    "limit" => $limit,
                 ])
                 ->throw();
 
             $payload = $response->json();
 
             return [
-                'data' => $this->extractCollectionPayload($payload),
-                'meta' => [
-                    'lastPage' => max((int) ($payload['meta']['lastPage'] ?? 1), 1),
+                "data" => $this->extractCollectionPayload($payload),
+                "meta" => [
+                    "lastPage" => max(
+                        (int) ($payload["meta"]["lastPage"] ?? 1),
+                        1,
+                    ),
                 ],
             ];
         } catch (RequestException $exception) {
-            Log::error('Legacy API request failed', [
-                'endpoint' => $endpoint,
-                'page' => $page,
-                'limit' => $limit,
-                'status' => $exception->response?->status(),
-                'error' => $exception->getMessage(),
+            Log::error("Legacy API request failed", [
+                "endpoint" => $endpoint,
+                "page" => $page,
+                "limit" => $limit,
+                "status" => $exception->response?->status(),
+                "error" => $exception->getMessage(),
             ]);
 
-            throw new RuntimeException('Failed to fetch data from legacy service', 0, $exception);
+            throw new RuntimeException(
+                "Failed to fetch data from legacy service",
+                0,
+                $exception,
+            );
         } catch (\Throwable $exception) {
-            Log::error('Legacy API transport failure', [
-                'endpoint' => $endpoint,
-                'page' => $page,
-                'limit' => $limit,
-                'error' => $exception->getMessage(),
+            Log::error("Legacy API transport failure", [
+                "endpoint" => $endpoint,
+                "page" => $page,
+                "limit" => $limit,
+                "error" => $exception->getMessage(),
             ]);
 
-            throw new RuntimeException('Legacy service is unavailable', 0, $exception);
+            throw new RuntimeException(
+                "Legacy service is unavailable",
+                0,
+                $exception,
+            );
         }
     }
 
@@ -131,23 +158,27 @@ class LegacyHttpClient
             return [];
         }
 
-        return is_array($payload['data'] ?? null) ? $payload['data'] : [];
+        return is_array($payload["data"] ?? null) ? $payload["data"] : [];
     }
 
-    private function logRequestFailure(string $endpoint, RequestException $exception): void
-    {
-        Log::error('Legacy API request failed', [
-            'endpoint' => $endpoint,
-            'status' => $exception->response?->status(),
-            'error' => $exception->getMessage(),
+    private function logRequestFailure(
+        string $endpoint,
+        RequestException $exception,
+    ): void {
+        Log::error("Legacy API request failed", [
+            "endpoint" => $endpoint,
+            "status" => $exception->response?->status(),
+            "error" => $exception->getMessage(),
         ]);
     }
 
-    private function logTransportFailure(string $endpoint, \Throwable $exception): void
-    {
-        Log::error('Legacy API transport failure', [
-            'endpoint' => $endpoint,
-            'error' => $exception->getMessage(),
+    private function logTransportFailure(
+        string $endpoint,
+        \Throwable $exception,
+    ): void {
+        Log::error("Legacy API transport failure", [
+            "endpoint" => $endpoint,
+            "error" => $exception->getMessage(),
         ]);
     }
 }
