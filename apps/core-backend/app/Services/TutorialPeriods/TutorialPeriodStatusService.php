@@ -266,12 +266,18 @@ class TutorialPeriodStatusService
                 $this->validateOpenableDates($tutorialPeriod);
             }
 
+            $wasOpen = $tutorialPeriod->status === TutorialPeriodStatus::OPEN;
+
             $updateData = ['status' => $to->value];
             if ($to === TutorialPeriodStatus::ONGOING) {
                 $updateData['has_entered_ongoing'] = true;
             }
 
             $tutorialPeriod->update($updateData);
+
+            if (!$wasOpen && $to === TutorialPeriodStatus::OPEN) {
+                event(new \App\Events\TutorialPeriodPublished($tutorialPeriod));
+            }
 
             return $tutorialPeriod->refresh()->load('createdBy');
         });

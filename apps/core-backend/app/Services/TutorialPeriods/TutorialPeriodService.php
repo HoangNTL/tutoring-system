@@ -53,6 +53,41 @@ class TutorialPeriodService
 
         if (!empty($attributes)) {
             $tutorialPeriod->update($attributes);
+
+            if ($tutorialPeriod->status === TutorialPeriodStatus::OPEN) {
+                $wasChanged = $tutorialPeriod->wasChanged('title')
+                    || $tutorialPeriod->wasChanged('registration_start_at')
+                    || $tutorialPeriod->wasChanged('registration_end_at');
+
+                if ($wasChanged) {
+                    $dateChanged = $tutorialPeriod->wasChanged('registration_start_at')
+                        || $tutorialPeriod->wasChanged('registration_end_at');
+
+                    $notificationTitle = $dateChanged
+                        ? 'Thông báo: Thay đổi thời gian đăng ký phụ đạo'
+                        : 'Thông báo: Đợt đăng ký phụ đạo mới';
+
+                    $start = $tutorialPeriod->registration_start_at?->format('d/m/Y') ?? '...';
+                    $end = $tutorialPeriod->registration_end_at?->format('d/m/Y') ?? '...';
+                    $message = "Đợt phụ đạo \"{$tutorialPeriod->title}\" chuẩn bị được mở vào ngày {$start} đến ngày {$end}";
+                    $registrationStartAt = $tutorialPeriod->registration_start_at?->format('Y-m-d H:i:s');
+                    $registrationEndAt = $tutorialPeriod->registration_end_at?->format('Y-m-d H:i:s');
+
+                    \Illuminate\Notifications\DatabaseNotification::query()
+                        ->where('type', \App\Notifications\NewTutorialPeriodNotification::class)
+                        ->where('data->tutorialPeriodId', $tutorialPeriod->id)
+                        ->chunkById(100, function ($notifications) use ($notificationTitle, $message, $registrationStartAt, $registrationEndAt) {
+                            foreach ($notifications as $notification) {
+                                $data = $notification->data;
+                                $data['title'] = $notificationTitle;
+                                $data['message'] = $message;
+                                $data['registrationStartAt'] = $registrationStartAt;
+                                $data['registrationEndAt'] = $registrationEndAt;
+                                $notification->update(['data' => $data]);
+                            }
+                        });
+                }
+            }
         }
 
         $tutorialPeriod = $tutorialPeriod->refresh()->load('createdBy');

@@ -54,6 +54,13 @@ export default function LoginForm() {
     try {
       await loginMutation.mutateAsync(data)
 
+      // Clear keys starting with 'seen_active_popup_' upon login
+      Object.keys(sessionStorage).forEach((key) => {
+        if (key.startsWith('seen_active_popup_')) {
+          sessionStorage.removeItem(key)
+        }
+      })
+
       navigate(
         redirectTo
           ? `${redirectTo.pathname ?? ''}${redirectTo.search ?? ''}${redirectTo.hash ?? ''}`

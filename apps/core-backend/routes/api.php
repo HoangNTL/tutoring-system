@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\StudentTutorialRegistrationController;
 use App\Http\Controllers\Api\V1\StudentTutorialRegistrationInfoController;
 use App\Http\Controllers\Api\V1\TutorialPeriodController;
 use App\Http\Controllers\Api\V1\UserController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -52,5 +53,8 @@ Route::prefix('v1')->group(function () {
         Route::put('/tutorial-periods/{tutorial_period}', [TutorialPeriodController::class, 'update']);
         Route::patch('/tutorial-periods/{tutorial_period}', [TutorialPeriodController::class, 'update']);
         Route::delete('/tutorial-periods/{tutorial_period}', [TutorialPeriodController::class, 'destroy']);
+
+        Route::get('/notifications', [NotificationController::class, 'index']);
+        Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
     });
 });
