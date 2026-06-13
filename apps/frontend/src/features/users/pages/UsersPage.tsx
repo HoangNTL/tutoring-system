@@ -3,8 +3,9 @@ import { UserRoundX } from 'lucide-react'
 
 import { UsersFilters } from '@/features/users/components/UsersFilters'
 import { UsersTable } from '@/features/users/components/UsersTable'
-import { useUsers } from '@/features/users/hooks'
-import type { UserRole } from '@/features/users/types/user.types'
+import { UserPasswordDialog } from '@/features/users/components/UserPasswordDialog'
+import { useUsers, useUpdateUserPasswordMutation } from '@/features/users/hooks'
+import type { UserRole, UserListItem } from '@/features/users/types/user.types'
 import { getApiErrorMessage } from '@/shared/api/errors'
 import ErrorState from '@/shared/ui/error-state'
 import {
@@ -51,6 +52,29 @@ export default function UsersPage() {
   const [page, setPage] = useState(1)
   const [searchInput, setSearchInput] = useState('')
   const [roleFilter, setRoleFilter] = useState<UserRole | 'ALL'>('ALL')
+  const [selectedUser, setSelectedUser] = useState<UserListItem | null>(null)
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+
+  const updatePasswordMutation = useUpdateUserPasswordMutation()
+
+  const handleSubmitPassword = async (password: string) => {
+    if (!selectedUser) return
+    setSubmitError(null)
+
+    try {
+      await updatePasswordMutation.mutateAsync({
+        userId: selectedUser.id,
+        password,
+      })
+      setIsPasswordDialogOpen(false)
+      setSelectedUser(null)
+    } catch (error) {
+      setSubmitError(
+        getApiErrorMessage(error, 'Không thể cập nhật mật khẩu. Vui lòng thử lại.')
+      )
+    }
+  }
 
   const deferredSearch = useDeferredValue(searchInput)
 
@@ -146,7 +170,14 @@ export default function UsersPage() {
               </EmptyHeader>
             </Empty>
           ) : (
-            <UsersTable users={users} />
+            <UsersTable
+              users={users}
+              onEditPassword={(user) => {
+                setSelectedUser(user)
+                setIsPasswordDialogOpen(true)
+                setSubmitError(null)
+              }}
+            />
           )}
         </div>
 
@@ -217,6 +248,21 @@ export default function UsersPage() {
           </div>
         ) : null}
       </div>
+
+      <UserPasswordDialog
+        open={isPasswordDialogOpen}
+        user={selectedUser}
+        isSubmitting={updatePasswordMutation.isPending}
+        submitError={submitError}
+        onOpenChange={(open) => {
+          setIsPasswordDialogOpen(open)
+          if (!open) {
+            setSelectedUser(null)
+            setSubmitError(null)
+          }
+        }}
+        onSubmit={handleSubmitPassword}
+      />
     </div>
   )
 }

@@ -1,4 +1,7 @@
+import { KeyRound } from 'lucide-react'
+
 import { formatDate } from '@/shared/lib/date'
+import { Button } from '@/shared/ui/button'
 import {
   Table,
   TableBody,
@@ -14,17 +17,19 @@ import {
 
 type UsersTableProps = {
   users: UserListItem[]
+  onEditPassword: (user: UserListItem) => void
 }
 
-export function UsersTable({ users }: UsersTableProps) {
+export function UsersTable({ users, onEditPassword }: UsersTableProps) {
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
       <Table>
         <TableHeader className="bg-slate-50">
           <TableRow>
-            <TableHead className="w-[44%] px-4">Tên đăng nhập</TableHead>
-            <TableHead className="w-[26%]">Vai trò</TableHead>
-            <TableHead className="w-[30%] px-4">Ngày tạo</TableHead>
+            <TableHead className="w-[38%] px-4">Tên đăng nhập</TableHead>
+            <TableHead className="w-[24%]">Vai trò</TableHead>
+            <TableHead className="w-[26%]">Ngày tạo</TableHead>
+            <TableHead className="w-[12%] px-4 text-right">Thao tác</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -37,8 +42,22 @@ export function UsersTable({ users }: UsersTableProps) {
                 <TableCell className="py-3 text-sm text-slate-700">
                   {userRoleLabels[user.role]}
                 </TableCell>
-                <TableCell className="px-4 py-3 text-sm text-slate-600">
+                <TableCell className="py-3 text-sm text-slate-600">
                   {formatDate(user.createdAt) || '—'}
+                </TableCell>
+                <TableCell className="px-4 py-3 text-right">
+                  {['LECTURER', 'STUDENT', 'DEPARTMENT'].includes(user.role) ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-8 rounded-lg px-2.5 text-slate-600 hover:text-[#0f4c81]"
+                      onClick={() => onEditPassword(user)}
+                    >
+                      <KeyRound className="mr-1.5 size-4" />
+                      Đổi mật khẩu
+                    </Button>
+                  ) : null}
                 </TableCell>
               </TableRow>
             )

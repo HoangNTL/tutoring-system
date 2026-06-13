@@ -78,4 +78,12 @@ class UserService
             default => null,
         };
     }
+
+    public function updatePassword(int $userId, string $password): void
+    {
+        $user = User::findOrFail($userId);
+        $user->update([
+            'password_hash' => $password,
+        ]);
+    }
 }

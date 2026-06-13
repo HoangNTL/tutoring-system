@@ -30,3 +30,15 @@ export const getUsers = async (
 
   return response.data
 }
+
+export const updateUserPassword = async (
+  userId: number,
+  password: string
+): Promise<BaseResponse<null>> => {
+  const response = await http.patch<BaseResponse<null>>(
+    `${USERS_ENDPOINT}/${userId}/password`,
+    { password }
+  )
+
+  return response.data
+}
