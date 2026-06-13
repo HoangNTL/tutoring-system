@@ -23,6 +23,9 @@ export function StudentTutorialPeriodCard({
   tutorialPeriod,
 }: StudentTutorialPeriodCardProps) {
   const registrationDeadline = formatDate(tutorialPeriod.registrationEndAt) || '—'
+  const isStarted = tutorialPeriod.registrationStartAt
+    ? new Date(tutorialPeriod.registrationStartAt) <= new Date()
+    : true
 
   return (
     <article className="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
@@ -36,12 +39,21 @@ export function StudentTutorialPeriodCard({
           </h3>
         </div>
 
-        <Badge
-          variant="outline"
-          className={`w-fit shrink-0 ${statusBadgeClassNames[tutorialPeriod.status]}`}
-        >
-          {studentTutorialPeriodStatusLabels[tutorialPeriod.status]}
-        </Badge>
+        {tutorialPeriod.status === 'OPEN' && !isStarted ? (
+          <Badge
+            variant="outline"
+            className="w-fit shrink-0 border-amber-200 bg-amber-100 text-amber-700 font-medium"
+          >
+            Sắp mở đăng ký
+          </Badge>
+        ) : (
+          <Badge
+            variant="outline"
+            className={`w-fit shrink-0 ${statusBadgeClassNames[tutorialPeriod.status]}`}
+          >
+            {studentTutorialPeriodStatusLabels[tutorialPeriod.status]}
+          </Badge>
+        )}
       </div>
 
       <dl className="mt-3 text-sm text-slate-600">

@@ -6,6 +6,7 @@ import AppMenu from '@/layouts/components/AppMenu'
 import Footer from '@/layouts/components/Footer'
 import Header from '@/layouts/components/Header'
 import { Button } from '@/shared/ui/button'
+import NotificationBell from '@/features/notifications/components/NotificationBell'
 
 interface TopNavigationLayoutShellProps extends PropsWithChildren {
   role?: Role | null
@@ -38,6 +39,8 @@ export default function TopNavigationLayoutShell({
           <AppMenu role={role} />
 
           <div className="flex items-center gap-3 text-sm text-slate-700">
+            {role === 'STUDENT' && <NotificationBell />}
+
             <p className="whitespace-nowrap">
               <span className="text-slate-500">{accountLabel}:</span>{' '}
               <span className="font-semibold text-slate-900">

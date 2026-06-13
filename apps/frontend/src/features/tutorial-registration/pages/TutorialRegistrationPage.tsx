@@ -1,4 +1,5 @@
-import { NotebookPen } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { NotebookPen, Bell } from 'lucide-react'
 
 import { StudentTutorialPeriodCard } from '@/features/tutorial-registration/components/StudentTutorialPeriodCard'
 import { useStudentTutorialPeriods } from '@/features/tutorial-registration/hooks'
@@ -12,12 +13,39 @@ import {
   EmptyTitle,
 } from '@/shared/ui/empty'
 import { Skeleton } from '@/shared/ui/skeleton'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/shared/ui/dialog'
 
 export default function TutorialRegistrationPage() {
   const tutorialPeriodsQuery = useStudentTutorialPeriods()
 
   const tutorialPeriods = tutorialPeriodsQuery.data?.data ?? []
   const isInitialLoading = tutorialPeriodsQuery.isPending && !tutorialPeriodsQuery.data
+
+  const activePeriodForPopup = tutorialPeriods[0]
+
+  const [showActivePopup, setShowActivePopup] = useState(false)
+
+  useEffect(() => {
+    if (activePeriodForPopup) {
+      const sessionKey = `seen_active_popup_${activePeriodForPopup.id}`
+      if (sessionStorage.getItem(sessionKey) !== 'true') {
+        setShowActivePopup(true)
+      }
+    }
+  }, [activePeriodForPopup])
+
+  const handleClosePopup = () => {
+    setShowActivePopup(false)
+    if (activePeriodForPopup) {
+      sessionStorage.setItem(`seen_active_popup_${activePeriodForPopup.id}`, 'true')
+    }
+  }
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white px-4 py-4 shadow-sm sm:px-5">
@@ -28,6 +56,32 @@ export default function TutorialRegistrationPage() {
       </div>
 
       <div className="mt-4">
+        {activePeriodForPopup && (
+          <Dialog open={showActivePopup} onOpenChange={(open) => {
+            if (!open) handleClosePopup()
+          }}>
+            <DialogContent className="sm:max-w-md bg-white border border-slate-200 shadow-xl rounded-xl p-6">
+              <DialogHeader className="space-y-3">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                  <Bell className="size-6 animate-bounce" />
+                </div>
+                <DialogTitle className="text-center text-lg font-semibold text-slate-950">
+                  Thông báo: Đợt đăng ký phụ đạo mới
+                </DialogTitle>
+                <DialogDescription className="text-center text-sm text-slate-600 leading-relaxed pt-2">
+                  Đợt phụ đạo <span className="font-bold">"{activePeriodForPopup.title}"</span> chuẩn bị được mở vào ngày{' '}
+                  <span className="font-semibold">
+                    {new Date(activePeriodForPopup.registrationStartAt!).toLocaleDateString('vi-VN')}
+                  </span>{' '}
+                  đến ngày{' '}
+                  <span className="font-semibold">
+                    {new Date(activePeriodForPopup.registrationEndAt!).toLocaleDateString('vi-VN')}
+                  </span>.
+                </DialogDescription>
+              </DialogHeader>
+            </DialogContent>
+          </Dialog>
+        )}
         {isInitialLoading ? (
           <div className="space-y-3">
             <Skeleton className="h-36 rounded-xl" />

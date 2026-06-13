@@ -4,6 +4,7 @@ namespace App\Services\TutorialPeriods;
 
 use App\Enums\TutorialPeriodStatus;
 use App\Models\TutorialPeriod;
+use App\Events\TutorialPeriodPublished;
 
 class TutorialPeriodService
 {
@@ -42,11 +43,17 @@ class TutorialPeriodService
         $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFailWithCounts($id, ['createdBy']);
         $this->tutorialPeriodStatusService->validateUpdate($tutorialPeriod, $data);
 
+        $wasOpen = $tutorialPeriod->status === TutorialPeriodStatus::OPEN;
+
         $attributes = $this->extractTutorialPeriodAttributes($data);
         $tutorialPeriod->update($attributes);
 
         $tutorialPeriod = $tutorialPeriod->refresh()->load('createdBy')->loadCount(['registrations', 'classes']);
         $this->academicPeriodResolver->enrich($tutorialPeriod);
+
+        if (!$wasOpen && $tutorialPeriod->status === TutorialPeriodStatus::OPEN) {
+            event(new TutorialPeriodPublished($tutorialPeriod));
+        }
 
         return $tutorialPeriod;
     }
@@ -59,6 +66,14 @@ class TutorialPeriodService
         $tutorialPeriod->delete();
     }
 
+
+    /**
+     * @return array{open_to_assigning:int,assigning_to_ongoing:int,ongoing_to_closed:int}
+     */
+    public function updateExpiredStatuses(): array
+    {
+        return $this->tutorialPeriodStatusService->updateExpiredStatuses();
+    }
     /**
      * @return array<string, mixed>
      */

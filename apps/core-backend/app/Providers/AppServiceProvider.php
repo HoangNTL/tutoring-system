@@ -10,6 +10,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Event;
+use App\Events\TutorialPeriodPublished;
+use App\Listeners\SendTutorialPeriodNotification;
 
 class AppServiceProvider extends ServiceProvider
 {

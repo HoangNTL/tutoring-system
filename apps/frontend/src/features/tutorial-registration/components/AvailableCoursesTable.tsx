@@ -13,6 +13,7 @@ type AvailableCoursesTableProps = {
   courses: StudentTutorialCourse[]
   canRegister?: boolean
   registeringCourseCode?: string | null
+  isRegistrationDisabled?: boolean
   onRegister: (courseCode: string) => void
 }
 
@@ -20,6 +21,7 @@ export function AvailableCoursesTable({
   courses,
   canRegister = true,
   registeringCourseCode = null,
+  isRegistrationDisabled = false,
   onRegister,
 }: AvailableCoursesTableProps) {
   if (courses.length === 0) {
@@ -52,7 +54,7 @@ export function AvailableCoursesTable({
                   type="button"
                   size="sm"
                   className="h-8 rounded-lg px-3"
-                  disabled={!canRegister || registeringCourseCode === course.courseCode}
+                  disabled={!canRegister || isRegistrationDisabled || registeringCourseCode === course.courseCode}
                   onClick={() => onRegister(course.courseCode)}
                 >
                   {registeringCourseCode === course.courseCode ? 'Đang đăng ký...' : 'Đăng ký'}
