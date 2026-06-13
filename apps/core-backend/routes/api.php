@@ -45,6 +45,9 @@ Route::prefix('v1')->group(function () {
         Route::patch('/tutorial-periods/{tutorial_period}/ongoing', [TutorialPeriodController::class, 'ongoing']);
         Route::patch('/tutorial-periods/{tutorial_period}/close', [TutorialPeriodController::class, 'close']);
         Route::patch('/tutorial-periods/{tutorial_period}/cancel', [TutorialPeriodController::class, 'cancel']);
+        Route::patch('/tutorial-periods/{tutorial_period}/revert-to-draft', [TutorialPeriodController::class, 'revertToDraft']);
+        Route::patch('/tutorial-periods/{tutorial_period}/reopen-registration', [TutorialPeriodController::class, 'reopenRegistration']);
+        Route::patch('/tutorial-periods/{tutorial_period}/restore', [TutorialPeriodController::class, 'restore']);
         Route::put('/tutorial-periods/{tutorial_period}', [TutorialPeriodController::class, 'update']);
         Route::patch('/tutorial-periods/{tutorial_period}', [TutorialPeriodController::class, 'update']);
         Route::delete('/tutorial-periods/{tutorial_period}', [TutorialPeriodController::class, 'destroy']);

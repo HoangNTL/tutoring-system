@@ -55,6 +55,15 @@ export function TutorialPeriodFormDialog({
   onOpenChange,
   onSubmit,
 }: TutorialPeriodFormDialogProps) {
+  const editableFields = mode === 'create'
+    ? null
+    : tutorialPeriod?.permissions?.editableFields ?? []
+
+  const isFieldLocked = (fieldName: string) => {
+    if (mode === 'create' || editableFields === null) return false
+    return !editableFields.includes(fieldName)
+  }
+
   const {
     control,
     register,
@@ -117,7 +126,7 @@ export function TutorialPeriodFormDialog({
                       <Select
                         value={field.value > 0 ? field.value.toString() : undefined}
                         onValueChange={(value) => field.onChange(Number(value))}
-                        disabled={isSubmitting || isLegacyPeriodsLoading}
+                        disabled={isSubmitting || isLegacyPeriodsLoading || isFieldLocked('academicPeriodId')}
                       >
                         <SelectTrigger
                           id="tutorial-period-academic-period-id"
@@ -164,7 +173,7 @@ export function TutorialPeriodFormDialog({
                   <Input
                     id="tutorial-period-title"
                     placeholder="Ví dụ: Đợt phụ đạo học kỳ 1"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isFieldLocked('title')}
                     className="h-11 rounded-xl border-slate-200 bg-white px-3 text-slate-900 shadow-none placeholder:text-slate-400"
                     {...register('title')}
                   />
@@ -183,7 +192,7 @@ export function TutorialPeriodFormDialog({
                   <Textarea
                     id="tutorial-period-description"
                     placeholder="Tóm tắt ngắn gọn cho đợt phụ đạo"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isFieldLocked('description')}
                     className="min-h-28 rounded-xl border-slate-200 bg-white px-3 py-2.5 leading-6 shadow-none placeholder:text-slate-400"
                     {...register('description')}
                   />
@@ -211,7 +220,7 @@ export function TutorialPeriodFormDialog({
                         onChange={field.onChange}
                         placeholder="Chọn ngày"
                         error={errors.registrationStartAt?.message}
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || isFieldLocked('registrationStartAt')}
                       />
                     )}
                   />
@@ -234,7 +243,7 @@ export function TutorialPeriodFormDialog({
                         onChange={field.onChange}
                         placeholder="Chọn ngày"
                         error={errors.registrationEndAt?.message}
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || isFieldLocked('registrationEndAt')}
                       />
                     )}
                   />
@@ -257,7 +266,7 @@ export function TutorialPeriodFormDialog({
                         onChange={field.onChange}
                         placeholder="Chọn ngày"
                         error={errors.studyStartAt?.message}
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || isFieldLocked('studyStartAt')}
                       />
                     )}
                   />
@@ -280,7 +289,7 @@ export function TutorialPeriodFormDialog({
                         onChange={field.onChange}
                         placeholder="Chọn ngày"
                         error={errors.studyEndAt?.message}
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || isFieldLocked('studyEndAt')}
                       />
                     )}
                   />

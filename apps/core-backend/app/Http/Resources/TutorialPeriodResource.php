@@ -38,7 +38,7 @@ class TutorialPeriodResource extends JsonResource
             }),
             'createdAt' => $this->formatDateTime($this->created_at),
             'updatedAt' => $this->formatDateTime($this->updated_at),
-            'permissions' => app(TutorialPeriodStatusService::class)->getPermissions($this->status),
+            'permissions' => app(TutorialPeriodStatusService::class)->getPermissions($this->resource),
         ];
     }
 

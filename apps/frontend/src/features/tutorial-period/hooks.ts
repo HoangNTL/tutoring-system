@@ -9,6 +9,9 @@ import {
   moveTutorialPeriodToAssigning,
   moveTutorialPeriodToOngoing,
   openTutorialPeriod,
+  reopenTutorialPeriodRegistration,
+  restoreTutorialPeriod,
+  revertTutorialPeriodToDraft,
   updateTutorialPeriod,
 } from '@/features/tutorial-period/api/tutorialPeriod.api'
 import { getLegacyPeriods } from '@/features/tutorial-period/api/legacyPeriod.api'
@@ -136,6 +139,45 @@ export const useCloseTutorialPeriodMutation = () => {
 
   return useMutation({
     mutationFn: closeTutorialPeriod,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: tutorialPeriodsQueryKey })
+    },
+  })
+}
+
+export const useRevertTutorialPeriodToDraftMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: revertTutorialPeriodToDraft,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: tutorialPeriodsQueryKey })
+    },
+  })
+}
+
+export const useReopenTutorialPeriodRegistrationMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: reopenTutorialPeriodRegistration,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: tutorialPeriodsQueryKey })
+    },
+  })
+}
+
+export const useRestoreTutorialPeriodMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      tutorialPeriodId,
+      targetStatus,
+    }: {
+      tutorialPeriodId: number
+      targetStatus: 'DRAFT' | 'OPEN'
+    }) => restoreTutorialPeriod(tutorialPeriodId, targetStatus),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: tutorialPeriodsQueryKey })
     },

@@ -7,6 +7,7 @@ use App\Models\TutorialPeriod;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -67,12 +68,63 @@ class TutorialPeriodStatusService
         return DB::transaction(function () use ($tutorialPeriod): TutorialPeriod {
             $tutorialPeriod = $this->findTutorialPeriodOrFail($tutorialPeriod->id, ['createdBy'], true);
 
-            if (in_array($tutorialPeriod->status, [TutorialPeriodStatus::CLOSED, TutorialPeriodStatus::CANCELLED], true)) {
+            if (in_array($tutorialPeriod->status, [TutorialPeriodStatus::OPEN, TutorialPeriodStatus::CLOSED, TutorialPeriodStatus::CANCELLED], true)) {
                 throw new ConflictHttpException('This tutorial period cannot be cancelled');
             }
 
             $tutorialPeriod->update([
                 'status' => TutorialPeriodStatus::CANCELLED->value,
+            ]);
+
+            return $tutorialPeriod->refresh()->load('createdBy');
+        });
+    }
+
+    public function revertToDraft(TutorialPeriod $tutorialPeriod): TutorialPeriod
+    {
+        return $this->transition(
+            $tutorialPeriod,
+            TutorialPeriodStatus::OPEN,
+            TutorialPeriodStatus::DRAFT,
+            'reverted to DRAFT'
+        );
+    }
+
+    public function reopenRegistration(TutorialPeriod $tutorialPeriod): TutorialPeriod
+    {
+        return $this->transition(
+            $tutorialPeriod,
+            TutorialPeriodStatus::ASSIGNING,
+            TutorialPeriodStatus::OPEN,
+            'reopened for registration'
+        );
+    }
+
+    public function restore(TutorialPeriod $tutorialPeriod, TutorialPeriodStatus $targetStatus): TutorialPeriod
+    {
+        $allowedTargets = [TutorialPeriodStatus::DRAFT, TutorialPeriodStatus::OPEN];
+
+        if (!in_array($targetStatus, $allowedTargets, true)) {
+            throw new ConflictHttpException('Cancelled tutorial periods can only be restored to DRAFT or OPEN');
+        }
+
+        return DB::transaction(function () use ($tutorialPeriod, $targetStatus): TutorialPeriod {
+            $tutorialPeriod = $this->findTutorialPeriodOrFail($tutorialPeriod->id, ['createdBy'], true);
+
+            if ($tutorialPeriod->status !== TutorialPeriodStatus::CANCELLED) {
+                throw new ConflictHttpException('Only cancelled tutorial periods can be restored');
+            }
+
+            if ($tutorialPeriod->has_entered_ongoing) {
+                throw new ConflictHttpException('Cannot restore a tutorial period that has entered ONGOING status');
+            }
+
+            if ($targetStatus === TutorialPeriodStatus::OPEN) {
+                $this->validateOpenableDates($tutorialPeriod);
+            }
+
+            $tutorialPeriod->update([
+                'status' => $targetStatus->value,
             ]);
 
             return $tutorialPeriod->refresh()->load('createdBy');
@@ -96,7 +148,10 @@ class TutorialPeriodStatusService
             ->where('status', TutorialPeriodStatus::ASSIGNING->value)
             ->whereNotNull('study_start_at')
             ->where('study_start_at', '<=', $now)
-            ->update(['status' => TutorialPeriodStatus::ONGOING->value]);
+            ->update([
+                'status' => TutorialPeriodStatus::ONGOING->value,
+                'has_entered_ongoing' => true,
+            ]);
 
         $openToAssigning = TutorialPeriod::query()
             ->where('status', TutorialPeriodStatus::OPEN->value)
@@ -136,12 +191,14 @@ class TutorialPeriodStatusService
     }
 
     /**
-     * @return array<string, bool>
+     * @return array<string, bool|list<string>>
      */
-    public function getPermissions(TutorialPeriodStatus $status): array
+    public function getPermissions(TutorialPeriod $tutorialPeriod): array
     {
+        $status = $tutorialPeriod->status;
+
         return [
-            'canEdit' => $status === TutorialPeriodStatus::DRAFT,
+            'canEdit' => in_array($status, [TutorialPeriodStatus::DRAFT, TutorialPeriodStatus::OPEN], true),
             'canDelete' => $status === TutorialPeriodStatus::DRAFT,
             'canOpen' => $status === TutorialPeriodStatus::DRAFT,
             'canAssigning' => $status === TutorialPeriodStatus::OPEN,
@@ -149,10 +206,42 @@ class TutorialPeriodStatusService
             'canClose' => $status === TutorialPeriodStatus::ONGOING,
             'canCancel' => !in_array(
                 $status,
-                [TutorialPeriodStatus::CLOSED, TutorialPeriodStatus::CANCELLED],
+                [TutorialPeriodStatus::OPEN, TutorialPeriodStatus::CLOSED, TutorialPeriodStatus::CANCELLED],
                 true
             ),
+            'canRevertToDraft' => $status === TutorialPeriodStatus::OPEN,
+            'canReopenRegistration' => $status === TutorialPeriodStatus::ASSIGNING,
+            'canRestore' => $status === TutorialPeriodStatus::CANCELLED && !$tutorialPeriod->has_entered_ongoing,
+            'editableFields' => array_map(
+                fn (string $field) => Str::camel($field),
+                $this->getEditableFields($status)
+            ),
         ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function getEditableFields(TutorialPeriodStatus $status): array
+    {
+        return match ($status) {
+            TutorialPeriodStatus::DRAFT => [
+                'academic_period_id',
+                'title',
+                'description',
+                'registration_start_at',
+                'registration_end_at',
+                'study_start_at',
+                'study_end_at',
+            ],
+            TutorialPeriodStatus::OPEN => [
+                'title',
+                'description',
+                'registration_start_at',
+                'registration_end_at',
+            ],
+            default => [],
+        };
     }
 
     private function transition(
@@ -177,9 +266,12 @@ class TutorialPeriodStatusService
                 $this->validateOpenableDates($tutorialPeriod);
             }
 
-            $tutorialPeriod->update([
-                'status' => $to->value,
-            ]);
+            $updateData = ['status' => $to->value];
+            if ($to === TutorialPeriodStatus::ONGOING) {
+                $updateData['has_entered_ongoing'] = true;
+            }
+
+            $tutorialPeriod->update($updateData);
 
             return $tutorialPeriod->refresh()->load('createdBy');
         });

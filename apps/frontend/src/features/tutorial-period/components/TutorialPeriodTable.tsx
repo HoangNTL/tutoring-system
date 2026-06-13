@@ -1,4 +1,4 @@
-import { MoreHorizontal, Pencil, Play, Trash2, XCircle } from 'lucide-react'
+import { MoreHorizontal, Pencil, Play, Trash2, Undo2, XCircle } from 'lucide-react'
 import { addDays, subDays } from 'date-fns'
 
 import { Badge } from '@/shared/ui/badge'
@@ -41,6 +41,9 @@ interface TutorialPeriodTableProps {
   onOngoing: (tutorialPeriod: TutorialPeriod) => void
   onClose: (tutorialPeriod: TutorialPeriod) => void
   onCancel: (tutorialPeriod: TutorialPeriod) => void
+  onRevertToDraft: (tutorialPeriod: TutorialPeriod) => void
+  onReopenRegistration: (tutorialPeriod: TutorialPeriod) => void
+  onRestore: (tutorialPeriod: TutorialPeriod, targetStatus: 'DRAFT' | 'OPEN') => void
 }
 
 export function TutorialPeriodTable({
@@ -52,6 +55,9 @@ export function TutorialPeriodTable({
   onOngoing,
   onClose,
   onCancel,
+  onRevertToDraft,
+  onReopenRegistration,
+  onRestore,
 }: TutorialPeriodTableProps) {
   const formatDateRange = (
     startAt: string | null,
@@ -129,6 +135,9 @@ export function TutorialPeriodTable({
             const canOngoing = tutorialPeriod.permissions?.canOngoing ?? false
             const canClose = tutorialPeriod.permissions?.canClose ?? false
             const canCancel = tutorialPeriod.permissions?.canCancel ?? false
+            const canRevertToDraft = tutorialPeriod.permissions?.canRevertToDraft ?? false
+            const canReopenRegistration = tutorialPeriod.permissions?.canReopenRegistration ?? false
+            const canRestore = tutorialPeriod.permissions?.canRestore ?? false
 
             return (
               <TableRow key={tutorialPeriod.id}>
@@ -254,7 +263,33 @@ export function TutorialPeriodTable({
                       </Button>
                     ) : null}
 
-                    {canCancel || canDelete ? (
+                    {canRevertToDraft ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 rounded-lg px-2.5"
+                        onClick={() => onRevertToDraft(tutorialPeriod)}
+                      >
+                        <Undo2 />
+                        Về nháp
+                      </Button>
+                    ) : null}
+
+                    {canReopenRegistration ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 rounded-lg px-2.5"
+                        onClick={() => onReopenRegistration(tutorialPeriod)}
+                      >
+                        <Undo2 />
+                        Mở lại ĐK
+                      </Button>
+                    ) : null}
+
+                    {canCancel || canDelete || canRestore ? (
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button
@@ -266,8 +301,31 @@ export function TutorialPeriodTable({
                             <MoreHorizontal className="size-4" />
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent align="end" className="w-44 p-1.5">
+                        <PopoverContent align="end" className="w-52 p-1.5">
                           <div className="space-y-1">
+                            {canRestore ? (
+                              <>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  className="h-9 w-full justify-start rounded-md px-2 text-slate-700 hover:bg-slate-100"
+                                  onClick={() => onRestore(tutorialPeriod, 'DRAFT')}
+                                >
+                                  <Undo2 className="size-4" />
+                                  Khôi phục về Nháp
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  className="h-9 w-full justify-start rounded-md px-2 text-slate-700 hover:bg-slate-100"
+                                  onClick={() => onRestore(tutorialPeriod, 'OPEN')}
+                                >
+                                  <Undo2 className="size-4" />
+                                  Khôi phục về Mở ĐK
+                                </Button>
+                              </>
+                            ) : null}
+
                             {canCancel ? (
                               <Button
                                 type="button"

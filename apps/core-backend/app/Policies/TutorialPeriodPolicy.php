@@ -27,7 +27,7 @@ class TutorialPeriodPolicy
     public function update(User $user, TutorialPeriod $tutorialPeriod): bool
     {
         return $user->role === UserRole::ADMIN
-            && $tutorialPeriod->status === TutorialPeriodStatus::DRAFT;
+            && in_array($tutorialPeriod->status, [TutorialPeriodStatus::DRAFT, TutorialPeriodStatus::OPEN], true);
     }
 
     public function delete(User $user, TutorialPeriod $tutorialPeriod): bool
@@ -47,7 +47,7 @@ class TutorialPeriodPolicy
         return $user->role === UserRole::ADMIN
             && !in_array(
                 $tutorialPeriod->status,
-                [TutorialPeriodStatus::CLOSED, TutorialPeriodStatus::CANCELLED],
+                [TutorialPeriodStatus::OPEN, TutorialPeriodStatus::CLOSED, TutorialPeriodStatus::CANCELLED],
                 true
             );
     }
@@ -68,5 +68,24 @@ class TutorialPeriodPolicy
     {
         return $user->role === UserRole::ADMIN
             && $tutorialPeriod->status === TutorialPeriodStatus::ONGOING;
+    }
+
+    public function revertToDraft(User $user, TutorialPeriod $tutorialPeriod): bool
+    {
+        return $user->role === UserRole::ADMIN
+            && $tutorialPeriod->status === TutorialPeriodStatus::OPEN;
+    }
+
+    public function reopenRegistration(User $user, TutorialPeriod $tutorialPeriod): bool
+    {
+        return $user->role === UserRole::ADMIN
+            && $tutorialPeriod->status === TutorialPeriodStatus::ASSIGNING;
+    }
+
+    public function restore(User $user, TutorialPeriod $tutorialPeriod): bool
+    {
+        return $user->role === UserRole::ADMIN
+            && $tutorialPeriod->status === TutorialPeriodStatus::CANCELLED
+            && !$tutorialPeriod->has_entered_ongoing;
     }
 }

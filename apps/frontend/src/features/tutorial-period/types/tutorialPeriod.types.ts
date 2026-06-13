@@ -36,6 +36,10 @@ export interface TutorialPeriodPermissions {
   canOngoing: boolean
   canClose: boolean
   canCancel: boolean
+  canRevertToDraft: boolean
+  canReopenRegistration: boolean
+  canRestore: boolean
+  editableFields: string[]
 }
 
 export interface TutorialPeriod {

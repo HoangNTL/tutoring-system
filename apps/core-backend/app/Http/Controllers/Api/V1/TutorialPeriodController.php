@@ -7,8 +7,10 @@ use App\Http\Requests\TutorialPeriod\ListTutorialPeriodsRequest;
 use App\Http\Requests\TutorialPeriod\StoreTutorialPeriodRequest;
 use App\Http\Requests\TutorialPeriod\UpdateTutorialPeriodRequest;
 use App\Http\Resources\TutorialPeriodResource;
+use App\Enums\TutorialPeriodStatus;
 use App\Models\TutorialPeriod;
 use App\Services\TutorialPeriods\TutorialPeriodService;
+use Illuminate\Http\Request;
 
 class TutorialPeriodController extends Controller
 {
@@ -136,6 +138,55 @@ class TutorialPeriodController extends Controller
         return $this->success(
             new TutorialPeriodResource($tutorialPeriod),
             'Tutorial period closed successfully'
+        );
+    }
+
+    public function revertToDraft(TutorialPeriod $tutorial_period)
+    {
+        $this->authorize('revertToDraft', $tutorial_period);
+
+        $tutorialPeriod = $this->tutorialPeriodService->revertToDraft($tutorial_period->id);
+
+        return $this->success(
+            new TutorialPeriodResource($tutorialPeriod),
+            'Tutorial period reverted to draft successfully'
+        );
+    }
+
+    public function reopenRegistration(TutorialPeriod $tutorial_period)
+    {
+        $this->authorize('reopenRegistration', $tutorial_period);
+
+        $tutorialPeriod = $this->tutorialPeriodService->reopenRegistration($tutorial_period->id);
+
+        return $this->success(
+            new TutorialPeriodResource($tutorialPeriod),
+            'Tutorial period reopened for registration successfully'
+        );
+    }
+
+    public function restore(Request $request, TutorialPeriod $tutorial_period)
+    {
+        $this->authorize('restore', $tutorial_period);
+
+        $targetStatusName = $request->input('targetStatus', 'DRAFT');
+        $targetStatus = TutorialPeriodStatus::tryFrom(
+            match (strtoupper($targetStatusName)) {
+                'DRAFT' => TutorialPeriodStatus::DRAFT->value,
+                'OPEN' => TutorialPeriodStatus::OPEN->value,
+                default => -1,
+            }
+        );
+
+        if ($targetStatus === null) {
+            return $this->error('targetStatus must be DRAFT or OPEN', 422);
+        }
+
+        $tutorialPeriod = $this->tutorialPeriodService->restore($tutorial_period->id, $targetStatus);
+
+        return $this->success(
+            new TutorialPeriodResource($tutorialPeriod),
+            'Tutorial period restored successfully'
         );
     }
 }

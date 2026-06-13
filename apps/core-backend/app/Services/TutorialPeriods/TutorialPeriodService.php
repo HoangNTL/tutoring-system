@@ -4,6 +4,7 @@ namespace App\Services\TutorialPeriods;
 
 use App\Enums\TutorialPeriodStatus;
 use App\Models\TutorialPeriod;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 class TutorialPeriodService
 {
@@ -40,10 +41,19 @@ class TutorialPeriodService
     public function update(int $id, array $data): TutorialPeriod
     {
         $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFail($id, ['createdBy']);
-        $this->tutorialPeriodStatusService->ensureDraftStatus($tutorialPeriod, 'edited');
 
-        $attributes = $this->extractTutorialPeriodAttributes($data);
-        $tutorialPeriod->update($attributes);
+        $editableFields = $this->tutorialPeriodStatusService->getEditableFields($tutorialPeriod->status);
+
+        if (empty($editableFields)) {
+            throw new ConflictHttpException('This tutorial period cannot be edited in its current status');
+        }
+
+        $allAttributes = $this->extractTutorialPeriodAttributes($data);
+        $attributes = array_intersect_key($allAttributes, array_flip($editableFields));
+
+        if (!empty($attributes)) {
+            $tutorialPeriod->update($attributes);
+        }
 
         $tutorialPeriod = $tutorialPeriod->refresh()->load('createdBy');
         $this->academicPeriodResolver->enrich($tutorialPeriod);
@@ -99,6 +109,33 @@ class TutorialPeriodService
     {
         $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFail($id);
         $tutorialPeriod = $this->tutorialPeriodStatusService->close($tutorialPeriod);
+        $this->academicPeriodResolver->enrich($tutorialPeriod);
+
+        return $tutorialPeriod;
+    }
+
+    public function revertToDraft(int $id): TutorialPeriod
+    {
+        $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFail($id);
+        $tutorialPeriod = $this->tutorialPeriodStatusService->revertToDraft($tutorialPeriod);
+        $this->academicPeriodResolver->enrich($tutorialPeriod);
+
+        return $tutorialPeriod;
+    }
+
+    public function reopenRegistration(int $id): TutorialPeriod
+    {
+        $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFail($id);
+        $tutorialPeriod = $this->tutorialPeriodStatusService->reopenRegistration($tutorialPeriod);
+        $this->academicPeriodResolver->enrich($tutorialPeriod);
+
+        return $tutorialPeriod;
+    }
+
+    public function restore(int $id, TutorialPeriodStatus $targetStatus): TutorialPeriod
+    {
+        $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFail($id);
+        $tutorialPeriod = $this->tutorialPeriodStatusService->restore($tutorialPeriod, $targetStatus);
         $this->academicPeriodResolver->enrich($tutorialPeriod);
 
         return $tutorialPeriod;

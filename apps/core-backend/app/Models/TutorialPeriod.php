@@ -33,6 +33,7 @@ class TutorialPeriod extends Model
         'study_start_at',
         'study_end_at',
         'status',
+        'has_entered_ongoing',
         'created_by',
     ];
 
@@ -50,6 +51,7 @@ class TutorialPeriod extends Model
             'study_start_at' => 'datetime',
             'study_end_at' => 'datetime',
             'status' => TutorialPeriodStatus::class,
+            'has_entered_ongoing' => 'boolean',
         ];
     }
 

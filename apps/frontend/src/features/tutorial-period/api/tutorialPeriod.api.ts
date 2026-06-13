@@ -122,3 +122,35 @@ export const cancelTutorialPeriod = async (
 
   return response.data
 }
+
+export const revertTutorialPeriodToDraft = async (
+  tutorialPeriodId: number
+): Promise<TutorialPeriodResponse> => {
+  const response = await http.patch<TutorialPeriodResponse>(
+    `${TUTORIAL_PERIODS_ENDPOINT}/${tutorialPeriodId}/revert-to-draft`
+  )
+
+  return response.data
+}
+
+export const reopenTutorialPeriodRegistration = async (
+  tutorialPeriodId: number
+): Promise<TutorialPeriodResponse> => {
+  const response = await http.patch<TutorialPeriodResponse>(
+    `${TUTORIAL_PERIODS_ENDPOINT}/${tutorialPeriodId}/reopen-registration`
+  )
+
+  return response.data
+}
+
+export const restoreTutorialPeriod = async (
+  tutorialPeriodId: number,
+  targetStatus: 'DRAFT' | 'OPEN'
+): Promise<TutorialPeriodResponse> => {
+  const response = await http.patch<TutorialPeriodResponse>(
+    `${TUTORIAL_PERIODS_ENDPOINT}/${tutorialPeriodId}/restore`,
+    { targetStatus }
+  )
+
+  return response.data
+}

@@ -10,6 +10,9 @@ import {
   useMoveTutorialPeriodToAssigningMutation,
   useMoveTutorialPeriodToOngoingMutation,
   useOpenTutorialPeriodMutation,
+  useReopenTutorialPeriodRegistrationMutation,
+  useRestoreTutorialPeriodMutation,
+  useRevertTutorialPeriodToDraftMutation,
   useTutorialPeriods,
   useUpdateTutorialPeriodMutation,
 } from '@/features/tutorial-period/hooks'
@@ -110,6 +113,9 @@ export default function TutorialPeriodListPage() {
   const ongoingMutation = useMoveTutorialPeriodToOngoingMutation()
   const closeMutation = useCloseTutorialPeriodMutation()
   const cancelMutation = useCancelTutorialPeriodMutation()
+  const revertToDraftMutation = useRevertTutorialPeriodToDraftMutation()
+  const reopenRegistrationMutation = useReopenTutorialPeriodRegistrationMutation()
+  const restoreMutation = useRestoreTutorialPeriodMutation()
 
   const tutorialPeriods = tutorialPeriodsQuery.data?.data ?? []
   const legacyPeriods = legacyPeriodsQuery.data?.data ?? []
@@ -234,6 +240,45 @@ export default function TutorialPeriodListPage() {
     } catch (error) {
       setActionError(
         getApiErrorMessage(error, 'Không thể đóng đợt phụ đạo. Vui lòng thử lại.')
+      )
+    }
+  }
+
+  const handleRevertToDraft = async (tutorialPeriod: TutorialPeriod) => {
+    setActionError(null)
+
+    try {
+      await revertToDraftMutation.mutateAsync(tutorialPeriod.id)
+    } catch (error) {
+      setActionError(
+        getApiErrorMessage(error, 'Không thể chuyển đợt phụ đạo về bản nháp. Vui lòng thử lại.')
+      )
+    }
+  }
+
+  const handleReopenRegistration = async (tutorialPeriod: TutorialPeriod) => {
+    setActionError(null)
+
+    try {
+      await reopenRegistrationMutation.mutateAsync(tutorialPeriod.id)
+    } catch (error) {
+      setActionError(
+        getApiErrorMessage(error, 'Không thể mở lại cổng đăng ký. Vui lòng thử lại.')
+      )
+    }
+  }
+
+  const handleRestore = async (tutorialPeriod: TutorialPeriod, targetStatus: 'DRAFT' | 'OPEN') => {
+    setActionError(null)
+
+    try {
+      await restoreMutation.mutateAsync({
+        tutorialPeriodId: tutorialPeriod.id,
+        targetStatus,
+      })
+    } catch (error) {
+      setActionError(
+        getApiErrorMessage(error, 'Không thể khôi phục đợt phụ đạo. Vui lòng thử lại.')
       )
     }
   }
@@ -367,6 +412,15 @@ export default function TutorialPeriodListPage() {
               }}
               onCancel={(tutorialPeriod) => {
                 void handleCancelTutorialPeriod(tutorialPeriod)
+              }}
+              onRevertToDraft={(tutorialPeriod) => {
+                void handleRevertToDraft(tutorialPeriod)
+              }}
+              onReopenRegistration={(tutorialPeriod) => {
+                void handleReopenRegistration(tutorialPeriod)
+              }}
+              onRestore={(tutorialPeriod, targetStatus) => {
+                void handleRestore(tutorialPeriod, targetStatus)
               }}
             />
           )}
