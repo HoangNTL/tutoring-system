@@ -38,6 +38,11 @@ export function UsersTable({ users, onEditPassword }: UsersTableProps) {
               <TableRow key={user.id}>
                 <TableCell className="px-4 py-3 font-medium text-slate-900">
                   {user.username}
+                  {user.role === 'DEPARTMENT' && user.departmentName && (
+                    <span className="ml-1.5 text-sm font-normal text-slate-500">
+                      ({user.departmentName})
+                    </span>
+                  )}
                 </TableCell>
                 <TableCell className="py-3 text-sm text-slate-700">
                   {userRoleLabels[user.role]}

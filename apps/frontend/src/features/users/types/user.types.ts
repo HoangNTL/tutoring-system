@@ -16,6 +16,7 @@ export type UserListItem = {
   studentId: number | null
   lecturerId: number | null
   departmentId: number | null
+  departmentName?: string | null
   createdAt: string | null
 }
 

@@ -10,6 +10,8 @@ class CachedLegacyDataGateway implements LegacyDataGateway
     private const LEGACY_PERIODS_TTL_MINUTES = 15;
     private const STUDENT_INFO_TTL_MINUTES = 10;
 
+    private ?array $departmentsCache = null;
+
     public function __construct(
         private LegacyDataGateway $inner,
         private CacheRepository $cache
@@ -66,6 +68,14 @@ class CachedLegacyDataGateway implements LegacyDataGateway
 
     public function fetchAllDepartments(): array
     {
-        return $this->inner->fetchAllDepartments();
+        if ($this->departmentsCache !== null) {
+            return $this->departmentsCache;
+        }
+
+        return $this->departmentsCache = $this->cache->remember(
+            'legacy:departments:all',
+            now()->addMinutes(120),
+            fn (): array => $this->inner->fetchAllDepartments()
+        );
     }
 }

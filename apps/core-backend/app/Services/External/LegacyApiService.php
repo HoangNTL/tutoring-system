@@ -111,6 +111,7 @@ class LegacyApiService implements LegacyDataGateway
             return [
                 'legacy_id' => (int) $department['id'],
                 'username' => 'bm' . $department['id'],
+                'name' => (string) ($department['name'] ?? ''),
             ];
         });
     }
