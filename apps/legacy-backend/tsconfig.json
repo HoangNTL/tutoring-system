@@ -2,21 +2,18 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "commonjs",
-    "moduleResolution": "node",
-    "baseUrl": ".",
     "rootDir": "./src",
     "outDir": "./dist",
     "esModuleInterop": true,
     "strict": true,
     "skipLibCheck": true,
-    "ignoreDeprecations": "6.0",
     "paths": {
-      "@/config/*": ["src/config/*"],
-      "@/middlewares/*": ["src/middlewares/*"],
-      "@/shared/*": ["src/shared/*"],
-      "@/modules/*": ["src/modules/*"],
-      "@/types": ["src/shared/types"],
-      "@/*": ["src/*"]
+      "@/config/*": ["./src/config/*"],
+      "@/middlewares/*": ["./src/middlewares/*"],
+      "@/shared/*": ["./src/shared/*"],
+      "@/modules/*": ["./src/modules/*"],
+      "@/types": ["./src/shared/types"],
+      "@/*": ["./src/*"]
     }
   }
 }
