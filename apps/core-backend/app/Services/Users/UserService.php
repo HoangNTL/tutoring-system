@@ -24,7 +24,30 @@ class UserService
             ->orderBy($sortBy, $sortOrder);
 
         if ($search !== '') {
-            $query->where('username', 'like', '%' . $search . '%');
+            $matchingDepartmentIds = [];
+            try {
+                $gateway = app(\App\Contracts\LegacyDataGateway::class);
+                $departments = $gateway->fetchAllDepartments();
+                $matchingDepartmentIds = collect($departments)
+                    ->filter(function ($dept) use ($search) {
+                        $name = $dept['name'] ?? '';
+                        return str_contains(
+                            mb_strtolower($name, 'UTF-8'),
+                            mb_strtolower($search, 'UTF-8')
+                        );
+                    })
+                    ->pluck('legacy_id')
+                    ->all();
+            } catch (\Throwable $e) {
+                // Ignore gateway failures gracefully
+            }
+
+            $query->where(function ($q) use ($search, $matchingDepartmentIds) {
+                $q->where('username', 'like', '%' . $search . '%');
+                if (!empty($matchingDepartmentIds)) {
+                    $q->orWhereIn('department_id', $matchingDepartmentIds);
+                }
+            });
         }
 
         if ($role !== null) {

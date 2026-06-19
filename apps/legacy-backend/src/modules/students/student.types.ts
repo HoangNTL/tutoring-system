@@ -12,6 +12,7 @@ export interface StudentCourse {
   courseCode: string;
   courseName: string;
   credits: number;
+  departmentId: number | null;
 }
 
 export interface StudentInfo {

@@ -7,14 +7,30 @@ import {
   getDepartmentTutorialClasses,
   restoreDepartmentTutorialClass,
   updateDepartmentTutorialClass,
+  updateClassSchedule,
+  updateClassLecturer,
+  getDepartmentLecturers,
 } from '@/features/department-classes/api/departmentTutorialClasses.api'
 import { departmentCourseRegistrationsQueryKey } from '@/features/department-registration/hooks'
 import type {
   CreateDepartmentTutorialClassPayload,
   UpdateDepartmentTutorialClassPayload,
+  UpdateClassSchedulePayload,
+  UpdateClassLecturerPayload,
 } from '@/features/department-classes/types/departmentTutorialClass.types'
 
 export const departmentTutorialClassesQueryKey = ['department-tutorial-classes'] as const
+export const departmentLecturersQueryKey = ['department-lecturers'] as const
+
+export const useDepartmentLecturers = () => {
+  const authStatus = useAppSelector((state) => state.auth.status)
+
+  return useQuery({
+    queryKey: departmentLecturersQueryKey,
+    enabled: authStatus === 'authenticated',
+    queryFn: getDepartmentLecturers,
+  })
+}
 
 export const useDepartmentTutorialClasses = (tutorialPeriodId: number | null) => {
   const authStatus = useAppSelector((state) => state.auth.status)
@@ -97,6 +113,46 @@ export const useRestoreDepartmentTutorialClassMutation = () => {
       classId: number
       tutorialPeriodId: number
     }) => restoreDepartmentTutorialClass(classId),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: [...departmentTutorialClassesQueryKey, variables.tutorialPeriodId],
+      })
+    },
+  })
+}
+
+export const useUpdateClassScheduleMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      classId,
+      payload,
+    }: {
+      classId: number
+      tutorialPeriodId: number
+      payload: UpdateClassSchedulePayload
+    }) => updateClassSchedule(classId, payload),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: [...departmentTutorialClassesQueryKey, variables.tutorialPeriodId],
+      })
+    },
+  })
+}
+
+export const useUpdateClassLecturerMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      classId,
+      payload,
+    }: {
+      classId: number
+      tutorialPeriodId: number
+      payload: UpdateClassLecturerPayload
+    }) => updateClassLecturer(classId, payload),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({
         queryKey: [...departmentTutorialClassesQueryKey, variables.tutorialPeriodId],

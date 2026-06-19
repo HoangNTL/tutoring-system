@@ -87,6 +87,43 @@ class UserListingTest extends TestCase
             ->assertJsonPath('data.0.username', 'lecturer_beta');
     }
 
+    public function test_admin_can_search_users_by_department_name(): void
+    {
+        $admin = $this->createAdmin();
+
+        $matchingUser = User::create([
+            'username' => 'bm70',
+            'password_hash' => 'password123',
+            'role' => UserRole::DEPARTMENT,
+            'department_id' => 70,
+        ]);
+
+        $nonMatchingUser = User::create([
+            'username' => 'bm12',
+            'password_hash' => 'password123',
+            'role' => UserRole::DEPARTMENT,
+            'department_id' => 12,
+        ]);
+
+        $mock = $this->mock(\App\Contracts\LegacyDataGateway::class);
+        $mock->shouldReceive('fetchAllDepartments')
+            ->andReturn([
+                ['legacy_id' => 70, 'name' => 'Văn phòng bộ môn Ngoại ngữ'],
+                ['legacy_id' => 12, 'name' => 'Bộ môn Tin học'],
+            ]);
+
+        $response = $this
+            ->actingAs($admin, 'web')
+            ->getJson('/api/v1/users?search=Ngoại ngữ');
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $matchingUser->id)
+            ->assertJsonPath('data.0.username', 'bm70');
+    }
+
     public function test_admin_can_filter_users_by_role(): void
     {
         $admin = $this->createAdmin();

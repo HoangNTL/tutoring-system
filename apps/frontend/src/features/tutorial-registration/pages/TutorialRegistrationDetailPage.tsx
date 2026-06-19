@@ -140,20 +140,22 @@ export default function TutorialRegistrationDetailPage() {
                 </div>
               ) : null}
 
-              <div className="border-t border-slate-200 pt-4">
-                <div className="mb-3">
-                  <h3 className="text-lg font-semibold text-slate-950">
-                    Có thể đăng ký
-                  </h3>
+              {tutorialPeriod?.status === 'OPEN' && (
+                <div className="border-t border-slate-200 pt-4">
+                  <div className="mb-3">
+                    <h3 className="text-lg font-semibold text-slate-950">
+                      Có thể đăng ký
+                    </h3>
+                  </div>
+                  <AvailableCoursesTable
+                    courses={availableCourses}
+                    registeringCourseCode={registerMutation.isPending ? registerMutation.variables?.courseCode ?? null : null}
+                    onRegister={(courseCode) => {
+                      void handleRegister(courseCode)
+                    }}
+                  />
                 </div>
-                <AvailableCoursesTable
-                  courses={availableCourses}
-                  registeringCourseCode={registerMutation.isPending ? registerMutation.variables?.courseCode ?? null : null}
-                  onRegister={(courseCode) => {
-                    void handleRegister(courseCode)
-                  }}
-                />
-              </div>
+              )}
 
               <div className="border-t border-slate-200 pt-4">
                 <div className="mb-3">
@@ -163,6 +165,7 @@ export default function TutorialRegistrationDetailPage() {
                 </div>
                 <RegisteredCoursesTable
                   courses={registrationInfo.registeredCourses}
+                  canCancel={tutorialPeriod?.status === 'OPEN'}
                   cancellingCourseCode={cancelMutation.isPending ? cancelMutation.variables?.courseCode ?? null : null}
                   onCancel={(courseCode) => {
                     const course = registrationInfo.registeredCourses.find(

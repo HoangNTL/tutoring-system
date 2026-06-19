@@ -33,7 +33,10 @@ class DepartmentTutorialRegistrationController extends Controller
     {
         $this->ensureDepartmentAccess($request);
 
-        $summary = $this->departmentTutorialRegistrationService->getCourseRegistrationSummary($tutorialPeriodId);
+        $summary = $this->departmentTutorialRegistrationService->getCourseRegistrationSummary(
+            $tutorialPeriodId,
+            $request->user()->department_id !== null ? (int) $request->user()->department_id : null
+        );
 
         return $this->success(
             DepartmentCourseRegistrationSummaryResource::collection(collect($summary)),
@@ -45,7 +48,11 @@ class DepartmentTutorialRegistrationController extends Controller
     {
         $this->ensureDepartmentAccess($request);
 
-        $students = $this->departmentTutorialRegistrationService->getRegisteredStudents($tutorialPeriodId, $courseCode);
+        $students = $this->departmentTutorialRegistrationService->getRegisteredStudents(
+            $tutorialPeriodId,
+            $courseCode,
+            $request->user()->department_id !== null ? (int) $request->user()->department_id : null
+        );
 
         return $this->success(
             DepartmentRegisteredStudentResource::collection($students),

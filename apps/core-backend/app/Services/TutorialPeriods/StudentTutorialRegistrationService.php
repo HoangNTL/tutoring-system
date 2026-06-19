@@ -50,6 +50,7 @@ class StudentTutorialRegistrationService
                 return TutorialRegistration::create([
                     'tutorial_period_id' => $tutorialPeriod->id,
                     'user_id' => $user->id,
+                    'department_id' => $availableCourse['departmentId'],
                     'course_code' => $availableCourse['courseCode'],
                     'course_name' => $availableCourse['courseName'],
                     'credits' => (int) $availableCourse['credits'],
@@ -64,6 +65,7 @@ class StudentTutorialRegistrationService
             }
 
             $registration->forceFill([
+                'department_id' => $availableCourse['departmentId'],
                 'course_name' => $availableCourse['courseName'],
                 'credits' => (int) $availableCourse['credits'],
                 'status' => TutorialRegistrationStatus::REGISTERED,

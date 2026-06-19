@@ -12,6 +12,11 @@ export type DepartmentTutorialClass = {
   totalPeriods: number
   status: DepartmentTutorialClassStatus
   cancelledAt: string | null
+  lecturerId: number | null
+  lecturerName: string | null
+  dayOfWeek: number | null
+  startPeriod: number | null
+  room: string | null
 }
 
 export type CreateDepartmentTutorialClassPayload = {
@@ -23,4 +28,15 @@ export type CreateDepartmentTutorialClassPayload = {
 export type UpdateDepartmentTutorialClassPayload = {
   totalSessions: number
   periodsPerSession: number
+}
+
+export type UpdateClassSchedulePayload = {
+  dayOfWeek: number
+  startPeriod: number
+  room: string
+}
+
+export type UpdateClassLecturerPayload = {
+  lecturerId: number
+  lecturerName: string
 }

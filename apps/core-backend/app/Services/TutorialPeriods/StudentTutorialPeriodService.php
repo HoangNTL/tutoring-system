@@ -18,7 +18,12 @@ class StudentTutorialPeriodService
     public function getOpenTutorialPeriods(): Collection
     {
         $tutorialPeriods = TutorialPeriod::query()
-            ->where('status', TutorialPeriodStatus::OPEN)
+            ->whereIn('status', [
+                TutorialPeriodStatus::OPEN->value,
+                TutorialPeriodStatus::ASSIGNING->value,
+                TutorialPeriodStatus::ONGOING->value,
+                TutorialPeriodStatus::CLOSED->value,
+            ])
             ->orderByDesc('registration_start_at')
             ->get();
 

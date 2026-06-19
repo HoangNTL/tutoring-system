@@ -22,12 +22,15 @@ class DepartmentTutorialClassService
     /**
      * @return array<int, TutorialClass>
      */
-    public function getClasses(int $tutorialPeriodId): array
+    public function getClasses(int $tutorialPeriodId, ?int $departmentId = null): array
     {
         $tutorialPeriod = $this->findAccessibleTutorialPeriodOrFail($tutorialPeriodId);
 
         $classes = TutorialClass::query()
             ->where('tutorial_period_id', $tutorialPeriod->id)
+            ->when($departmentId !== null, function ($query) use ($departmentId) {
+                return $query->where('department_id', $departmentId);
+            })
             ->orderByRaw(
                 'CASE WHEN status = ? THEN 0 ELSE 1 END',
                 [TutorialClassStatus::PLANNED->value]
@@ -35,10 +38,10 @@ class DepartmentTutorialClassService
             ->orderBy('course_name')
             ->get();
 
-        return $this->attachStudentCounts($tutorialPeriod->id, $classes)->all();
+        return $this->attachStudentCounts($tutorialPeriod->id, $classes, $departmentId)->all();
     }
 
-    public function createClass(int $tutorialPeriodId, array $data, int $userId): TutorialClass
+    public function createClass(int $tutorialPeriodId, array $data, int $userId, ?int $departmentId): TutorialClass
     {
         $tutorialPeriod = $this->findAssignableTutorialPeriodOrFail($tutorialPeriodId);
         $courseCode = (string) $data['course_code'];
@@ -77,6 +80,7 @@ class DepartmentTutorialClassService
 
         $tutorialClass = TutorialClass::create([
             'tutorial_period_id' => $tutorialPeriod->id,
+            'department_id' => $departmentId,
             'course_code' => (string) data_get($course, 'courseCode', ''),
             'course_name' => (string) data_get($course, 'courseName', ''),
             'credits' => (int) data_get($course, 'credits', 0),
@@ -134,6 +138,99 @@ class DepartmentTutorialClassService
         $tutorialClass->fill([
             'status' => TutorialClassStatus::PLANNED->value,
             'cancelled_at' => null,
+        ]);
+        $tutorialClass->save();
+
+        return $this->attachStudentCount($tutorialClass);
+    }
+
+    public function updateClassSchedule(int $classId, array $data, ?int $departmentId = null): TutorialClass
+    {
+        $tutorialClass = $this->findManagedClassOrFail($classId);
+
+        if ($departmentId !== null && $tutorialClass->department_id !== $departmentId) {
+            throw new NotFoundHttpException('Tutorial class not found for this department');
+        }
+
+        $this->ensureClassIsInAssigningPeriod($tutorialClass, 'scheduled');
+
+        if ($tutorialClass->status !== TutorialClassStatus::PLANNED) {
+            throw new BadRequestHttpException('Only planned tutorial classes can be scheduled');
+        }
+
+        // Room conflict check
+        $roomConflict = TutorialClass::query()
+            ->where('tutorial_period_id', $tutorialClass->tutorial_period_id)
+            ->where('id', '!=', $classId)
+            ->where('status', '!=', TutorialClassStatus::CANCELLED->value)
+            ->where('day_of_week', (int) $data['day_of_week'])
+            ->where('start_period', (int) $data['start_period'])
+            ->where('room', $data['room'])
+            ->exists();
+
+        if ($roomConflict) {
+            throw new ConflictHttpException('Phòng học ' . $data['room'] . ' đã có lớp khác đăng ký vào thời gian này.');
+        }
+
+        // Lecturer conflict check
+        if ($tutorialClass->lecturer_id !== null) {
+            $lecturerConflict = TutorialClass::query()
+                ->where('tutorial_period_id', $tutorialClass->tutorial_period_id)
+                ->where('id', '!=', $classId)
+                ->where('status', '!=', TutorialClassStatus::CANCELLED->value)
+                ->where('lecturer_id', $tutorialClass->lecturer_id)
+                ->where('day_of_week', (int) $data['day_of_week'])
+                ->where('start_period', (int) $data['start_period'])
+                ->exists();
+
+            if ($lecturerConflict) {
+                throw new ConflictHttpException('Giảng viên đã có lịch dạy lớp khác vào thời gian này.');
+            }
+        }
+
+        $tutorialClass->fill([
+            'day_of_week' => (int) $data['day_of_week'],
+            'start_period' => (int) $data['start_period'],
+            'room' => (string) $data['room'],
+        ]);
+        $tutorialClass->save();
+
+        return $this->attachStudentCount($tutorialClass);
+    }
+
+    public function updateClassLecturer(int $classId, array $data, ?int $departmentId = null): TutorialClass
+    {
+        $tutorialClass = $this->findManagedClassOrFail($classId);
+
+        if ($departmentId !== null && $tutorialClass->department_id !== $departmentId) {
+            throw new NotFoundHttpException('Tutorial class not found for this department');
+        }
+
+        $this->ensureClassIsInAssigningPeriod($tutorialClass, 'assigned');
+
+        if ($tutorialClass->status !== TutorialClassStatus::PLANNED) {
+            throw new BadRequestHttpException('Only planned tutorial classes can have lecturers assigned');
+        }
+
+        // Lecturer conflict check if schedule is already configured
+        if ($tutorialClass->day_of_week !== null && $tutorialClass->start_period !== null) {
+            $lecturerConflict = TutorialClass::query()
+                ->where('tutorial_period_id', $tutorialClass->tutorial_period_id)
+                ->where('id', '!=', $classId)
+                ->where('status', '!=', TutorialClassStatus::CANCELLED->value)
+                ->where('lecturer_id', (int) $data['lecturer_id'])
+                ->where('day_of_week', $tutorialClass->day_of_week)
+                ->where('start_period', $tutorialClass->start_period)
+                ->exists();
+
+            if ($lecturerConflict) {
+                throw new ConflictHttpException('Giảng viên đã có lịch dạy lớp khác vào thời gian này.');
+            }
+        }
+
+        $tutorialClass->fill([
+            'lecturer_id' => (int) $data['lecturer_id'],
+            'lecturer_name' => (string) $data['lecturer_name'],
         ]);
         $tutorialClass->save();
 
@@ -230,7 +327,7 @@ class DepartmentTutorialClassService
      * @param Collection<int, TutorialClass> $classes
      * @return Collection<int, TutorialClass>
      */
-    private function attachStudentCounts(int $tutorialPeriodId, Collection $classes): Collection
+    private function attachStudentCounts(int $tutorialPeriodId, Collection $classes, ?int $departmentId = null): Collection
     {
         if ($classes->isEmpty()) {
             return $classes;
@@ -240,6 +337,9 @@ class DepartmentTutorialClassService
             ->selectRaw('course_code, COUNT(*) as student_count')
             ->where('tutorial_period_id', $tutorialPeriodId)
             ->where('status', TutorialRegistrationStatus::REGISTERED->value)
+            ->when($departmentId !== null, function ($query) use ($departmentId) {
+                return $query->where('department_id', $departmentId);
+            })
             ->groupBy('course_code')
             ->pluck('student_count', 'course_code');
 
@@ -257,7 +357,8 @@ class DepartmentTutorialClassService
     {
         return $this->attachStudentCounts(
             (int) $tutorialClass->tutorial_period_id,
-            collect([$tutorialClass])
+            collect([$tutorialClass]),
+            $tutorialClass->department_id
         )->first();
     }
 }

@@ -264,6 +264,7 @@ export default function DepartmentTutorialClassesPage() {
           ) : (
             <TutorialClassesTable
               classes={classes}
+              isAssigning={selectedTutorialPeriod?.status === 'ASSIGNING'}
               onEdit={setEditingClass}
               onCancel={setCancellingClass}
               onRestore={setRestoringClass}

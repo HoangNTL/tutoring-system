@@ -86,6 +86,7 @@ export class StudentRepository {
           'mh.MaMonHoc as courseCode',
           'mh.TenMonHoc as courseName',
           'mh.SoTinChi as credits',
+          'lhp.IDKhoaChuQuan as departmentId',
         )
         .orderBy('mh.TenMonHoc', 'asc');
 
@@ -93,6 +94,7 @@ export class StudentRepository {
         courseCode: String(course.courseCode ?? ''),
         courseName: String(course.courseName ?? ''),
         credits: Number(course.credits ?? 0),
+        departmentId: course.departmentId !== null && course.departmentId !== undefined ? Number(course.departmentId) : null,
       }));
     } catch (error) {
       if (shouldUseDatabaseFallback()) {
@@ -124,6 +126,7 @@ export class StudentRepository {
           'mh.MaMonHoc as courseCode',
           'mh.TenMonHoc as courseName',
           'mh.SoTinChi as credits',
+          'lhp.IDKhoaChuQuan as departmentId',
         )
         .orderBy('mh.TenMonHoc', 'asc');
 
@@ -131,6 +134,7 @@ export class StudentRepository {
         courseCode: String(course.courseCode ?? ''),
         courseName: String(course.courseName ?? ''),
         credits: Number(course.credits ?? 0),
+        departmentId: course.departmentId !== null && course.departmentId !== undefined ? Number(course.departmentId) : null,
       }));
     } catch (error) {
       if (shouldUseDatabaseFallback()) {

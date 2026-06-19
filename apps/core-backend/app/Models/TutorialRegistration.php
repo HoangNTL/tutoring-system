@@ -17,6 +17,7 @@ class TutorialRegistration extends Model
     protected $fillable = [
         'tutorial_period_id',
         'user_id',
+        'department_id',
         'course_code',
         'course_name',
         'credits',

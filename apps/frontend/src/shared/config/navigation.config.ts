@@ -82,18 +82,6 @@ export const navigationConfig: NavigationSection[] = [
         allowedRoles: ['DEPARTMENT'],
       },
       {
-        title: 'Xếp lịch',
-        description: 'Thiết lập lịch phụ đạo.',
-        path: '/tutorial-scheduling',
-        allowedRoles: ['DEPARTMENT'],
-      },
-      {
-        title: 'Giảng viên',
-        description: 'Phân công giảng viên.',
-        path: '/lecturer-assignments',
-        allowedRoles: ['DEPARTMENT'],
-      },
-      {
         title: 'Đăng ký phụ đạo',
         description: 'Đăng ký lớp phụ đạo.',
         path: '/tutorial-registration',

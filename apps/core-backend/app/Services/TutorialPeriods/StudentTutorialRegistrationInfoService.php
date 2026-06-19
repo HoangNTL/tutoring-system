@@ -43,10 +43,18 @@ class StudentTutorialRegistrationInfoService
 
         $this->academicPeriodResolver->enrich($tutorialPeriod);
 
-        $availableCourses = $this->studentTutorialPeriodCourseService->getAvailableCourses(
-            $user,
-            $tutorialPeriodId
-        );
+        $availableCourses = [];
+        if ($tutorialPeriod->status === TutorialPeriodStatus::OPEN) {
+            $availableCourses = $this->studentTutorialPeriodCourseService->getAvailableCourses(
+                $user,
+                $tutorialPeriodId
+            );
+        }
+
+        $classes = \App\Models\TutorialClass::query()
+            ->where('tutorial_period_id', $tutorialPeriod->id)
+            ->get()
+            ->keyBy('course_code');
 
         $registeredCourses = TutorialRegistration::query()
             ->where('tutorial_period_id', $tutorialPeriod->id)
@@ -54,12 +62,22 @@ class StudentTutorialRegistrationInfoService
             ->where('status', TutorialRegistrationStatus::REGISTERED)
             ->orderBy('course_name')
             ->get()
-            ->map(static fn (TutorialRegistration $registration): array => [
-                'courseCode' => $registration->course_code,
-                'courseName' => $registration->course_name,
-                'credits' => $registration->credits,
-                'registeredAt' => $registration->registered_at?->format('Y-m-d H:i:s'),
-            ])
+            ->map(static function (TutorialRegistration $registration) use ($classes): array {
+                $class = $classes->get($registration->course_code);
+
+                return [
+                    'courseCode' => $registration->course_code,
+                    'courseName' => $registration->course_name,
+                    'credits' => $registration->credits,
+                    'registeredAt' => $registration->registered_at?->format('Y-m-d H:i:s'),
+                    'dayOfWeek' => $class?->day_of_week,
+                    'startPeriod' => $class?->start_period,
+                    'room' => $class?->room,
+                    'lecturerId' => $class?->lecturer_id,
+                    'lecturerName' => $class?->lecturer_name,
+                    'classStatus' => $class?->status?->name,
+                ];
+            })
             ->values()
             ->all();
 
@@ -75,7 +93,12 @@ class StudentTutorialRegistrationInfoService
         try {
             return TutorialPeriod::query()
                 ->whereKey($tutorialPeriodId)
-                ->where('status', TutorialPeriodStatus::OPEN)
+                ->whereIn('status', [
+                    TutorialPeriodStatus::OPEN->value,
+                    TutorialPeriodStatus::ASSIGNING->value,
+                    TutorialPeriodStatus::ONGOING->value,
+                    TutorialPeriodStatus::CLOSED->value,
+                ])
                 ->firstOrFail();
         } catch (ModelNotFoundException $exception) {
             throw new NotFoundHttpException('Tutorial period not found', $exception);

@@ -3,10 +3,25 @@ import { Link } from 'react-router-dom'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { formatDate } from '@/shared/lib/date'
+import { cn } from '@/shared/lib/utils'
 import type { StudentTutorialPeriod } from '@/features/tutorial-registration/types/studentTutorialPeriod.types'
 
 type StudentTutorialPeriodCardProps = {
   tutorialPeriod: StudentTutorialPeriod
+}
+
+const statusBadgeClassNames: Record<StudentTutorialPeriod['status'], string> = {
+  OPEN: 'border-sky-200 bg-sky-100 text-sky-700',
+  ASSIGNING: 'border-amber-200 bg-amber-100 text-amber-700',
+  ONGOING: 'border-emerald-200 bg-emerald-100 text-emerald-700',
+  CLOSED: 'border-slate-300 bg-slate-200 text-slate-700',
+}
+
+const statusLabels: Record<StudentTutorialPeriod['status'], string> = {
+  OPEN: 'Đang mở đăng ký',
+  ASSIGNING: 'Đang phân công',
+  ONGOING: 'Đang học',
+  CLOSED: 'Đã kết thúc',
 }
 
 export function StudentTutorialPeriodCard({
@@ -28,9 +43,12 @@ export function StudentTutorialPeriodCard({
 
         <Badge
           variant="outline"
-          className="w-fit shrink-0 border-sky-200 bg-sky-100 text-sky-700"
+          className={cn(
+            'w-fit shrink-0 font-semibold',
+            statusBadgeClassNames[tutorialPeriod.status]
+          )}
         >
-          Đang mở đăng ký
+          {statusLabels[tutorialPeriod.status]}
         </Badge>
       </div>
 

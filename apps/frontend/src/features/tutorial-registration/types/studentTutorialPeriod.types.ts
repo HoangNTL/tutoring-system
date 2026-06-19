@@ -11,5 +11,5 @@ export type StudentTutorialPeriod = {
   registrationEndAt: string | null
   studyStartAt: string | null
   studyEndAt: string | null
-  status: 'OPEN'
+  status: 'OPEN' | 'ASSIGNING' | 'ONGOING' | 'CLOSED'
 }

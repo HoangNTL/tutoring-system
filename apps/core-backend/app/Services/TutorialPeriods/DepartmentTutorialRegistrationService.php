@@ -35,7 +35,7 @@ class DepartmentTutorialRegistrationService
         return $tutorialPeriods;
     }
 
-    public function getCourseRegistrationSummary(int $tutorialPeriodId): array
+    public function getCourseRegistrationSummary(int $tutorialPeriodId, ?int $departmentId = null): array
     {
         $tutorialPeriod = $this->findAccessibleTutorialPeriodOrFail($tutorialPeriodId);
 
@@ -43,6 +43,9 @@ class DepartmentTutorialRegistrationService
             ->selectRaw('course_code as courseCode, course_name as courseName, credits, COUNT(*) as studentCount')
             ->where('tutorial_period_id', $tutorialPeriod->id)
             ->where('status', TutorialRegistrationStatus::REGISTERED->value)
+            ->when($departmentId !== null, function ($query) use ($departmentId) {
+                return $query->where('department_id', $departmentId);
+            })
             ->groupBy('course_code', 'course_name', 'credits')
             ->orderByDesc('studentCount')
             ->orderBy('course_name')
@@ -53,7 +56,7 @@ class DepartmentTutorialRegistrationService
     /**
      * @return array<int, array{id:int|null,studentCode:string,fullName:string|null,registeredAt:string|null}>
      */
-    public function getRegisteredStudents(int $tutorialPeriodId, string $courseCode): array
+    public function getRegisteredStudents(int $tutorialPeriodId, string $courseCode, ?int $departmentId = null): array
     {
         $tutorialPeriod = $this->findAccessibleTutorialPeriodOrFail($tutorialPeriodId);
 
@@ -62,6 +65,9 @@ class DepartmentTutorialRegistrationService
             ->where('tutorial_period_id', $tutorialPeriod->id)
             ->where('course_code', $courseCode)
             ->where('status', TutorialRegistrationStatus::REGISTERED->value)
+            ->when($departmentId !== null, function ($query) use ($departmentId) {
+                return $query->where('department_id', $departmentId);
+            })
             ->orderBy('registered_at')
             ->get();
 

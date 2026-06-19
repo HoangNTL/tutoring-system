@@ -83,8 +83,13 @@ class LegacyApiService implements LegacyDataGateway
         });
     }
 
-    public function fetchAllLecturers(): array
+    public function fetchAllLecturers(?int $departmentId = null): array
     {
+        $queryParams = [];
+        if ($departmentId !== null) {
+            $queryParams['departmentId'] = $departmentId;
+        }
+
         return $this->fetchAll('/lecturers', function (array $lecturer): ?array {
             if (
                 empty($lecturer['id']) ||
@@ -97,8 +102,11 @@ class LegacyApiService implements LegacyDataGateway
                 'legacy_id' => (int) $lecturer['id'],
                 'username' => (string) $lecturer['lecturerCode'],
                 'date_of_birth' => $lecturer['dateOfBirth'] ?? null,
+                'first_name' => $lecturer['firstName'] ?? null,
+                'last_name' => $lecturer['lastName'] ?? null,
+                'full_name' => $lecturer['fullName'] ?? null,
             ];
-        });
+        }, $queryParams);
     }
 
     public function fetchAllDepartments(): array
@@ -120,13 +128,13 @@ class LegacyApiService implements LegacyDataGateway
      * @param  callable(array<string, mixed>): ?array<string, mixed>  $mapper
      * @return array<int, array<string, mixed>>
      */
-    private function fetchAll(string $endpoint, callable $mapper): array
+    private function fetchAll(string $endpoint, callable $mapper, array $queryParams = []): array
     {
         $page = 1;
         $allItems = [];
 
         do {
-            $payload = $this->requestPage($endpoint, $page, self::LIMIT);
+            $payload = $this->requestPage($endpoint, $page, self::LIMIT, $queryParams);
 
             foreach ($payload['data'] as $item) {
                 $mapped = $mapper($item);
@@ -181,7 +189,7 @@ class LegacyApiService implements LegacyDataGateway
 
     /**
      * @param  array<int, array<string, mixed>>  $payload
-     * @return array<int, array{courseCode:string,courseName:string,credits:int}>
+     * @return array<int, array{courseCode:string,courseName:string,credits:int,departmentId:int|null}>
      */
     private function mapStudentCourses(array $payload): array
     {
@@ -199,6 +207,7 @@ class LegacyApiService implements LegacyDataGateway
                 'courseCode' => (string) $course['courseCode'],
                 'courseName' => (string) $course['courseName'],
                 'credits' => (int) ($course['credits'] ?? 0),
+                'departmentId' => isset($course['departmentId']) ? (int) $course['departmentId'] : null,
             ];
         }
 
@@ -226,16 +235,16 @@ class LegacyApiService implements LegacyDataGateway
     /**
      * @return array{data: array<int, array<string, mixed>>, meta: array{lastPage: int}}
      */
-    private function requestPage(string $endpoint, int $page, int $limit): array
+    private function requestPage(string $endpoint, int $page, int $limit, array $queryParams = []): array
     {
         try {
             $response = Http::legacy()
                 ->timeout(self::TIMEOUT_SECONDS)
                 ->retry(self::RETRY_TIMES, self::RETRY_DELAY_MS)
-                ->get($endpoint, [
+                ->get($endpoint, array_merge([
                     'page' => $page,
                     'limit' => $limit,
-                ])
+                ], $queryParams))
                 ->throw();
 
             $payload = $response->json();

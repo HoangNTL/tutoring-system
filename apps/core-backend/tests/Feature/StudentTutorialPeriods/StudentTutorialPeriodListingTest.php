@@ -75,7 +75,7 @@ class StudentTutorialPeriodListingTest extends TestCase
             ]);
     }
 
-    public function test_student_only_sees_open_periods(): void
+    public function test_student_sees_active_and_completed_periods_but_not_draft_or_cancelled(): void
     {
         $student = User::factory()->create([
             'role' => UserRole::STUDENT,
@@ -106,16 +106,15 @@ class StudentTutorialPeriodListingTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.id', $openPeriod->id);
+            ->assertJsonCount(2, 'data');
 
         $returnedIds = collect($response->json('data'))
             ->pluck('id')
             ->all();
 
-        $this->assertSame([$openPeriod->id], $returnedIds);
+        $this->assertContains($openPeriod->id, $returnedIds);
+        $this->assertContains($closedPeriod->id, $returnedIds);
         $this->assertNotContains($draftPeriod->id, $returnedIds);
-        $this->assertNotContains($closedPeriod->id, $returnedIds);
     }
 
     public function test_response_does_not_include_admin_only_fields(): void

@@ -84,7 +84,7 @@ class StudentTutorialRegistrationInfoTest extends TestCase
             ->assertJsonPath('data.registeredCourses', []);
     }
 
-    public function test_non_open_periods_are_blocked_before_querying_legacy(): void
+    public function test_draft_or_cancelled_periods_are_blocked_before_querying_legacy(): void
     {
         Http::fake();
 
@@ -93,7 +93,7 @@ class StudentTutorialRegistrationInfoTest extends TestCase
             'student_id' => 88,
             'username' => 'sv0001',
         ]);
-        $tutorialPeriod = $this->createTutorialPeriod(TutorialPeriodStatus::CLOSED, 296);
+        $tutorialPeriod = $this->createTutorialPeriod(TutorialPeriodStatus::DRAFT, 296);
 
         $this
             ->actingAs($student, 'web')

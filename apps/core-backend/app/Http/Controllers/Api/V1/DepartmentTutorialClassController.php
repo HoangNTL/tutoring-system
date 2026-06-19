@@ -6,6 +6,8 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Department\CreateTutorialClassRequest;
 use App\Http\Requests\Department\UpdateTutorialClassRequest;
+use App\Http\Requests\Department\UpdateClassScheduleRequest;
+use App\Http\Requests\Department\UpdateClassLecturerRequest;
 use App\Http\Resources\DepartmentTutorialClassResource;
 use App\Services\TutorialPeriods\DepartmentTutorialClassService;
 use Illuminate\Http\Request;
@@ -21,7 +23,10 @@ class DepartmentTutorialClassController extends Controller
     {
         $this->ensureDepartmentAccess($request);
 
-        $classes = $this->departmentTutorialClassService->getClasses($tutorialPeriodId);
+        $classes = $this->departmentTutorialClassService->getClasses(
+            $tutorialPeriodId,
+            $request->user()->department_id !== null ? (int) $request->user()->department_id : null
+        );
 
         return $this->success(
             DepartmentTutorialClassResource::collection(collect($classes)),
@@ -36,7 +41,8 @@ class DepartmentTutorialClassController extends Controller
         $tutorialClass = $this->departmentTutorialClassService->createClass(
             $tutorialPeriodId,
             $request->validated(),
-            (int) $request->user()->id
+            (int) $request->user()->id,
+            $request->user()->department_id !== null ? (int) $request->user()->department_id : null
         );
 
         return $this->success(
@@ -83,6 +89,38 @@ class DepartmentTutorialClassController extends Controller
         return $this->success(
             new DepartmentTutorialClassResource($tutorialClass),
             'Tutorial class restored successfully'
+        );
+    }
+
+    public function updateSchedule(UpdateClassScheduleRequest $request, int $classId)
+    {
+        $this->ensureDepartmentAccess($request);
+
+        $tutorialClass = $this->departmentTutorialClassService->updateClassSchedule(
+            $classId,
+            $request->validated(),
+            $request->user()->department_id !== null ? (int) $request->user()->department_id : null
+        );
+
+        return $this->success(
+            new DepartmentTutorialClassResource($tutorialClass),
+            'Tutorial class schedule updated successfully'
+        );
+    }
+
+    public function updateLecturer(UpdateClassLecturerRequest $request, int $classId)
+    {
+        $this->ensureDepartmentAccess($request);
+
+        $tutorialClass = $this->departmentTutorialClassService->updateClassLecturer(
+            $classId,
+            $request->validated(),
+            $request->user()->department_id !== null ? (int) $request->user()->department_id : null
+        );
+
+        return $this->success(
+            new DepartmentTutorialClassResource($tutorialClass),
+            'Tutorial class lecturer assigned successfully'
         );
     }
 

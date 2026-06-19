@@ -11,12 +11,20 @@ import {
 
 type RegisteredCoursesTableProps = {
   courses: StudentTutorialCourse[]
+  canCancel?: boolean
   cancellingCourseCode?: string | null
   onCancel: (courseCode: string) => void
 }
 
+const formatDayOfWeek = (day: number | null) => {
+  if (!day) return ''
+  if (day === 8) return 'Chủ nhật'
+  return `Thứ ${day}`
+}
+
 export function RegisteredCoursesTable({
   courses,
+  canCancel = true,
   cancellingCourseCode = null,
   onCancel,
 }: RegisteredCoursesTableProps) {
@@ -29,10 +37,11 @@ export function RegisteredCoursesTable({
       <Table>
         <TableHeader className="bg-slate-50">
           <TableRow>
-            <TableHead className="w-[24%] px-4">Mã môn</TableHead>
-            <TableHead className="w-[46%]">Tên môn</TableHead>
-            <TableHead className="w-[14%] px-4 text-right">Số tín chỉ</TableHead>
-            <TableHead className="w-[16%] px-4 text-right">Thao tác</TableHead>
+            <TableHead className="w-[15%] px-4">Mã môn</TableHead>
+            <TableHead className="w-[30%]">Tên môn</TableHead>
+            <TableHead className="w-[30%]">Lịch học & Giảng viên</TableHead>
+            <TableHead className="w-[12%] px-4 text-right">Số tín chỉ</TableHead>
+            <TableHead className="w-[13%] px-4 text-right">Thao tác</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -42,20 +51,38 @@ export function RegisteredCoursesTable({
                 {course.courseCode}
               </TableCell>
               <TableCell className="py-3 text-slate-700">{course.courseName}</TableCell>
+              <TableCell className="py-3 text-slate-700">
+                {course.dayOfWeek && course.startPeriod && course.room ? (
+                  <div className="flex flex-col gap-0.5 text-xs">
+                    <span className="font-semibold text-slate-800">
+                      {formatDayOfWeek(course.dayOfWeek)}, Tiết {course.startPeriod} ({course.room})
+                    </span>
+                    {course.lecturerName && (
+                      <span className="text-indigo-600 font-medium">GV: {course.lecturerName}</span>
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-xs text-slate-400 italic">Chưa xếp lịch</span>
+                )}
+              </TableCell>
               <TableCell className="px-4 py-3 text-right text-slate-700">
                 {course.credits}
               </TableCell>
               <TableCell className="px-4 py-3 text-right">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="h-8 rounded-lg px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
-                  disabled={cancellingCourseCode === course.courseCode}
-                  onClick={() => onCancel(course.courseCode)}
-                >
-                  {cancellingCourseCode === course.courseCode ? 'Đang hủy...' : 'Hủy'}
-                </Button>
+                {canCancel ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-8 rounded-lg px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
+                    disabled={cancellingCourseCode === course.courseCode}
+                    onClick={() => onCancel(course.courseCode)}
+                  >
+                    {cancellingCourseCode === course.courseCode ? 'Đang hủy...' : 'Hủy'}
+                  </Button>
+                ) : (
+                  <span className="text-sm text-slate-400">—</span>
+                )}
               </TableCell>
             </TableRow>
           ))}

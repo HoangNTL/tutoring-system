@@ -51,7 +51,7 @@ class LegacyImportServiceTest extends TestCase
                 ]];
             }
 
-            public function fetchAllLecturers(): array
+            public function fetchAllLecturers(?int $departmentId = null): array
             {
                 return [];
             }
@@ -108,7 +108,7 @@ class LegacyImportServiceTest extends TestCase
                 return [];
             }
 
-            public function fetchAllLecturers(): array
+            public function fetchAllLecturers(?int $departmentId = null): array
             {
                 return [];
             }

@@ -78,6 +78,7 @@ class LegacyApiServiceTest extends TestCase
                         'courseCode' => 'INT123',
                         'courseName' => 'Cấu trúc dữ liệu',
                         'credits' => 3,
+                        'departmentId' => null,
                     ],
                 ],
             ], 200),
@@ -92,6 +93,7 @@ class LegacyApiServiceTest extends TestCase
                 'courseCode' => 'INT123',
                 'courseName' => 'Cấu trúc dữ liệu',
                 'credits' => 3,
+                'departmentId' => null,
             ],
         ], $result);
 
@@ -110,6 +112,7 @@ class LegacyApiServiceTest extends TestCase
                         'courseCode' => 'INT123',
                         'courseName' => 'Cấu trúc dữ liệu',
                         'credits' => 3,
+                        'departmentId' => null,
                     ],
                 ],
             ], 200),
@@ -124,6 +127,7 @@ class LegacyApiServiceTest extends TestCase
                 'courseCode' => 'INT123',
                 'courseName' => 'Cấu trúc dữ liệu',
                 'credits' => 3,
+                'departmentId' => null,
             ],
         ], $result);
 

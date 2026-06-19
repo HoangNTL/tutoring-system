@@ -24,6 +24,11 @@ class DepartmentTutorialClassResource extends JsonResource
             'totalPeriods' => $this->total_periods,
             'status' => $this->status?->name,
             'cancelledAt' => $this->cancelled_at?->format('Y-m-d H:i:s'),
+            'lecturerId' => $this->lecturer_id,
+            'lecturerName' => $this->lecturer_name,
+            'dayOfWeek' => $this->day_of_week,
+            'startPeriod' => $this->start_period,
+            'room' => $this->room,
         ];
     }
 }

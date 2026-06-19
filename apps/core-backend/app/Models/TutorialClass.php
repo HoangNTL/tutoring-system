@@ -13,6 +13,7 @@ class TutorialClass extends Model
 
     protected $fillable = [
         'tutorial_period_id',
+        'department_id',
         'course_code',
         'course_name',
         'credits',
@@ -22,6 +23,11 @@ class TutorialClass extends Model
         'status',
         'cancelled_at',
         'created_by',
+        'lecturer_id',
+        'lecturer_name',
+        'day_of_week',
+        'start_period',
+        'room',
     ];
 
     protected function casts(): array
@@ -35,6 +41,9 @@ class TutorialClass extends Model
             'status' => TutorialClassStatus::class,
             'cancelled_at' => 'datetime',
             'created_by' => 'integer',
+            'lecturer_id' => 'integer',
+            'day_of_week' => 'integer',
+            'start_period' => 'integer',
         ];
     }
 

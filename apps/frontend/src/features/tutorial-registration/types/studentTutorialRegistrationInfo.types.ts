@@ -3,6 +3,12 @@ export type StudentTutorialCourse = {
   courseName: string
   credits: number
   registeredAt?: string | null
+  dayOfWeek?: number | null
+  startPeriod?: number | null
+  room?: string | null
+  lecturerId?: number | null
+  lecturerName?: string | null
+  classStatus?: string | null
 }
 
 export type StudentTutorialRegistrationSummary = {
@@ -13,7 +19,7 @@ export type StudentTutorialRegistrationSummary = {
     name: string
   } | null
   registrationEndAt: string | null
-  status: 'OPEN'
+  status: 'OPEN' | 'ASSIGNING' | 'ONGOING' | 'CLOSED'
 }
 
 export type StudentTutorialRegistrationInfo = {

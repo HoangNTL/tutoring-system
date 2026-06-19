@@ -339,6 +339,176 @@ class DepartmentTutorialClassTest extends TestCase
             ->assertBadRequest();
     }
 
+    public function test_department_can_update_schedule_of_planned_class_during_assigning(): void
+    {
+        $department = $this->createUser('dept_schedule', UserRole::DEPARTMENT, 2);
+        $tutorialPeriod = $this->createTutorialPeriod(TutorialPeriodStatus::ASSIGNING, 'Dot schedule');
+        $tutorialClass = $this->createTutorialClass(
+            $tutorialPeriod->id,
+            '020205',
+            'An toàn lao động',
+            5,
+            3,
+            TutorialClassStatus::PLANNED,
+            null,
+            2
+        );
+
+        $this->actingAs($department, 'web')
+            ->putJson("/api/v1/department/classes/{$tutorialClass->id}/schedule", [
+                'dayOfWeek' => 3,
+                'startPeriod' => 4,
+                'room' => 'A1-202',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.dayOfWeek', 3)
+            ->assertJsonPath('data.startPeriod', 4)
+            ->assertJsonPath('data.room', 'A1-202');
+
+        $this->assertDatabaseHas('tutorial_classes', [
+            'id' => $tutorialClass->id,
+            'day_of_week' => 3,
+            'start_period' => 4,
+            'room' => 'A1-202',
+        ]);
+    }
+
+    public function test_cannot_update_schedule_of_class_belonging_to_another_department(): void
+    {
+        $department = $this->createUser('dept_schedule_other', UserRole::DEPARTMENT, 2);
+        $tutorialPeriod = $this->createTutorialPeriod(TutorialPeriodStatus::ASSIGNING, 'Dot schedule other');
+        $tutorialClass = $this->createTutorialClass(
+            $tutorialPeriod->id,
+            '020205',
+            'An toàn lao động',
+            5,
+            3,
+            TutorialClassStatus::PLANNED,
+            null,
+            3 // other dept
+        );
+
+        $this->actingAs($department, 'web')
+            ->putJson("/api/v1/department/classes/{$tutorialClass->id}/schedule", [
+                'dayOfWeek' => 3,
+                'startPeriod' => 4,
+                'room' => 'A1-202',
+            ])
+            ->assertNotFound();
+    }
+
+    public function test_department_can_assign_lecturer_of_planned_class_during_assigning(): void
+    {
+        $department = $this->createUser('dept_lecturer', UserRole::DEPARTMENT, 2);
+        $tutorialPeriod = $this->createTutorialPeriod(TutorialPeriodStatus::ASSIGNING, 'Dot lecturer');
+        $tutorialClass = $this->createTutorialClass(
+            $tutorialPeriod->id,
+            '020205',
+            'An toàn lao động',
+            5,
+            3,
+            TutorialClassStatus::PLANNED,
+            null,
+            2
+        );
+
+        $this->actingAs($department, 'web')
+            ->putJson("/api/v1/department/classes/{$tutorialClass->id}/lecturer", [
+                'lecturerId' => 123,
+                'lecturerName' => 'Nguyen Van A',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.lecturerId', 123)
+            ->assertJsonPath('data.lecturerName', 'Nguyen Van A');
+
+        $this->assertDatabaseHas('tutorial_classes', [
+            'id' => $tutorialClass->id,
+            'lecturer_id' => 123,
+            'lecturer_name' => 'Nguyen Van A',
+        ]);
+    }
+
+    public function test_cannot_assign_lecturer_of_class_belonging_to_another_department(): void
+    {
+        $department = $this->createUser('dept_lecturer_other', UserRole::DEPARTMENT, 2);
+        $tutorialPeriod = $this->createTutorialPeriod(TutorialPeriodStatus::ASSIGNING, 'Dot lecturer other');
+        $tutorialClass = $this->createTutorialClass(
+            $tutorialPeriod->id,
+            '020205',
+            'An toàn lao động',
+            5,
+            3,
+            TutorialClassStatus::PLANNED,
+            null,
+            3 // other dept
+        );
+
+        $this->actingAs($department, 'web')
+            ->putJson("/api/v1/department/classes/{$tutorialClass->id}/lecturer", [
+                'lecturerId' => 123,
+                'lecturerName' => 'Nguyen Van A',
+            ])
+            ->assertNotFound();
+    }
+
+    public function test_cannot_schedule_class_in_occupied_room(): void
+    {
+        $department = $this->createUser('dept_schedule_conflict', UserRole::DEPARTMENT, 2);
+        $tutorialPeriod = $this->createTutorialPeriod(TutorialPeriodStatus::ASSIGNING, 'Dot schedule conflict');
+
+        $class1 = $this->createTutorialClass($tutorialPeriod->id, '020205', 'An toàn lao động', 5, 3, TutorialClassStatus::PLANNED, null, 2);
+        $class1->update(['day_of_week' => 3, 'start_period' => 4, 'room' => 'A1-202']);
+
+        $class2 = $this->createTutorialClass($tutorialPeriod->id, '020206', 'Vật lý 1', 5, 3, TutorialClassStatus::PLANNED, null, 2);
+
+        $this->actingAs($department, 'web')
+            ->putJson("/api/v1/department/classes/{$class2->id}/schedule", [
+                'dayOfWeek' => 3,
+                'startPeriod' => 4,
+                'room' => 'A1-202',
+            ])
+            ->assertStatus(409);
+    }
+
+    public function test_cannot_schedule_class_if_lecturer_already_busy(): void
+    {
+        $department = $this->createUser('dept_schedule_lec_conflict', UserRole::DEPARTMENT, 2);
+        $tutorialPeriod = $this->createTutorialPeriod(TutorialPeriodStatus::ASSIGNING, 'Dot schedule lec conflict');
+
+        $class1 = $this->createTutorialClass($tutorialPeriod->id, '020205', 'An toàn lao động', 5, 3, TutorialClassStatus::PLANNED, null, 2);
+        $class1->update(['lecturer_id' => 123, 'lecturer_name' => 'Lec A', 'day_of_week' => 3, 'start_period' => 4, 'room' => 'A1-202']);
+
+        $class2 = $this->createTutorialClass($tutorialPeriod->id, '020206', 'Vật lý 1', 5, 3, TutorialClassStatus::PLANNED, null, 2);
+        $class2->update(['lecturer_id' => 123, 'lecturer_name' => 'Lec A']);
+
+        $this->actingAs($department, 'web')
+            ->putJson("/api/v1/department/classes/{$class2->id}/schedule", [
+                'dayOfWeek' => 3,
+                'startPeriod' => 4,
+                'room' => 'A1-203',
+            ])
+            ->assertStatus(409);
+    }
+
+    public function test_cannot_assign_lecturer_if_already_busy_at_that_time(): void
+    {
+        $department = $this->createUser('dept_lec_assign_conflict', UserRole::DEPARTMENT, 2);
+        $tutorialPeriod = $this->createTutorialPeriod(TutorialPeriodStatus::ASSIGNING, 'Dot lec assign conflict');
+
+        $class1 = $this->createTutorialClass($tutorialPeriod->id, '020205', 'An toàn lao động', 5, 3, TutorialClassStatus::PLANNED, null, 2);
+        $class1->update(['lecturer_id' => 123, 'lecturer_name' => 'Lec A', 'day_of_week' => 3, 'start_period' => 4, 'room' => 'A1-202']);
+
+        $class2 = $this->createTutorialClass($tutorialPeriod->id, '020206', 'Vật lý 1', 5, 3, TutorialClassStatus::PLANNED, null, 2);
+        $class2->update(['day_of_week' => 3, 'start_period' => 4, 'room' => 'A1-203']);
+
+        $this->actingAs($department, 'web')
+            ->putJson("/api/v1/department/classes/{$class2->id}/lecturer", [
+                'lecturerId' => 123,
+                'lecturerName' => 'Lec A',
+            ])
+            ->assertStatus(409);
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -351,12 +521,13 @@ class DepartmentTutorialClassTest extends TestCase
         parent::tearDown();
     }
 
-    private function createUser(string $username, UserRole $role): User
+    private function createUser(string $username, UserRole $role, ?int $departmentId = null): User
     {
         return User::create([
             'username' => $username,
             'password_hash' => 'password123',
             'role' => $role,
+            'department_id' => $departmentId,
         ]);
     }
 
@@ -402,7 +573,8 @@ class DepartmentTutorialClassTest extends TestCase
         int $totalSessions,
         int $periodsPerSession,
         TutorialClassStatus $status = TutorialClassStatus::PLANNED,
-        ?string $cancelledAt = null
+        ?string $cancelledAt = null,
+        ?int $departmentId = null
     ): TutorialClass {
         return TutorialClass::create([
             'tutorial_period_id' => $tutorialPeriodId,
@@ -414,7 +586,8 @@ class DepartmentTutorialClassTest extends TestCase
             'total_periods' => $totalSessions * $periodsPerSession,
             'status' => $status,
             'cancelled_at' => $cancelledAt,
-            'created_by' => $this->createUser('creator_' . $courseCode . '_' . $tutorialPeriodId, UserRole::DEPARTMENT)->id,
+            'department_id' => $departmentId,
+            'created_by' => $this->createUser('creator_' . $courseCode . '_' . $tutorialPeriodId, UserRole::DEPARTMENT, $departmentId)->id,
         ]);
     }
 }
