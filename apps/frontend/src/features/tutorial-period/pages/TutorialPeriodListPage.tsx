@@ -1,5 +1,5 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react'
-import { CalendarSearch, CirclePlus } from 'lucide-react'
+import { CalendarSearch, CirclePlus, Archive, Calendar } from 'lucide-react'
 
 import {
   useCancelTutorialPeriodMutation,
@@ -87,7 +87,8 @@ const buildPaginationItems = (
 export default function TutorialPeriodListPage() {
   const [page, setPage] = useState(1)
   const [searchInput, setSearchInput] = useState('')
-  const [statusFilter, setStatusFilter] = useState<TutorialPeriodStatus | 'ALL'>('ALL')
+  const [activeTab, setActiveTab] = useState<'ACTIVE' | 'ARCHIVED'>('ACTIVE')
+  const [statusFilter, setStatusFilter] = useState<TutorialPeriodStatus | 'ALL' | 'ACTIVE' | 'ARCHIVED'>('ACTIVE')
   const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create')
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false)
   const [selectedTutorialPeriod, setSelectedTutorialPeriod] = useState<TutorialPeriod | null>(null)
@@ -329,16 +330,50 @@ export default function TutorialPeriodListPage() {
   return (
     <div className="flex min-h-full flex-col">
       <div className="flex min-h-0 flex-1 flex-col rounded-xl border border-slate-200 bg-white px-4 py-3">
-        <div className="border-b border-slate-200 pb-3">
+        <div className="border-b border-slate-200 pb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
             Quản lý đợt phụ đạo
           </h1>
+
+          <div className="flex gap-1">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('ACTIVE')
+                setStatusFilter('ACTIVE')
+                setPage(1)
+              }}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold rounded-lg transition-all ${
+                activeTab === 'ACTIVE'
+                  ? 'bg-indigo-50 text-indigo-700 shadow-xs border border-indigo-100'
+                  : 'text-slate-500 hover:text-slate-800 border border-transparent'
+              }`}
+            >
+              <Calendar className="size-4" /> Đợt học hiện tại
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('ARCHIVED')
+                setStatusFilter('ARCHIVED')
+                setPage(1)
+              }}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold rounded-lg transition-all ${
+                activeTab === 'ARCHIVED'
+                  ? 'bg-indigo-50 text-indigo-700 shadow-xs border border-indigo-100'
+                  : 'text-slate-500 hover:text-slate-800 border border-transparent'
+              }`}
+            >
+              <Archive className="size-4" /> Đợt học cũ / Lưu trữ
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-col gap-3 pt-3 lg:flex-row lg:items-center lg:justify-between">
           <TutorialPeriodFilters
             searchInput={searchInput}
             statusFilter={statusFilter}
+            activeTab={activeTab}
             onSearchChange={(value) => {
               setSearchInput(value)
               setPage(1)

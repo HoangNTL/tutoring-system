@@ -119,6 +119,16 @@ class TutorialPeriodQueryService
     private function applyStatusFilter(Builder $query, string $status): void
     {
         match ($status) {
+            'ACTIVE' => $query->whereIn('status', [
+                TutorialPeriodStatus::DRAFT->value,
+                TutorialPeriodStatus::OPEN->value,
+                TutorialPeriodStatus::ASSIGNING->value,
+                TutorialPeriodStatus::ONGOING->value,
+            ]),
+            'ARCHIVED' => $query->whereIn('status', [
+                TutorialPeriodStatus::CLOSED->value,
+                TutorialPeriodStatus::CANCELLED->value,
+            ]),
             TutorialPeriodStatus::DRAFT->name => $query->where('status', TutorialPeriodStatus::DRAFT->value),
             TutorialPeriodStatus::OPEN->name => $query->where('status', TutorialPeriodStatus::OPEN->value),
             TutorialPeriodStatus::ASSIGNING->name => $query->where('status', TutorialPeriodStatus::ASSIGNING->value),

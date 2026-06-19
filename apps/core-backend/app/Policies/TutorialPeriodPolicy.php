@@ -33,7 +33,7 @@ class TutorialPeriodPolicy
     public function delete(User $user, TutorialPeriod $tutorialPeriod): bool
     {
         return $user->role === UserRole::ADMIN
-            && $tutorialPeriod->status === TutorialPeriodStatus::DRAFT;
+            && in_array($tutorialPeriod->status, [TutorialPeriodStatus::DRAFT, TutorialPeriodStatus::CLOSED, TutorialPeriodStatus::CANCELLED], true);
     }
 
     public function open(User $user, TutorialPeriod $tutorialPeriod): bool

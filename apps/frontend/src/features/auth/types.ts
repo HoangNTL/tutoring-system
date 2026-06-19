@@ -6,6 +6,13 @@ export interface User {
   id: number
   username: string
   role: Role
+  studentId?: number | null
+  lecturerId?: number | null
+  departmentId?: number | null
+  departmentName?: string | null
+  lecturerName?: string | null
+  studentName?: string | null
+  createdAt?: string | null
 }
 
 export interface LoginPayload {

@@ -16,7 +16,7 @@ class ListTutorialPeriodsRequest extends BaseQueryRequest
     {
         return array_merge(parent::rules(), [
             'search' => 'string|nullable|max:255',
-            'status' => 'string|nullable|in:' . implode(
+            'status' => 'string|nullable|in:ACTIVE,ARCHIVED,' . implode(
                 ',',
                 array_map(
                     static fn(TutorialPeriodStatus $status): string => $status->name,

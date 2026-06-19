@@ -22,6 +22,13 @@ class TutorialPeriodStatusService
         }
     }
 
+    public function ensureDeletableStatus(TutorialPeriod $tutorialPeriod): void
+    {
+        if (!in_array($tutorialPeriod->status, [TutorialPeriodStatus::DRAFT, TutorialPeriodStatus::CLOSED, TutorialPeriodStatus::CANCELLED], true)) {
+            throw new ConflictHttpException("Only tutorial periods in DRAFT, CLOSED, or CANCELLED status can be deleted");
+        }
+    }
+
     public function open(TutorialPeriod $tutorialPeriod): TutorialPeriod
     {
         return $this->transition(
@@ -199,7 +206,7 @@ class TutorialPeriodStatusService
 
         return [
             'canEdit' => in_array($status, [TutorialPeriodStatus::DRAFT, TutorialPeriodStatus::OPEN], true),
-            'canDelete' => $status === TutorialPeriodStatus::DRAFT,
+            'canDelete' => in_array($status, [TutorialPeriodStatus::DRAFT, TutorialPeriodStatus::CLOSED, TutorialPeriodStatus::CANCELLED], true),
             'canOpen' => $status === TutorialPeriodStatus::DRAFT,
             'canAssigning' => $status === TutorialPeriodStatus::OPEN,
             'canOngoing' => $status === TutorialPeriodStatus::ASSIGNING,

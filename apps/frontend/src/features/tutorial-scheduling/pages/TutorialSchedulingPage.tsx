@@ -42,7 +42,17 @@ export default function TutorialSchedulingPage() {
   useEffect(() => {
     if (targetClass) {
       setDayOfWeek(targetClass.dayOfWeek ? String(targetClass.dayOfWeek) : '2')
-      setStartPeriod(targetClass.startPeriod ? String(targetClass.startPeriod) : '1')
+      
+      let initialPeriod = '1'
+      if (targetClass.startPeriod) {
+        const p = targetClass.startPeriod
+        if (p <= 3) initialPeriod = '1'
+        else if (p <= 6) initialPeriod = '4'
+        else if (p <= 9) initialPeriod = '7'
+        else initialPeriod = '10'
+      }
+      setStartPeriod(initialPeriod)
+      
       setRoom(targetClass.room ?? '')
     }
   }, [targetClass])
@@ -144,40 +154,41 @@ export default function TutorialSchedulingPage() {
         </div>
 
         <div className="space-y-4">
-          {/* Thứ trong tuần */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-700">Thứ trong tuần</label>
-            <Select value={dayOfWeek} onValueChange={setDayOfWeek}>
-              <SelectTrigger>
-                <SelectValue placeholder="Chọn thứ" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="2">Thứ hai</SelectItem>
-                <SelectItem value="3">Thứ ba</SelectItem>
-                <SelectItem value="4">Thứ tư</SelectItem>
-                <SelectItem value="5">Thứ năm</SelectItem>
-                <SelectItem value="6">Thứ sáu</SelectItem>
-                <SelectItem value="7">Thứ bảy</SelectItem>
-                <SelectItem value="8">Chủ nhật</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {/* Thứ trong tuần */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700">Thứ trong tuần</label>
+              <Select value={dayOfWeek} onValueChange={setDayOfWeek}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Chọn thứ" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="2">Thứ hai</SelectItem>
+                  <SelectItem value="3">Thứ ba</SelectItem>
+                  <SelectItem value="4">Thứ tư</SelectItem>
+                  <SelectItem value="5">Thứ năm</SelectItem>
+                  <SelectItem value="6">Thứ sáu</SelectItem>
+                  <SelectItem value="7">Thứ bảy</SelectItem>
+                  <SelectItem value="8">Chủ nhật</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          {/* Tiết học bắt đầu */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-700">Tiết học bắt đầu</label>
-            <Select value={startPeriod} onValueChange={setStartPeriod}>
-              <SelectTrigger>
-                <SelectValue placeholder="Chọn tiết" />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.from({ length: 12 }, (_, i) => i + 1).map((p) => (
-                  <SelectItem key={p} value={String(p)}>
-                    Tiết {p}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* Tiết học bắt đầu */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700">Tiết học bắt đầu</label>
+              <Select value={startPeriod} onValueChange={setStartPeriod}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Chọn tiết" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Tiết 1 - 3</SelectItem>
+                  <SelectItem value="4">Tiết 4 - 6</SelectItem>
+                  <SelectItem value="7">Tiết 7 - 9</SelectItem>
+                  <SelectItem value="10">Tiết 10 - 12</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Phòng học */}

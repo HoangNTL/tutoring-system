@@ -63,5 +63,5 @@ export interface TutorialPeriodListParams {
   page: number
   limit: number
   search: string
-  status: TutorialPeriodStatus | 'ALL'
+  status: TutorialPeriodStatus | 'ALL' | 'ACTIVE' | 'ARCHIVED'
 }

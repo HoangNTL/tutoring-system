@@ -26,6 +26,29 @@ class UserResource extends JsonResource
             }
         }
 
+        $lecturerName = null;
+        if ($this->role === \App\Enums\UserRole::LECTURER && $this->lecturer_id !== null) {
+            try {
+                $gateway = app(\App\Contracts\LegacyDataGateway::class);
+                $lecturers = $gateway->fetchAllLecturers();
+                $lecturer = collect($lecturers)->firstWhere('legacy_id', $this->lecturer_id);
+                $lecturerName = $lecturer['full_name'] ?? null;
+            } catch (\Throwable $e) {
+                // Fallback to null
+            }
+        }
+
+        $studentName = null;
+        if ($this->role === \App\Enums\UserRole::STUDENT && $this->student_id !== null) {
+            try {
+                $gateway = app(\App\Contracts\LegacyDataGateway::class);
+                $student = $gateway->fetchStudentInfoByLegacyStudentId($this->student_id);
+                $studentName = $student['fullName'] ?? null;
+            } catch (\Throwable $e) {
+                // Fallback to null
+            }
+        }
+
         return [
             'id' => $this->id,
             'username' => $this->username,
@@ -34,6 +57,8 @@ class UserResource extends JsonResource
             'lecturerId' => $this->lecturer_id,
             'departmentId' => $this->department_id,
             'departmentName' => $departmentName,
+            'lecturerName' => $lecturerName,
+            'studentName' => $studentName,
             'createdAt' => $this->created_at?->format('Y-m-d H:i:s'),
         ];
     }

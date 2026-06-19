@@ -4,7 +4,7 @@ import { AUTH_API_ENDPOINTS } from '@/features/auth/constants'
 import { queryClient } from '@/shared/api/queryClient'
 
 const http = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000',
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
@@ -59,6 +59,12 @@ http.interceptors.response.use(
           Accept: 'application/json',
         },
       })
+
+      // Remove the stale XSRF header so Axios can pick up the fresh cookie
+      if (originalRequest.headers) {
+        delete originalRequest.headers['X-XSRF-TOKEN']
+        delete originalRequest.headers['x-xsrf-token']
+      }
 
       return http.request(originalRequest)
     }

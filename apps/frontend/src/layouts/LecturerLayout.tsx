@@ -23,6 +23,7 @@ export default function LecturerLayout() {
       userName={user?.username}
       title="Không gian giảng viên"
       description="Theo dõi lịch dạy và thông tin công việc hằng ngày trong một điều hướng gọn, dễ mở rộng."
+      showPageIntro={false}
       onLogout={handleLogout}
       isLoggingOut={logoutMutation.isPending}
     >

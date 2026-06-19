@@ -43,6 +43,16 @@ export function UsersTable({ users, onEditPassword }: UsersTableProps) {
                       ({user.departmentName})
                     </span>
                   )}
+                  {user.role === 'LECTURER' && user.lecturerName && (
+                    <span className="ml-1.5 text-sm font-normal text-slate-500">
+                      ({user.lecturerName})
+                    </span>
+                  )}
+                  {user.role === 'STUDENT' && user.studentName && (
+                    <span className="ml-1.5 text-sm font-normal text-slate-500">
+                      ({user.studentName})
+                    </span>
+                  )}
                 </TableCell>
                 <TableCell className="py-3 text-sm text-slate-700">
                   {userRoleLabels[user.role]}

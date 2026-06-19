@@ -4,7 +4,9 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\DepartmentTutorialRegistrationController;
 use App\Http\Controllers\Api\V1\DepartmentTutorialClassController;
 use App\Http\Controllers\Api\V1\DepartmentLecturerController;
+use App\Http\Controllers\Api\V1\LecturerTeachingScheduleController;
 use App\Http\Controllers\Api\V1\LegacyPeriodController;
+use App\Http\Controllers\Api\V1\StudentStudyScheduleController;
 use App\Http\Controllers\Api\V1\StudentTutorialPeriodCourseController;
 use App\Http\Controllers\Api\V1\StudentTutorialPeriodController;
 use App\Http\Controllers\Api\V1\StudentTutorialRegistrationController;
@@ -40,6 +42,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/student/tutorial-periods/{tutorialPeriodId}/registrations', [StudentTutorialRegistrationController::class, 'store']);
         Route::delete('/student/tutorial-periods/{tutorialPeriodId}/registrations/{courseCode}', [StudentTutorialRegistrationController::class, 'destroy']);
         Route::get('/student/tutorial-periods', [StudentTutorialPeriodController::class, 'index']);
+        Route::get('/student/study-schedule', [StudentStudyScheduleController::class, 'index']);
+        Route::get('/lecturer/teaching-schedule', [LecturerTeachingScheduleController::class, 'index']);
         Route::get('/users', [UserController::class, 'index']);
         Route::patch('/users/{user}/password', [UserController::class, 'updatePassword']);
         Route::get('/tutorial-periods', [TutorialPeriodController::class, 'index']);

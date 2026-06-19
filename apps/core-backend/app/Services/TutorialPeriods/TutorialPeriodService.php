@@ -64,7 +64,7 @@ class TutorialPeriodService
     public function delete(int $id): void
     {
         $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFail($id);
-        $this->tutorialPeriodStatusService->ensureDraftStatus($tutorialPeriod, 'deleted');
+        $this->tutorialPeriodStatusService->ensureDeletableStatus($tutorialPeriod);
 
         $tutorialPeriod->delete();
     }
