@@ -57,4 +57,12 @@ class UserService extends AbstractPaginatedQueryService
 
         return $role === '' ? null : $role;
     }
+
+    public function updatePassword(int $userId, string $password): void
+    {
+        $user = User::findOrFail($userId);
+        $user->update([
+            'password_hash' => $password,
+        ]);
+    }
 }

@@ -145,6 +145,26 @@ class TutorialPeriodNotificationTest extends TestCase
         $this->assertStringContainsString('Active Period', $data[0]['data']['message']);
     }
 
+    public function test_does_not_fetch_cancelled_tutorial_period_notifications(): void
+    {
+        $student = User::create([
+            'username' => 'student_cancelled_test',
+            'password_hash' => 'password',
+            'role' => UserRole::STUDENT,
+        ]);
+
+        $cancelledPeriod = $this->createTutorialPeriod($student->id, TutorialPeriodStatus::CANCELLED, 'Cancelled Period', '2026-06-10 08:00:00', '2026-06-25 17:00:00');
+        $student->notify(new NewTutorialPeriodNotification($cancelledPeriod));
+
+        $response = $this->actingAs($student, 'web')
+            ->getJson('/api/v1/notifications');
+
+        $response->assertOk();
+        $data = $response->json('data');
+
+        $this->assertCount(0, $data);
+    }
+
     public function test_can_mark_notification_as_read(): void
     {
         $student = User::create([

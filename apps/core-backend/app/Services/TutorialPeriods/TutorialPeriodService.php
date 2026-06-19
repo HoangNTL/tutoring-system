@@ -66,6 +66,77 @@ class TutorialPeriodService
         $tutorialPeriod->delete();
     }
 
+    public function open(int $id): TutorialPeriod
+    {
+        $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFail($id);
+        $tutorialPeriod = $this->tutorialPeriodStatusService->open($tutorialPeriod);
+        $this->academicPeriodResolver->enrich($tutorialPeriod);
+
+        return $tutorialPeriod;
+    }
+
+    public function cancel(int $id): TutorialPeriod
+    {
+        $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFail($id);
+        $tutorialPeriod = $this->tutorialPeriodStatusService->cancel($tutorialPeriod);
+        $this->academicPeriodResolver->enrich($tutorialPeriod);
+
+        return $tutorialPeriod;
+    }
+
+    public function assigning(int $id): TutorialPeriod
+    {
+        $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFail($id);
+        $tutorialPeriod = $this->tutorialPeriodStatusService->assigning($tutorialPeriod);
+        $this->academicPeriodResolver->enrich($tutorialPeriod);
+
+        return $tutorialPeriod;
+    }
+
+    public function ongoing(int $id): TutorialPeriod
+    {
+        $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFail($id);
+        $tutorialPeriod = $this->tutorialPeriodStatusService->ongoing($tutorialPeriod);
+        $this->academicPeriodResolver->enrich($tutorialPeriod);
+
+        return $tutorialPeriod;
+    }
+
+    public function close(int $id): TutorialPeriod
+    {
+        $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFail($id);
+        $tutorialPeriod = $this->tutorialPeriodStatusService->close($tutorialPeriod);
+        $this->academicPeriodResolver->enrich($tutorialPeriod);
+
+        return $tutorialPeriod;
+    }
+
+    public function revertToDraft(int $id): TutorialPeriod
+    {
+        $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFail($id);
+        $tutorialPeriod = $this->tutorialPeriodStatusService->revertToDraft($tutorialPeriod);
+        $this->academicPeriodResolver->enrich($tutorialPeriod);
+
+        return $tutorialPeriod;
+    }
+
+    public function reopenRegistration(int $id): TutorialPeriod
+    {
+        $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFail($id);
+        $tutorialPeriod = $this->tutorialPeriodStatusService->reopenRegistration($tutorialPeriod);
+        $this->academicPeriodResolver->enrich($tutorialPeriod);
+
+        return $tutorialPeriod;
+    }
+
+    public function restore(int $id, TutorialPeriodStatus $targetStatus): TutorialPeriod
+    {
+        $tutorialPeriod = $this->tutorialPeriodQueryService->findOrFail($id);
+        $tutorialPeriod = $this->tutorialPeriodStatusService->restore($tutorialPeriod, $targetStatus);
+        $this->academicPeriodResolver->enrich($tutorialPeriod);
+
+        return $tutorialPeriod;
+    }
 
     /**
      * @return array{open_to_assigning:int,assigning_to_ongoing:int,ongoing_to_closed:int}

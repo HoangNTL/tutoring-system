@@ -34,7 +34,10 @@ export default function TutorialRegistrationPage() {
   useEffect(() => {
     if (activePeriodForPopup) {
       const sessionKey = `seen_active_popup_${activePeriodForPopup.id}`
-      if (sessionStorage.getItem(sessionKey) !== 'true') {
+      const isNotExpired = activePeriodForPopup.registrationEndAt
+        ? new Date() < new Date(activePeriodForPopup.registrationEndAt)
+        : true
+      if (isNotExpired && sessionStorage.getItem(sessionKey) !== 'true') {
         setShowActivePopup(true)
       }
     }

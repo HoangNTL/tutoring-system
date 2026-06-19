@@ -2,18 +2,18 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Contracts\Legacy\LegacyApiClient;
+use App\Contracts\LegacyDataGateway;
 use App\Http\Controllers\Controller;
 
 class LegacyPeriodController extends Controller
 {
     public function __construct(
-        private LegacyApiClient $legacyApiService
+        private LegacyDataGateway $legacyDataGateway
     ) {}
 
     public function index()
     {
-        $periods = $this->legacyApiService->fetchLegacyPeriods();
+        $periods = $this->legacyDataGateway->fetchLegacyPeriods();
 
         return $this->success($periods, 'Legacy periods retrieved successfully');
     }

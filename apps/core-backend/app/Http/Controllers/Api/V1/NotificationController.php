@@ -10,17 +10,30 @@ class NotificationController extends Controller
 {
     public function index(Request $request)
     {
-        $notifications = $request->user()->notifications()
-            ->get()
-            ->filter(function ($n) {
-                $data = $n->data;
-                if (isset($data['registrationEndAt'])) {
-                    return now()->lessThan(Carbon::parse($data['registrationEndAt']));
-                }
-                return true;
-            });
+        $notifications = $request->user()->notifications()->get();
 
-        $formatted = $notifications->map(fn ($n) => [
+        $periodIds = $notifications->map(fn ($n) => $n->data['tutorialPeriodId'] ?? null)
+            ->filter()
+            ->unique()
+            ->toArray();
+
+        $activePeriods = \App\Models\TutorialPeriod::whereIn('id', $periodIds)
+            ->where('status', '!=', \App\Enums\TutorialPeriodStatus::CANCELLED->value)
+            ->pluck('id')
+            ->toArray();
+
+        $formatted = $notifications->filter(function ($n) use ($activePeriods) {
+            $data = $n->data;
+            if (isset($data['registrationEndAt'])) {
+                if (now()->greaterThanOrEqualTo(Carbon::parse($data['registrationEndAt']))) {
+                    return false;
+                }
+            }
+            if (isset($data['tutorialPeriodId'])) {
+                return in_array($data['tutorialPeriodId'], $activePeriods);
+            }
+            return true;
+        })->map(fn ($n) => [
             'id' => $n->id,
             'type' => $n->type,
             'data' => $n->data,

@@ -42,5 +42,38 @@ class DatabaseSeeder extends Seeder
                 'role' => UserRole::ADMIN,
             ]
         );
+
+        User::updateOrCreate(
+            [
+                'username' => 'department_demo'
+            ],
+            [
+                'password_hash' => '123456',
+                'role' => UserRole::DEPARTMENT,
+                'department_id' => 1,
+            ]
+        );
+
+        User::updateOrCreate(
+            [
+                'username' => 'lecturer_demo'
+            ],
+            [
+                'password_hash' => '123456',
+                'role' => UserRole::LECTURER,
+                'lecturer_id' => 1,
+            ]
+        );
+
+        User::updateOrCreate(
+            [
+                'username' => 'student_demo'
+            ],
+            [
+                'password_hash' => '123456',
+                'role' => UserRole::STUDENT,
+                'student_id' => 1,
+            ]
+        );
     }
 }

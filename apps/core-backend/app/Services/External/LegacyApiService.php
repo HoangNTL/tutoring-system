@@ -3,6 +3,7 @@
 namespace App\Services\External;
 
 use App\Contracts\Legacy\LegacyApiClient;
+use App\Contracts\LegacyDataGateway;
 use App\Services\External\Adapters\LegacyImportedUserAdapter;
 use App\Services\External\Adapters\LegacyLecturerAdapter;
 use App\Services\External\Adapters\LegacyPeriodAdapter;
@@ -10,7 +11,7 @@ use App\Services\External\Adapters\LegacyRoomAdapter;
 use App\Services\External\Adapters\LegacyStudentCourseAdapter;
 use App\Services\External\Adapters\LegacyStudentInfoAdapter;
 
-class LegacyApiService implements LegacyApiClient
+class LegacyApiService implements LegacyApiClient, LegacyDataGateway
 {
     private const LIMIT = 100;
 

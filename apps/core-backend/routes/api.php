@@ -51,9 +51,18 @@ Route::prefix('v1')->group(function () {
         Route::delete('/student/tutorial-periods/{tutorialPeriodId}/registrations/{courseCode}', [StudentTutorialRegistrationController::class, 'destroy']);
         Route::get('/student/tutorial-periods', [StudentTutorialPeriodController::class, 'index']);
         Route::get('/users', [UserController::class, 'index']);
+        Route::patch('/users/{user}/password', [UserController::class, 'updatePassword']);
         Route::get('/tutorial-periods', [TutorialPeriodController::class, 'index']);
         Route::get('/tutorial-periods/{tutorial_period}', [TutorialPeriodController::class, 'show']);
         Route::post('/tutorial-periods', [TutorialPeriodController::class, 'store']);
+        Route::patch('/tutorial-periods/{tutorial_period}/open', [TutorialPeriodController::class, 'open']);
+        Route::patch('/tutorial-periods/{tutorial_period}/assigning', [TutorialPeriodController::class, 'assigning']);
+        Route::patch('/tutorial-periods/{tutorial_period}/ongoing', [TutorialPeriodController::class, 'ongoing']);
+        Route::patch('/tutorial-periods/{tutorial_period}/close', [TutorialPeriodController::class, 'close']);
+        Route::patch('/tutorial-periods/{tutorial_period}/cancel', [TutorialPeriodController::class, 'cancel']);
+        Route::patch('/tutorial-periods/{tutorial_period}/revert-to-draft', [TutorialPeriodController::class, 'revertToDraft']);
+        Route::patch('/tutorial-periods/{tutorial_period}/reopen-registration', [TutorialPeriodController::class, 'reopenRegistration']);
+        Route::patch('/tutorial-periods/{tutorial_period}/restore', [TutorialPeriodController::class, 'restore']);
         Route::put('/tutorial-periods/{tutorial_period}', [TutorialPeriodController::class, 'update']);
         Route::patch('/tutorial-periods/{tutorial_period}', [TutorialPeriodController::class, 'update']);
         Route::delete('/tutorial-periods/{tutorial_period}', [TutorialPeriodController::class, 'destroy']);
