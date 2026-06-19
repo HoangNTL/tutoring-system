@@ -3,23 +3,25 @@ import logger from './shared/logger';
 
 async function inspectSchema() {
   try {
-    logger.info('--- Querying relationship between DM_GiangVien and TMP_DsBoMonKhoa ---');
+    logger.info('--- Joining DM_GiangVien to DM_MonHoc via TKB_MonHocGiangVien ---');
     
-    // Check if IDKhoa values match IDBoMon values
-    const matchCount = await db('DM_GiangVien as gv')
-      .join('TMP_DsBoMonKhoa as bm', 'gv.IDKhoa', '=', 'bm.IDBoMon')
+    // Count matches
+    const matchesCount = await db('DM_GiangVien as gv')
+      .join('TKB_MonHocGiangVien as mhg', 'gv.Id', 'mhg.IDGiangVien')
+      .join('DM_MonHoc as mh', 'mhg.IDMonHoc', 'mh.Id')
       .count('gv.Id as total');
+    
+    logger.info('Matching rows: ' + JSON.stringify(matchesCount, null, 2));
 
-    logger.info('Matching rows between IDKhoa and IDBoMon: ' + JSON.stringify(matchCount, null, 2));
-
-    // Show a sample mapping
+    // Get a few sample matches
     const sample = await db('DM_GiangVien as gv')
-      .join('TMP_DsBoMonKhoa as bm', 'gv.IDKhoa', '=', 'bm.IDBoMon')
-      .select('gv.Id as LecturerId', 'gv.MaGiangVien', 'gv.HoDem', 'gv.Ten', 'bm.IDBoMon', 'bm.TenBoMon')
+      .join('TKB_MonHocGiangVien as mhg', 'gv.Id', 'mhg.IDGiangVien')
+      .join('DM_MonHoc as mh', 'mhg.IDMonHoc', 'mh.Id')
+      .select('gv.MaGiangVien', 'gv.HoDem', 'gv.Ten', 'mh.MaMonHoc', 'mh.TenMonHoc')
       .limit(5);
 
-    logger.info('Sample matching: ' + JSON.stringify(sample, null, 2));
-
+    logger.info('Sample matches: ' + JSON.stringify(sample, null, 2));
+    
   } catch (error: any) {
     logger.error('Inspection failed: ' + error.message, { stack: error.stack });
   } finally {

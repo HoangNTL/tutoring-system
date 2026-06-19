@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Calendar, List, Clock, User, MapPin, BookOpen, AlertCircle, RefreshCw } from 'lucide-react'
+import { Calendar, List, Clock, User, MapPin, AlertCircle, RefreshCw } from 'lucide-react'
 
 import { useStudySchedule } from '../hooks'
 import { getApiErrorMessage } from '@/shared/api/errors'
 import ErrorState from '@/shared/ui/error-state'
 import { Skeleton } from '@/shared/ui/skeleton'
-import { Badge } from '@/shared/ui/badge'
 import {
   Select,
   SelectContent,
@@ -26,24 +25,6 @@ const DAYS = [
   { value: 8, label: 'Chủ nhật' },
 ]
 
-const periodStatusLabels: Record<string, string> = {
-  OPEN: 'Mở đăng ký',
-  ASSIGNING: 'Đang xếp lịch',
-  ONGOING: 'Đang diễn ra',
-  CLOSED: 'Đã kết thúc',
-  CANCELLED: 'Đã hủy',
-  DRAFT: 'Nháp',
-}
-
-const periodStatusBadgeStyles: Record<string, string> = {
-  OPEN: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-  ASSIGNING: 'border-amber-200 bg-amber-50 text-amber-700',
-  ONGOING: 'border-sky-200 bg-sky-50 text-sky-700',
-  CLOSED: 'border-slate-200 bg-slate-50 text-slate-700',
-  CANCELLED: 'border-rose-200 bg-rose-50 text-rose-700',
-  DRAFT: 'border-indigo-200 bg-indigo-50 text-indigo-700',
-}
-
 export default function StudySchedulePage() {
   const [selectedPeriodId, setSelectedPeriodId] = useState<number | null>(null)
   const [activeTab, setActiveTab] = useState<'calendar' | 'list'>('calendar')
@@ -60,19 +41,39 @@ export default function StudySchedulePage() {
     }
   }, [periods, selectedPeriodId])
 
-  const selectedPeriod = periods.find((p) => p.id === selectedPeriodId)
-
-  // Filter schedules that have dayOfWeek and startPeriod configured
-  const scheduledItems = schedules.filter(
-    (item) => item.dayOfWeek !== null && item.startPeriod !== null
-  )
-
-  // Filter schedules that do not have dayOfWeek or startPeriod configured
-  const unscheduledItems = schedules.filter(
-    (item) => item.dayOfWeek === null || item.startPeriod === null
-  )
+  // Flatten schedules to individual slots for calendar rendering
+  const scheduledItems = schedules.flatMap((item) => {
+    if (item.schedules && item.schedules.length > 0) {
+      return item.schedules.map((s) => ({
+        ...item,
+        dayOfWeek: s.dayOfWeek,
+        startPeriod: s.startPeriod,
+        room: s.room,
+      }))
+    }
+    if (item.dayOfWeek !== null && item.startPeriod !== null) {
+      return [item]
+    }
+    return []
+  })
 
   const formatScheduleDetail = (item: StudyScheduleItem) => {
+    if (item.schedules && item.schedules.length > 0) {
+      return item.schedules
+        .map((s) => {
+          const dayStr = s.dayOfWeek === 8 ? 'Chủ nhật' : `Thứ ${s.dayOfWeek}`
+          const endPeriod = item.periodsPerSession
+            ? s.startPeriod + item.periodsPerSession - 1
+            : s.startPeriod
+          const periodStr =
+            item.periodsPerSession && item.periodsPerSession > 1
+              ? `Tiết ${s.startPeriod}-${endPeriod}`
+              : `Tiết ${s.startPeriod}`
+          return `${dayStr}, ${periodStr} (${s.room})`
+        })
+        .join(' | ')
+    }
+
     if (!item.dayOfWeek || !item.startPeriod || !item.room) {
       return 'Chưa xếp lịch'
     }
@@ -128,16 +129,6 @@ export default function StudySchedulePage() {
               </div>
             )}
 
-            {selectedPeriod && (
-              <Badge
-                variant="outline"
-                className={`font-semibold py-1 px-2.5 ${
-                  periodStatusBadgeStyles[selectedPeriod.status] ?? 'bg-slate-100 text-slate-700'
-                }`}
-              >
-                {periodStatusLabels[selectedPeriod.status] ?? selectedPeriod.status}
-              </Badge>
-            )}
           </div>
         </div>
       </div>
@@ -301,10 +292,10 @@ export default function StudySchedulePage() {
                   <TableRow>
                     <TableHead className="w-[12%] px-4">Mã môn</TableHead>
                     <TableHead className="w-[28%]">Tên môn học</TableHead>
-                    <TableHead className="w-[10%] text-center">Số TC</TableHead>
-                    <TableHead className="w-[30%]">Thông tin lịch học & Giảng viên</TableHead>
-                    <TableHead className="w-[10%] text-center">Số buổi</TableHead>
-                    <TableHead className="w-[10%] px-4">Trạng thái</TableHead>
+                    <TableHead className="w-[8%] text-center">Số TC</TableHead>
+                    <TableHead className="w-[30%]">Lịch học & Phòng học</TableHead>
+                    <TableHead className="w-[14%]">Giảng viên</TableHead>
+                    <TableHead className="w-[8%] text-center">Số buổi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -331,42 +322,26 @@ export default function StudySchedulePage() {
                             {item.credits}
                           </TableCell>
                           <TableCell className="py-3">
-                            {isUnscheduled ? (
+                            {isCancelled ? (
+                              <span className="text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-100 rounded-md px-2 py-0.5 inline-flex items-center gap-1">
+                                <AlertCircle className="size-3" /> Lớp đã hủy
+                              </span>
+                            ) : isUnscheduled ? (
                               <span className="text-xs font-semibold text-amber-600 bg-amber-50 border border-amber-100 rounded-md px-2 py-0.5 inline-flex items-center gap-1">
                                 <Clock className="size-3" /> Chưa xếp lịch học
                               </span>
                             ) : (
-                              <div className="space-y-1 text-xs">
-                                <div className="font-semibold text-indigo-700 flex items-center gap-1.5">
-                                  <Clock className="size-3.5" />
-                                  <span>{formatScheduleDetail(item)}</span>
-                                </div>
-                                {item.lecturerName && (
-                                  <div className="text-slate-500 flex items-center gap-1.5 font-medium">
-                                    <User className="size-3.5 text-slate-400" />
-                                    <span>Giảng viên: {item.lecturerName}</span>
-                                  </div>
-                                )}
+                              <div className="font-semibold text-indigo-700 flex items-center gap-1.5 text-xs">
+                                <Clock className="size-3.5" />
+                                <span>{formatScheduleDetail(item)}</span>
                               </div>
                             )}
                           </TableCell>
+                          <TableCell className="py-3 text-slate-700 font-medium">
+                            {item.lecturerName || <span className="text-slate-400 italic">—</span>}
+                          </TableCell>
                           <TableCell className="py-3 text-center text-slate-600 font-medium">
                             {item.totalSessions ? `${item.totalSessions} buổi` : '-'}
-                          </TableCell>
-                          <TableCell className="px-4 py-3">
-                            {isCancelled ? (
-                              <Badge className="border-rose-200 bg-rose-50 text-rose-700 font-semibold">
-                                Đã hủy
-                              </Badge>
-                            ) : isUnscheduled ? (
-                              <Badge className="border-amber-200 bg-amber-50 text-amber-700 font-semibold">
-                                Đang xếp lịch
-                              </Badge>
-                            ) : (
-                              <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700 font-semibold">
-                                Đã xếp lớp
-                              </Badge>
-                            )}
                           </TableCell>
                         </TableRow>
                       )
@@ -377,27 +352,6 @@ export default function StudySchedulePage() {
             </div>
           )}
 
-          {/* Section for Unscheduled Classes (when activeTab is calendar) */}
-          {activeTab === 'calendar' && unscheduledItems.length > 0 && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4">
-              <h3 className="text-sm font-bold text-amber-800 flex items-center gap-1.5 mb-2">
-                <BookOpen className="size-4" /> Các lớp học đang trong quá trình xếp lịch ({unscheduledItems.length})
-              </h3>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
-                {unscheduledItems.map((item, idx) => (
-                  <div key={idx} className="rounded-lg border border-amber-100 bg-white p-3 shadow-xs">
-                    <div className="font-bold text-xs text-slate-800 line-clamp-1">{item.courseName}</div>
-                    <div className="text-[10px] text-slate-400 font-semibold uppercase mt-0.5">
-                      {item.courseCode} · {item.credits} TC
-                    </div>
-                    <div className="mt-2 text-[10px] text-amber-700 font-medium bg-amber-50 rounded-md py-1 px-2 border border-amber-100/60 inline-flex items-center gap-1">
-                      <Clock className="size-3" /> Đang chờ xếp lịch học & phòng học
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
     </section>

@@ -22,7 +22,6 @@ class StudentTutorialPeriodService
                 TutorialPeriodStatus::OPEN->value,
                 TutorialPeriodStatus::ASSIGNING->value,
                 TutorialPeriodStatus::ONGOING->value,
-                TutorialPeriodStatus::CLOSED->value,
             ])
             ->orderByDesc('registration_start_at')
             ->get();

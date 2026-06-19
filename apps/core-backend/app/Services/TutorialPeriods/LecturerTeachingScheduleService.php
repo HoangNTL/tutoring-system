@@ -67,11 +67,10 @@ class LecturerTeachingScheduleService
 
         // Get classes assigned to this lecturer for the target period
         $classes = TutorialClass::query()
+            ->with('schedules')
             ->where('tutorial_period_id', $targetPeriodId)
             ->where('lecturer_id', $lecturerId)
             ->where('status', '!=', TutorialClassStatus::CANCELLED->value)
-            ->orderBy('day_of_week')
-            ->orderBy('start_period')
             ->orderBy('course_name')
             ->get();
 
@@ -84,21 +83,34 @@ class LecturerTeachingScheduleService
             ->pluck('student_count', 'course_code');
 
         $schedules = $classes->map(function (TutorialClass $class) use ($studentCounts) {
+            $firstSchedule = $class->schedules->first();
             return [
                 'classId' => $class->id,
                 'courseCode' => $class->course_code,
                 'courseName' => $class->course_name,
                 'credits' => $class->credits,
-                'dayOfWeek' => $class->day_of_week,
-                'startPeriod' => $class->start_period,
-                'room' => $class->room,
+                'dayOfWeek' => $firstSchedule?->day_of_week,
+                'startPeriod' => $firstSchedule?->start_period,
+                'room' => $firstSchedule?->room,
                 'totalSessions' => $class->total_sessions,
                 'periodsPerSession' => $class->periods_per_session,
                 'totalPeriods' => $class->total_periods,
                 'studentCount' => (int) ($studentCounts[$class->course_code] ?? 0),
                 'classStatus' => $class->status?->name,
+                'schedules' => $class->schedules->map(fn($s) => [
+                    'dayOfWeek' => $s->day_of_week,
+                    'startPeriod' => $s->start_period,
+                    'room' => $s->room,
+                ])->all(),
             ];
-        })->values()->all();
+        })
+        ->sortBy([
+            ['dayOfWeek', 'asc'],
+            ['startPeriod', 'asc'],
+            ['courseName', 'asc'],
+        ])
+        ->values()
+        ->all();
 
         return [
             'periods' => $periods,

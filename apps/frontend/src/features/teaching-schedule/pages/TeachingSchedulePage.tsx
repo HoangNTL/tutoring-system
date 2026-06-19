@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Calendar, List, Clock, MapPin, BookOpen, AlertCircle, RefreshCw, Users } from 'lucide-react'
+import { Calendar, List, Clock, MapPin, AlertCircle, RefreshCw, Users } from 'lucide-react'
 
 import { useTeachingSchedule } from '../hooks'
 import { getApiErrorMessage } from '@/shared/api/errors'
@@ -62,17 +62,39 @@ export default function TeachingSchedulePage() {
 
   const selectedPeriod = periods.find((p) => p.id === selectedPeriodId)
 
-  // Filter schedules that have dayOfWeek and startPeriod configured
-  const scheduledItems = schedules.filter(
-    (item) => item.dayOfWeek !== null && item.startPeriod !== null
-  )
-
-  // Filter schedules that do not have dayOfWeek or startPeriod configured
-  const unscheduledItems = schedules.filter(
-    (item) => item.dayOfWeek === null || item.startPeriod === null
-  )
+  // Flatten schedules to individual slots for calendar rendering
+  const scheduledItems = schedules.flatMap((item) => {
+    if (item.schedules && item.schedules.length > 0) {
+      return item.schedules.map((s) => ({
+        ...item,
+        dayOfWeek: s.dayOfWeek,
+        startPeriod: s.startPeriod,
+        room: s.room,
+      }))
+    }
+    if (item.dayOfWeek !== null && item.startPeriod !== null) {
+      return [item]
+    }
+    return []
+  })
 
   const formatScheduleDetail = (item: TeachingScheduleItem) => {
+    if (item.schedules && item.schedules.length > 0) {
+      return item.schedules
+        .map((s) => {
+          const dayStr = s.dayOfWeek === 8 ? 'Chủ nhật' : `Thứ ${s.dayOfWeek}`
+          const endPeriod = item.periodsPerSession
+            ? s.startPeriod + item.periodsPerSession - 1
+            : s.startPeriod
+          const periodStr =
+            item.periodsPerSession && item.periodsPerSession > 1
+              ? `Tiết ${s.startPeriod}-${endPeriod}`
+              : `Tiết ${s.startPeriod}`
+          return `${dayStr}, ${periodStr} (${s.room})`
+        })
+        .join(' | ')
+    }
+
     if (!item.dayOfWeek || !item.startPeriod || !item.room) {
       return 'Chưa xếp lịch'
     }
@@ -370,28 +392,6 @@ export default function TeachingSchedulePage() {
                   )}
                 </TableBody>
               </Table>
-            </div>
-          )}
-
-          {/* Section for Unscheduled Classes (when activeTab is calendar) */}
-          {activeTab === 'calendar' && unscheduledItems.length > 0 && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4">
-              <h3 className="text-sm font-bold text-amber-800 flex items-center gap-1.5 mb-2">
-                <BookOpen className="size-4" /> Các lớp học đang trong quá trình xếp lịch ({unscheduledItems.length})
-              </h3>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
-                {unscheduledItems.map((item, idx) => (
-                  <div key={idx} className="rounded-lg border border-amber-100 bg-white p-3 shadow-xs">
-                    <div className="font-bold text-xs text-slate-800 line-clamp-1">{item.courseName}</div>
-                    <div className="text-[10px] text-slate-400 font-semibold uppercase mt-0.5">
-                      {item.courseCode} · {item.credits} TC
-                    </div>
-                    <div className="mt-2 text-[10px] text-amber-700 font-medium bg-amber-50 rounded-md py-1 px-2 border border-amber-100/60 inline-flex items-center gap-1">
-                      <Clock className="size-3" /> Đang chờ xếp lịch học & phòng học
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
           )}
         </div>

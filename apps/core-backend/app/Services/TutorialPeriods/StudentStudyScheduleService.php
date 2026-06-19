@@ -59,24 +59,31 @@ class StudentStudyScheduleService
 
         // Get tutorial classes for this period keyed by course_code
         $classes = TutorialClass::query()
+            ->with('schedules')
             ->where('tutorial_period_id', $targetPeriodId)
             ->get()
             ->keyBy('course_code');
 
         $schedules = $registrations->map(function (TutorialRegistration $registration) use ($classes) {
             $class = $classes->get($registration->course_code);
+            $firstSchedule = $class?->schedules?->first();
 
             return [
                 'courseCode' => $registration->course_code,
                 'courseName' => $registration->course_name,
                 'credits' => $registration->credits,
-                'dayOfWeek' => $class?->day_of_week,
-                'startPeriod' => $class?->start_period,
-                'room' => $class?->room,
+                'dayOfWeek' => $firstSchedule?->day_of_week,
+                'startPeriod' => $firstSchedule?->start_period,
+                'room' => $firstSchedule?->room,
                 'lecturerName' => $class?->lecturer_name,
                 'totalSessions' => $class?->total_sessions,
                 'periodsPerSession' => $class?->periods_per_session,
                 'classStatus' => $class?->status?->name,
+                'schedules' => $class?->schedules?->map(fn($s) => [
+                    'dayOfWeek' => $s->day_of_week,
+                    'startPeriod' => $s->start_period,
+                    'room' => $s->room,
+                ])->all() ?? [],
             ];
         })->values()->all();
 

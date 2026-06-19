@@ -6,6 +6,7 @@ use App\Enums\TutorialClassStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TutorialClass extends Model
 {
@@ -25,9 +26,6 @@ class TutorialClass extends Model
         'created_by',
         'lecturer_id',
         'lecturer_name',
-        'day_of_week',
-        'start_period',
-        'room',
     ];
 
     protected function casts(): array
@@ -42,8 +40,6 @@ class TutorialClass extends Model
             'cancelled_at' => 'datetime',
             'created_by' => 'integer',
             'lecturer_id' => 'integer',
-            'day_of_week' => 'integer',
-            'start_period' => 'integer',
         ];
     }
 
@@ -55,5 +51,10 @@ class TutorialClass extends Model
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function schedules(): HasMany
+    {
+        return $this->hasMany(TutorialClassSchedule::class, 'tutorial_class_id');
     }
 }

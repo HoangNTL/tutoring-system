@@ -133,7 +133,6 @@ class DepartmentTutorialRegistrationService
         return [
             TutorialPeriodStatus::ASSIGNING->value,
             TutorialPeriodStatus::ONGOING->value,
-            TutorialPeriodStatus::CLOSED->value,
         ];
     }
 

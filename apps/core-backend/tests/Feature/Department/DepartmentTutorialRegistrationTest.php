@@ -104,14 +104,14 @@ class DepartmentTutorialRegistrationTest extends TestCase
 
         $data = collect($response->json('data'));
 
-        $this->assertCount(2, $data);
+        $this->assertCount(1, $data);
         $this->assertTrue($data->contains(fn (array $item) => $item['id'] === $allowed->id && $item['status'] === 'ASSIGNING'));
-        $this->assertTrue($data->contains(fn (array $item) => $item['id'] === $closed->id && $item['status'] === 'CLOSED'));
+        $this->assertFalse($data->contains(fn (array $item) => $item['id'] === $closed->id));
         $this->assertFalse($data->contains(fn (array $item) => $item['id'] === $blocked->id));
         $this->assertSame('HK2 2024-2025', $data->firstWhere('id', $allowed->id)['academicPeriod']['name']);
     }
 
-    public function test_period_options_return_only_assigning_ongoing_and_closed(): void
+    public function test_period_options_return_only_assigning_and_ongoing(): void
     {
         $department = $this->createUser('department_statuses', UserRole::DEPARTMENT);
 
@@ -129,7 +129,7 @@ class DepartmentTutorialRegistrationTest extends TestCase
 
         $statuses = collect($response->json('data'))->pluck('status')->all();
 
-        $this->assertSame(['CLOSED', 'ONGOING', 'ASSIGNING'], $statuses);
+        $this->assertSame(['ONGOING', 'ASSIGNING'], $statuses);
     }
 
     public function test_summary_returns_only_registered_registrations_and_groups_by_course(): void

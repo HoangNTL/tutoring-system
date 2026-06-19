@@ -12,6 +12,7 @@ use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use App\Enums\TutorialRegistrationStatus;
+use Illuminate\Support\Facades\DB;
 
 class DepartmentTutorialClassService
 {
@@ -27,6 +28,7 @@ class DepartmentTutorialClassService
         $tutorialPeriod = $this->findAccessibleTutorialPeriodOrFail($tutorialPeriodId);
 
         $classes = TutorialClass::query()
+            ->with('schedules')
             ->where('tutorial_period_id', $tutorialPeriod->id)
             ->when($departmentId !== null, function ($query) use ($departmentId) {
                 return $query->where('department_id', $departmentId);
@@ -158,42 +160,67 @@ class DepartmentTutorialClassService
             throw new BadRequestHttpException('Only planned tutorial classes can be scheduled');
         }
 
-        // Room conflict check
-        $roomConflict = TutorialClass::query()
-            ->where('tutorial_period_id', $tutorialClass->tutorial_period_id)
-            ->where('id', '!=', $classId)
-            ->where('status', '!=', TutorialClassStatus::CANCELLED->value)
-            ->where('day_of_week', (int) $data['day_of_week'])
-            ->where('start_period', (int) $data['start_period'])
-            ->where('room', $data['room'])
-            ->exists();
+        $schedules = $data['schedules'] ?? [];
 
-        if ($roomConflict) {
-            throw new ConflictHttpException('Phòng học ' . $data['room'] . ' đã có lớp khác đăng ký vào thời gian này.');
+        // Self conflict check in input (ensure no duplicates)
+        $slots = [];
+        foreach ($schedules as $slot) {
+            $key = $slot['day_of_week'] . '-' . $slot['start_period'];
+            if (isset($slots[$key])) {
+                throw new ConflictHttpException('Không thể xếp cùng một thời gian cho hai buổi học khác nhau của lớp.');
+            }
+            $slots[$key] = true;
         }
 
-        // Lecturer conflict check
-        if ($tutorialClass->lecturer_id !== null) {
-            $lecturerConflict = TutorialClass::query()
-                ->where('tutorial_period_id', $tutorialClass->tutorial_period_id)
-                ->where('id', '!=', $classId)
-                ->where('status', '!=', TutorialClassStatus::CANCELLED->value)
-                ->where('lecturer_id', $tutorialClass->lecturer_id)
-                ->where('day_of_week', (int) $data['day_of_week'])
-                ->where('start_period', (int) $data['start_period'])
+        // Validate conflict for each slot
+        foreach ($schedules as $slot) {
+            // Room conflict check
+            $roomConflict = DB::table('tutorial_class_schedules as s')
+                ->join('tutorial_classes as c', 's.tutorial_class_id', '=', 'c.id')
+                ->where('c.tutorial_period_id', $tutorialClass->tutorial_period_id)
+                ->where('c.id', '!=', $classId)
+                ->where('c.status', '!=', TutorialClassStatus::CANCELLED->value)
+                ->where('s.day_of_week', (int) $slot['day_of_week'])
+                ->where('s.start_period', (int) $slot['start_period'])
+                ->where('s.room', $slot['room'])
                 ->exists();
 
-            if ($lecturerConflict) {
-                throw new ConflictHttpException('Giảng viên đã có lịch dạy lớp khác vào thời gian này.');
+            if ($roomConflict) {
+                throw new ConflictHttpException('Phòng học ' . $slot['room'] . ' đã có lớp khác đăng ký vào thời gian này.');
+            }
+
+            // Lecturer conflict check
+            if ($tutorialClass->lecturer_id !== null) {
+                $lecturerConflict = DB::table('tutorial_class_schedules as s')
+                    ->join('tutorial_classes as c', 's.tutorial_class_id', '=', 'c.id')
+                    ->where('c.tutorial_period_id', $tutorialClass->tutorial_period_id)
+                    ->where('c.id', '!=', $classId)
+                    ->where('c.status', '!=', TutorialClassStatus::CANCELLED->value)
+                    ->where('c.lecturer_id', $tutorialClass->lecturer_id)
+                    ->where('s.day_of_week', (int) $slot['day_of_week'])
+                    ->where('s.start_period', (int) $slot['start_period'])
+                    ->exists();
+
+                if ($lecturerConflict) {
+                    throw new ConflictHttpException('Giảng viên đã có lịch dạy lớp khác vào thời gian này.');
+                }
             }
         }
 
-        $tutorialClass->fill([
-            'day_of_week' => (int) $data['day_of_week'],
-            'start_period' => (int) $data['start_period'],
-            'room' => (string) $data['room'],
-        ]);
-        $tutorialClass->save();
+        // Sync schedules in transaction
+        DB::transaction(function () use ($tutorialClass, $schedules) {
+            $tutorialClass->schedules()->delete();
+            foreach ($schedules as $slot) {
+                $tutorialClass->schedules()->create([
+                    'day_of_week' => (int) $slot['day_of_week'],
+                    'start_period' => (int) $slot['start_period'],
+                    'room' => (string) $slot['room'],
+                ]);
+            }
+        });
+
+        // Reload schedules relation
+        $tutorialClass->load('schedules');
 
         return $this->attachStudentCount($tutorialClass);
     }
@@ -213,18 +240,22 @@ class DepartmentTutorialClassService
         }
 
         // Lecturer conflict check if schedule is already configured
-        if ($tutorialClass->day_of_week !== null && $tutorialClass->start_period !== null) {
-            $lecturerConflict = TutorialClass::query()
-                ->where('tutorial_period_id', $tutorialClass->tutorial_period_id)
-                ->where('id', '!=', $classId)
-                ->where('status', '!=', TutorialClassStatus::CANCELLED->value)
-                ->where('lecturer_id', (int) $data['lecturer_id'])
-                ->where('day_of_week', $tutorialClass->day_of_week)
-                ->where('start_period', $tutorialClass->start_period)
-                ->exists();
+        $currentClassSchedules = $tutorialClass->schedules;
+        if ($currentClassSchedules->isNotEmpty()) {
+            foreach ($currentClassSchedules as $slot) {
+                $lecturerConflict = DB::table('tutorial_class_schedules as s')
+                    ->join('tutorial_classes as c', 's.tutorial_class_id', '=', 'c.id')
+                    ->where('c.tutorial_period_id', $tutorialClass->tutorial_period_id)
+                    ->where('c.id', '!=', $classId)
+                    ->where('c.status', '!=', TutorialClassStatus::CANCELLED->value)
+                    ->where('c.lecturer_id', (int) $data['lecturer_id'])
+                    ->where('s.day_of_week', $slot->day_of_week)
+                    ->where('s.start_period', $slot->start_period)
+                    ->exists();
 
-            if ($lecturerConflict) {
-                throw new ConflictHttpException('Giảng viên đã có lịch dạy lớp khác vào thời gian này.');
+                if ($lecturerConflict) {
+                    throw new ConflictHttpException('Giảng viên đã có lịch dạy lớp khác vào thời gian này.');
+                }
             }
         }
 
@@ -277,7 +308,7 @@ class DepartmentTutorialClassService
     private function findManagedClassOrFail(int $classId): TutorialClass
     {
         $tutorialClass = TutorialClass::query()
-            ->with('tutorialPeriod')
+            ->with(['tutorialPeriod', 'schedules'])
             ->find($classId);
 
         if (!$tutorialClass) {

@@ -9,6 +9,11 @@ export type StudyScheduleItem = {
   totalSessions: number | null
   periodsPerSession: number | null
   classStatus: string | null
+  schedules?: Array<{
+    dayOfWeek: number
+    startPeriod: number
+    room: string
+  }>
 }
 
 export type SchedulePeriodOption = {

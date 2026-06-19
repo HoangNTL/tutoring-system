@@ -26,9 +26,14 @@ class DepartmentTutorialClassResource extends JsonResource
             'cancelledAt' => $this->cancelled_at?->format('Y-m-d H:i:s'),
             'lecturerId' => $this->lecturer_id,
             'lecturerName' => $this->lecturer_name,
-            'dayOfWeek' => $this->day_of_week,
-            'startPeriod' => $this->start_period,
-            'room' => $this->room,
+            'dayOfWeek' => $this->schedules->first()?->day_of_week,
+            'startPeriod' => $this->schedules->first()?->start_period,
+            'room' => $this->schedules->first()?->room,
+            'schedules' => $this->schedules->map(fn($s) => [
+                'dayOfWeek' => $s->day_of_week,
+                'startPeriod' => $s->start_period,
+                'room' => $s->room,
+            ])->all(),
         ];
     }
 }

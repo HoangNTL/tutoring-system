@@ -1,5 +1,11 @@
 export type DepartmentTutorialClassStatus = 'PLANNED' | 'CANCELLED'
 
+export type TutorialClassSchedule = {
+  dayOfWeek: number
+  startPeriod: number
+  room: string
+}
+
 export type DepartmentTutorialClass = {
   id: number
   tutorialPeriodId: number
@@ -17,6 +23,7 @@ export type DepartmentTutorialClass = {
   dayOfWeek: number | null
   startPeriod: number | null
   room: string | null
+  schedules?: TutorialClassSchedule[]
 }
 
 export type CreateDepartmentTutorialClassPayload = {
@@ -31,9 +38,7 @@ export type UpdateDepartmentTutorialClassPayload = {
 }
 
 export type UpdateClassSchedulePayload = {
-  dayOfWeek: number
-  startPeriod: number
-  room: string
+  schedules: TutorialClassSchedule[]
 }
 
 export type UpdateClassLecturerPayload = {

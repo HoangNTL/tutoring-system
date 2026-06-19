@@ -365,8 +365,8 @@ class DepartmentTutorialClassTest extends TestCase
             ->assertJsonPath('data.startPeriod', 4)
             ->assertJsonPath('data.room', 'A1-202');
 
-        $this->assertDatabaseHas('tutorial_classes', [
-            'id' => $tutorialClass->id,
+        $this->assertDatabaseHas('tutorial_class_schedules', [
+            'tutorial_class_id' => $tutorialClass->id,
             'day_of_week' => 3,
             'start_period' => 4,
             'room' => 'A1-202',
@@ -457,7 +457,7 @@ class DepartmentTutorialClassTest extends TestCase
         $tutorialPeriod = $this->createTutorialPeriod(TutorialPeriodStatus::ASSIGNING, 'Dot schedule conflict');
 
         $class1 = $this->createTutorialClass($tutorialPeriod->id, '020205', 'An toàn lao động', 5, 3, TutorialClassStatus::PLANNED, null, 2);
-        $class1->update(['day_of_week' => 3, 'start_period' => 4, 'room' => 'A1-202']);
+        $class1->schedules()->create(['day_of_week' => 3, 'start_period' => 4, 'room' => 'A1-202']);
 
         $class2 = $this->createTutorialClass($tutorialPeriod->id, '020206', 'Vật lý 1', 5, 3, TutorialClassStatus::PLANNED, null, 2);
 
@@ -476,7 +476,8 @@ class DepartmentTutorialClassTest extends TestCase
         $tutorialPeriod = $this->createTutorialPeriod(TutorialPeriodStatus::ASSIGNING, 'Dot schedule lec conflict');
 
         $class1 = $this->createTutorialClass($tutorialPeriod->id, '020205', 'An toàn lao động', 5, 3, TutorialClassStatus::PLANNED, null, 2);
-        $class1->update(['lecturer_id' => 123, 'lecturer_name' => 'Lec A', 'day_of_week' => 3, 'start_period' => 4, 'room' => 'A1-202']);
+        $class1->update(['lecturer_id' => 123, 'lecturer_name' => 'Lec A']);
+        $class1->schedules()->create(['day_of_week' => 3, 'start_period' => 4, 'room' => 'A1-202']);
 
         $class2 = $this->createTutorialClass($tutorialPeriod->id, '020206', 'Vật lý 1', 5, 3, TutorialClassStatus::PLANNED, null, 2);
         $class2->update(['lecturer_id' => 123, 'lecturer_name' => 'Lec A']);
@@ -496,15 +497,44 @@ class DepartmentTutorialClassTest extends TestCase
         $tutorialPeriod = $this->createTutorialPeriod(TutorialPeriodStatus::ASSIGNING, 'Dot lec assign conflict');
 
         $class1 = $this->createTutorialClass($tutorialPeriod->id, '020205', 'An toàn lao động', 5, 3, TutorialClassStatus::PLANNED, null, 2);
-        $class1->update(['lecturer_id' => 123, 'lecturer_name' => 'Lec A', 'day_of_week' => 3, 'start_period' => 4, 'room' => 'A1-202']);
+        $class1->update(['lecturer_id' => 123, 'lecturer_name' => 'Lec A']);
+        $class1->schedules()->create(['day_of_week' => 3, 'start_period' => 4, 'room' => 'A1-202']);
 
         $class2 = $this->createTutorialClass($tutorialPeriod->id, '020206', 'Vật lý 1', 5, 3, TutorialClassStatus::PLANNED, null, 2);
-        $class2->update(['day_of_week' => 3, 'start_period' => 4, 'room' => 'A1-203']);
+        $class2->schedules()->create(['day_of_week' => 3, 'start_period' => 4, 'room' => 'A1-203']);
 
         $this->actingAs($department, 'web')
             ->putJson("/api/v1/department/classes/{$class2->id}/lecturer", [
                 'lecturerId' => 123,
                 'lecturerName' => 'Lec A',
+            ])
+            ->assertStatus(409);
+    }
+
+    public function test_cannot_schedule_class_if_any_of_multiple_slots_occupied(): void
+    {
+        $department = $this->createUser('dept_multi_conflict', UserRole::DEPARTMENT, 2);
+        $tutorialPeriod = $this->createTutorialPeriod(TutorialPeriodStatus::ASSIGNING, 'Dot multi conflict');
+
+        $class1 = $this->createTutorialClass($tutorialPeriod->id, '020205', 'An toàn lao động', 5, 3, TutorialClassStatus::PLANNED, null, 2);
+        $class1->schedules()->create(['day_of_week' => 3, 'start_period' => 4, 'room' => 'A1-202']);
+
+        $class2 = $this->createTutorialClass($tutorialPeriod->id, '020206', 'Vật lý 1', 5, 3, TutorialClassStatus::PLANNED, null, 2);
+
+        $this->actingAs($department, 'web')
+            ->putJson("/api/v1/department/classes/{$class2->id}/schedule", [
+                'schedules' => [
+                    [
+                        'dayOfWeek' => 2,
+                        'startPeriod' => 1,
+                        'room' => 'A1-201',
+                    ],
+                    [
+                        'dayOfWeek' => 3,
+                        'startPeriod' => 4,
+                        'room' => 'A1-202',
+                    ]
+                ]
             ])
             ->assertStatus(409);
     }

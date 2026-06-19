@@ -52,6 +52,7 @@ class StudentTutorialRegistrationInfoService
         }
 
         $classes = \App\Models\TutorialClass::query()
+            ->with('schedules')
             ->where('tutorial_period_id', $tutorialPeriod->id)
             ->get()
             ->keyBy('course_code');
@@ -64,18 +65,24 @@ class StudentTutorialRegistrationInfoService
             ->get()
             ->map(static function (TutorialRegistration $registration) use ($classes): array {
                 $class = $classes->get($registration->course_code);
+                $firstSchedule = $class?->schedules?->first();
 
                 return [
                     'courseCode' => $registration->course_code,
                     'courseName' => $registration->course_name,
                     'credits' => $registration->credits,
                     'registeredAt' => $registration->registered_at?->format('Y-m-d H:i:s'),
-                    'dayOfWeek' => $class?->day_of_week,
-                    'startPeriod' => $class?->start_period,
-                    'room' => $class?->room,
+                    'dayOfWeek' => $firstSchedule?->day_of_week,
+                    'startPeriod' => $firstSchedule?->start_period,
+                    'room' => $firstSchedule?->room,
                     'lecturerId' => $class?->lecturer_id,
                     'lecturerName' => $class?->lecturer_name,
                     'classStatus' => $class?->status?->name,
+                    'schedules' => $class?->schedules?->map(fn($s) => [
+                        'dayOfWeek' => $s->day_of_week,
+                        'startPeriod' => $s->start_period,
+                        'room' => $s->room,
+                    ])->all() ?? [],
                 ];
             })
             ->values()
