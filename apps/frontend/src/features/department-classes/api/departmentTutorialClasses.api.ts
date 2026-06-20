@@ -20,9 +20,14 @@ export type DepartmentLecturer = {
   fullName: string | null
 }
 
-export const getDepartmentLecturers = async (): Promise<BaseResponse<DepartmentLecturer[]>> => {
+export const getDepartmentLecturers = async (
+  courseCode?: string
+): Promise<BaseResponse<DepartmentLecturer[]>> => {
   const response = await http.get<BaseResponse<DepartmentLecturer[]>>(
-    '/api/v1/department/lecturers'
+    '/api/v1/department/lecturers',
+    {
+      params: courseCode ? { courseCode } : {},
+    }
   )
 
   return response.data

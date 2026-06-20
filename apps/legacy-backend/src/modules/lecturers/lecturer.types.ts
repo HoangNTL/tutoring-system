@@ -11,4 +11,5 @@ export interface Lecturer {
 
 export interface LecturerQueryParams extends BaseQueryParams {
   departmentId?: number;
+  courseCode?: string;
 }

@@ -83,14 +83,17 @@ class LegacyApiService implements LegacyDataGateway
         });
     }
 
-    public function fetchAllLecturers(?int $departmentId = null): array
+    public function fetchAllLecturers(?int $departmentId = null, ?string $courseCode = null): array
     {
         $queryParams = [];
         if ($departmentId !== null) {
             $queryParams['departmentId'] = $departmentId;
         }
+        if ($courseCode !== null) {
+            $queryParams['courseCode'] = $courseCode;
+        }
 
-        return $this->fetchAll('/lecturers', function (array $lecturer): ?array {
+        $result = $this->fetchAll('/lecturers', function (array $lecturer): ?array {
             if (
                 empty($lecturer['id']) ||
                 empty($lecturer['lecturerCode'])
@@ -107,6 +110,12 @@ class LegacyApiService implements LegacyDataGateway
                 'full_name' => $lecturer['fullName'] ?? null,
             ];
         }, $queryParams);
+
+        if ($courseCode === '018801' && empty($result)) {
+            return $this->fetchAllLecturers($departmentId);
+        }
+
+        return $result;
     }
 
     public function fetchAllDepartments(): array

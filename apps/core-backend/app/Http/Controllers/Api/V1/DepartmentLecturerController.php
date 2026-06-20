@@ -21,8 +21,9 @@ class DepartmentLecturerController extends Controller
         }
 
         $departmentId = $request->user()->department_id !== null ? (int) $request->user()->department_id : null;
+        $courseCode = $request->query('courseCode');
 
-        $lecturers = $this->legacyDataGateway->fetchAllLecturers($departmentId);
+        $lecturers = $this->legacyDataGateway->fetchAllLecturers($departmentId, $courseCode);
 
         $formattedLecturers = array_map(function ($lecturer) {
             return [

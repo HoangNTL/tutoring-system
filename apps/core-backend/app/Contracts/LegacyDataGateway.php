@@ -16,7 +16,7 @@ interface LegacyDataGateway
 
     public function fetchAllStudents(): array;
 
-    public function fetchAllLecturers(?int $departmentId = null): array;
+    public function fetchAllLecturers(?int $departmentId = null, ?string $courseCode = null): array;
 
     public function fetchAllDepartments(): array;
 }

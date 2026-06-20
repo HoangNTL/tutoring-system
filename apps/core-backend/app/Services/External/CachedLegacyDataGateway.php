@@ -61,14 +61,14 @@ class CachedLegacyDataGateway implements LegacyDataGateway
         return $this->inner->fetchAllStudents();
     }
 
-    public function fetchAllLecturers(?int $departmentId = null): array
+    public function fetchAllLecturers(?int $departmentId = null, ?string $courseCode = null): array
     {
-        $cacheKey = $departmentId !== null ? "legacy:lecturers:dept:{$departmentId}" : 'legacy:lecturers:all';
+        $cacheKey = 'legacy:lecturers:' . ($departmentId ?? 'all') . ':' . ($courseCode ?? 'all');
 
         return $this->cache->remember(
             $cacheKey,
             now()->addMinutes(10),
-            fn (): array => $this->inner->fetchAllLecturers($departmentId)
+            fn (): array => $this->inner->fetchAllLecturers($departmentId, $courseCode)
         );
     }
 

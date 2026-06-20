@@ -22,13 +22,13 @@ import type {
 export const departmentTutorialClassesQueryKey = ['department-tutorial-classes'] as const
 export const departmentLecturersQueryKey = ['department-lecturers'] as const
 
-export const useDepartmentLecturers = () => {
+export const useDepartmentLecturers = (courseCode?: string) => {
   const authStatus = useAppSelector((state) => state.auth.status)
 
   return useQuery({
-    queryKey: departmentLecturersQueryKey,
+    queryKey: [...departmentLecturersQueryKey, courseCode] as const,
     enabled: authStatus === 'authenticated',
-    queryFn: getDepartmentLecturers,
+    queryFn: () => getDepartmentLecturers(courseCode),
   })
 }
 

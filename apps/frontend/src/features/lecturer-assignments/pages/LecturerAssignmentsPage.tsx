@@ -38,7 +38,7 @@ export default function LecturerAssignmentsPage() {
   const targetClass = classes.find((c) => c.id === Number(classId))
 
   // 4. Get department lecturers
-  const { data: lecturersData, isLoading: lecturersLoading } = useDepartmentLecturers()
+  const { data: lecturersData, isLoading: lecturersLoading } = useDepartmentLecturers(targetClass?.courseCode)
   const lecturers = lecturersData?.data ?? []
 
   // 5. Populate initial selection
@@ -164,8 +164,15 @@ export default function LecturerAssignmentsPage() {
 
         {/* Danh sách giảng viên */}
         <div className="max-h-[300px] overflow-y-auto border border-slate-200 rounded-lg p-2 space-y-1 mb-6">
-          {filteredLecturers.length === 0 ? (
-            <p className="text-sm text-slate-500 p-4 text-center">Không tìm thấy giảng viên phù hợp.</p>
+          {lecturers.length === 0 ? (
+            <div className="text-center p-6 text-slate-500 space-y-2">
+              <p className="font-semibold text-slate-700 text-sm">Không tìm thấy giảng viên đề xuất cho môn học này</p>
+              <p className="text-xs text-slate-400 leading-relaxed max-w-md mx-auto">
+                Môn học <strong className="text-slate-600 font-mono">{targetClass?.courseCode}</strong> hiện chưa được gán giảng viên giảng dạy trong danh mục đào tạo của trường. Vui lòng liên hệ Phòng Đào tạo để thiết lập liên kết giảng viên - môn học.
+              </p>
+            </div>
+          ) : filteredLecturers.length === 0 ? (
+            <p className="text-sm text-slate-500 p-4 text-center">Không tìm thấy giảng viên khớp với từ khóa tìm kiếm.</p>
           ) : (
             filteredLecturers.map((lecturer) => {
               const isSelected = selectedLecturerId === lecturer.id

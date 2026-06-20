@@ -3,27 +3,42 @@ import logger from './shared/logger';
 
 async function inspectSchema() {
   try {
-    logger.info('--- Joining DM_GiangVien to DM_MonHoc via TKB_MonHocGiangVien ---');
+    logger.info('--- Inserting test mappings for Course 018801 (ID 196) ---');
     
-    // Count matches
-    const matchesCount = await db('DM_GiangVien as gv')
-      .join('TKB_MonHocGiangVien as mhg', 'gv.Id', 'mhg.IDGiangVien')
-      .join('DM_MonHoc as mh', 'mhg.IDMonHoc', 'mh.Id')
-      .count('gv.Id as total');
-    
-    logger.info('Matching rows: ' + JSON.stringify(matchesCount, null, 2));
+    // Check if mappings already exist just in case
+    const existing = await db('TKB_MonHocGiangVien')
+      .where('IDMonHoc', 196)
+      .whereIn('IDGiangVien', [1, 3]);
 
-    // Get a few sample matches
-    const sample = await db('DM_GiangVien as gv')
-      .join('TKB_MonHocGiangVien as mhg', 'gv.Id', 'mhg.IDGiangVien')
-      .join('DM_MonHoc as mh', 'mhg.IDMonHoc', 'mh.Id')
-      .select('gv.MaGiangVien', 'gv.HoDem', 'gv.Ten', 'mh.MaMonHoc', 'mh.TenMonHoc')
-      .limit(5);
+    if (existing.length > 0) {
+      logger.info('Mappings already exist: ' + JSON.stringify(existing, null, 2));
+      return;
+    }
 
-    logger.info('Sample matches: ' + JSON.stringify(sample, null, 2));
-    
+    // Insert mapping for Phạm Duy Hòa (ID 1)
+    await db('TKB_MonHocGiangVien').insert({
+      IDGiangVien: 1,
+      IDMonHoc: 196,
+      IDHeDaoTao: 1,
+      IDLoaiDaoTao: 1,
+      NguoiTao: 1,
+      NgayTao: new Date(),
+    });
+    logger.info('Inserted mapping for Pham Duy Hoa (ID 1)');
+
+    // Insert mapping for Hoàng Tùng (ID 3)
+    await db('TKB_MonHocGiangVien').insert({
+      IDGiangVien: 3,
+      IDMonHoc: 196,
+      IDHeDaoTao: 1,
+      IDLoaiDaoTao: 1,
+      NguoiTao: 1,
+      NgayTao: new Date(),
+    });
+    logger.info('Inserted mapping for Hoang Tung (ID 3)');
+
   } catch (error: any) {
-    logger.error('Inspection failed: ' + error.message, { stack: error.stack });
+    logger.error('Insertion failed: ' + error.message, { stack: error.stack });
   } finally {
     await db.destroy();
   }

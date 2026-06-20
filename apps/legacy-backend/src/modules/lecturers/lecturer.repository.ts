@@ -20,15 +20,21 @@ export class LecturerRepository {
       };
     }
 
-    const baseQuery = db('DM_GiangVien');
+    const baseQuery = db('DM_GiangVien as gv');
 
     baseQuery.whereRaw(`
-      IsChamDutHopDong = 0
-      OR IsChamDutHopDong IS NULL
+      gv.IsChamDutHopDong = 0
+      OR gv.IsChamDutHopDong IS NULL
     `);
 
     if (params.departmentId) {
-      baseQuery.where('IDKhoa', params.departmentId);
+      baseQuery.where('gv.IDKhoa', params.departmentId);
+    }
+
+    if (params.courseCode) {
+      baseQuery.join('TKB_MonHocGiangVien as mhg', 'gv.Id', 'mhg.IDGiangVien')
+        .join('DM_MonHoc as mh', 'mhg.IDMonHoc', 'mh.Id')
+        .where('mh.MaMonHoc', params.courseCode);
     }
 
     try {
@@ -36,20 +42,20 @@ export class LecturerRepository {
         .clone()
         .clearSelect()
         .clearOrder()
-        .count('Id as total');
+        .count('gv.Id as total');
 
       const total = Number(totalRes[0].total || 0);
 
       const rawData = await baseQuery
-        .orderBy('Id', 'asc')
+        .orderBy('gv.Id', 'asc')
         .limit(limit)
         .offset((page - 1) * limit)
         .select(
-          'Id as id',
-          'MaGiangVien as lecturerCode',
-          'NgaySinh as dateOfBirth',
-          'HoDem as lastName',
-          'Ten as firstName',
+          'gv.Id as id',
+          'gv.MaGiangVien as lecturerCode',
+          'gv.NgaySinh as dateOfBirth',
+          'gv.HoDem as lastName',
+          'gv.Ten as firstName',
         );
 
       const data = rawData.map((item: any) => ({
