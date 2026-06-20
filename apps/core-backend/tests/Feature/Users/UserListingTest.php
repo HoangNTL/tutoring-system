@@ -170,6 +170,45 @@ class UserListingTest extends TestCase
         }
     }
 
+    public function test_admin_can_search_users_by_lecturer_name(): void
+    {
+        $admin = $this->createAdmin();
+
+        $matchingUser = User::create([
+            'username' => 'TG010038',
+            'password_hash' => 'password123',
+            'role' => UserRole::LECTURER,
+            'lecturer_id' => 38,
+        ]);
+
+        $nonMatchingUser = User::create([
+            'username' => 'TG010012',
+            'password_hash' => 'password123',
+            'role' => UserRole::LECTURER,
+            'lecturer_id' => 12,
+        ]);
+
+        $mock = $this->mock(\App\Contracts\LegacyDataGateway::class);
+        $mock->shouldReceive('fetchAllDepartments')
+            ->andReturn([]);
+        $mock->shouldReceive('fetchAllLecturers')
+            ->andReturn([
+                ['legacy_id' => 38, 'full_name' => 'Phạm Duy Hòa', 'department_id' => 15],
+                ['legacy_id' => 12, 'full_name' => 'Nguyễn Nam', 'department_id' => 15],
+            ]);
+
+        $response = $this
+            ->actingAs($admin, 'web')
+            ->getJson('/api/v1/users?search=Hòa');
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $matchingUser->id)
+            ->assertJsonPath('data.0.username', 'TG010038');
+    }
+
     private function createAdmin(): User
     {
         return User::create([
@@ -179,3 +218,4 @@ class UserListingTest extends TestCase
         ]);
     }
 }
+

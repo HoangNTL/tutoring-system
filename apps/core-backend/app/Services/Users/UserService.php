@@ -25,8 +25,10 @@ class UserService
 
         if ($search !== '') {
             $matchingDepartmentIds = [];
+            $matchingLecturerIds = [];
             try {
                 $gateway = app(\App\Contracts\LegacyDataGateway::class);
+                
                 $departments = $gateway->fetchAllDepartments();
                 $matchingDepartmentIds = collect($departments)
                     ->filter(function ($dept) use ($search) {
@@ -38,14 +40,29 @@ class UserService
                     })
                     ->pluck('legacy_id')
                     ->all();
+
+                $lecturers = $gateway->fetchAllLecturers();
+                $matchingLecturerIds = collect($lecturers)
+                    ->filter(function ($lec) use ($search) {
+                        $fullName = $lec['full_name'] ?? '';
+                        return str_contains(
+                            mb_strtolower($fullName, 'UTF-8'),
+                            mb_strtolower($search, 'UTF-8')
+                        );
+                    })
+                    ->pluck('legacy_id')
+                    ->all();
             } catch (\Throwable $e) {
                 // Ignore gateway failures gracefully
             }
 
-            $query->where(function ($q) use ($search, $matchingDepartmentIds) {
+            $query->where(function ($q) use ($search, $matchingDepartmentIds, $matchingLecturerIds) {
                 $q->where('username', 'like', '%' . $search . '%');
                 if (!empty($matchingDepartmentIds)) {
                     $q->orWhereIn('department_id', $matchingDepartmentIds);
+                }
+                if (!empty($matchingLecturerIds)) {
+                    $q->orWhereIn('lecturer_id', $matchingLecturerIds);
                 }
             });
         }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Calendar, List, Clock, User, MapPin, AlertCircle, RefreshCw } from 'lucide-react'
+import { Calendar, List, Clock, AlertCircle, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react'
+import { addDays, format, addWeeks, subWeeks } from 'date-fns'
 
 import { useStudySchedule } from '../hooks'
 import { getApiErrorMessage } from '@/shared/api/errors'
@@ -16,18 +17,99 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import type { StudyScheduleItem } from '../types/studySchedule.types'
 
 const DAYS = [
-  { value: 2, label: 'Thứ hai' },
-  { value: 3, label: 'Thứ ba' },
-  { value: 4, label: 'Thứ tư' },
-  { value: 5, label: 'Thứ năm' },
-  { value: 6, label: 'Thứ sáu' },
-  { value: 7, label: 'Thứ bảy' },
+  { value: 2, label: 'Thứ 2' },
+  { value: 3, label: 'Thứ 3' },
+  { value: 4, label: 'Thứ 4' },
+  { value: 5, label: 'Thứ 5' },
+  { value: 6, label: 'Thứ 6' },
+  { value: 7, label: 'Thứ 7' },
   { value: 8, label: 'Chủ nhật' },
 ]
+
+const SHIFTS = [
+  { value: 'Sáng', label: 'Sáng' },
+  { value: 'Chiều', label: 'Chiều' },
+  { value: 'Tối', label: 'Tối' },
+]
+
+const getMonday = (date: Date): Date => {
+  const day = date.getDay()
+  const diff = day === 0 ? -6 : 1 - day
+  const monday = new Date(date)
+  monday.setDate(date.getDate() + diff)
+  monday.setHours(0, 0, 0, 0)
+  return monday
+}
+
+const getShiftOfPeriod = (startPeriod: number | null): 'Sáng' | 'Chiều' | 'Tối' => {
+  if (startPeriod === null) return 'Sáng'
+  if (startPeriod >= 1 && startPeriod <= 6) return 'Sáng'
+  if (startPeriod >= 7 && startPeriod <= 12) return 'Chiều'
+  return 'Tối'
+}
+
+const getPeriodTimeRange = (start: number, end: number) => {
+  const periodTimes: Record<number, { start: string; end: string }> = {
+    1: { start: '07:00', end: '07:45' },
+    2: { start: '07:50', end: '08:35' },
+    3: { start: '08:40', end: '09:25' },
+    4: { start: '09:40', end: '10:25' },
+    5: { start: '10:30', end: '11:15' },
+    6: { start: '11:20', end: '12:05' },
+    7: { start: '12:30', end: '13:15' },
+    8: { start: '13:20', end: '14:05' },
+    9: { start: '14:10', end: '15:10' },
+    10: { start: '15:20', end: '16:05' },
+    11: { start: '16:10', end: '16:55' },
+    12: { start: '17:00', end: '17:45' },
+    13: { start: '18:00', end: '18:45' },
+    14: { start: '18:50', end: '19:35' },
+    15: { start: '19:40', end: '20:25' }
+  }
+
+  if (start === 1 && end === 3) return '07:00 - 09:30'
+  if (start === 4 && end === 6) return '09:40 - 12:10'
+  if (start === 7 && end === 9) return '12:30 - 15:10'
+  if (start === 10 && end === 12) return '15:20 - 18:00'
+  if (start === 13 && end === 15) return '18:15 - 20:45'
+
+  const startTime = periodTimes[start]?.start || '07:00'
+  const endTime = periodTimes[end]?.end || periodTimes[start]?.end || '09:30'
+  return `${startTime} - ${endTime}`
+}
 
 export default function StudySchedulePage() {
   const [selectedPeriodId, setSelectedPeriodId] = useState<number | null>(null)
   const [activeTab, setActiveTab] = useState<'calendar' | 'list'>('calendar')
+
+  const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => getMonday(new Date()))
+
+  const handlePrevWeek = () => {
+    setCurrentWeekStart((prev) => subWeeks(prev, 1))
+  }
+
+  const handleNextWeek = () => {
+    setCurrentWeekStart((prev) => addWeeks(prev, 1))
+  }
+
+  const handleCurrentWeek = () => {
+    setCurrentWeekStart(getMonday(new Date()))
+  }
+
+  const weekEnd = addDays(currentWeekStart, 6)
+  const weekRangeStr = `Tuần: ${format(currentWeekStart, 'dd/MM/yyyy')} - ${format(weekEnd, 'dd/MM/yyyy')}`
+
+  const getHeaderDate = (dayValue: number) => {
+    const index = dayValue === 8 ? 6 : dayValue - 2
+    const targetDate = addDays(currentWeekStart, index)
+    return format(targetDate, 'dd/MM/yyyy')
+  }
+
+  const getItemsForCell = (dayValue: number, shift: 'Sáng' | 'Chiều' | 'Tối') => {
+    return scheduledItems.filter(
+      (item) => item.dayOfWeek === dayValue && getShiftOfPeriod(item.startPeriod) === shift
+    )
+  }
 
   const scheduleQuery = useStudySchedule(selectedPeriodId)
   const scheduleData = scheduleQuery.data?.data
@@ -197,91 +279,139 @@ export default function StudySchedulePage() {
           </div>
 
           {activeTab === 'calendar' ? (
-            <div className="space-y-6">
-              {/* Responsive Grid for Days */}
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-7">
-                {DAYS.map((day) => {
-                  const daySchedules = scheduledItems.filter((item) => item.dayOfWeek === day.value)
+            <div className="space-y-4">
+              {/* Week Navigation */}
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handlePrevWeek}
+                    className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 transition-colors shadow-xs cursor-pointer"
+                  >
+                    <ChevronLeft className="size-4" />
+                  </button>
+                  <span className="text-sm font-semibold text-slate-700">{weekRangeStr}</span>
+                  <button
+                    type="button"
+                    onClick={handleNextWeek}
+                    className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 transition-colors shadow-xs cursor-pointer"
+                  >
+                    <ChevronRight className="size-4" />
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCurrentWeek}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 transition-colors shadow-xs cursor-pointer"
+                >
+                  Tuần này
+                </button>
+              </div>
 
-                  return (
-                    <div
-                      key={day.value}
-                      className="flex flex-col rounded-xl border border-slate-200 bg-white/70 backdrop-blur-xs shadow-xs"
-                    >
-                      {/* Day Header */}
-                      <div className="border-b border-slate-100 bg-slate-50/50 py-2.5 px-3 text-center">
-                        <span className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                          {day.label}
-                        </span>
-                      </div>
+              {/* Grid Timetable */}
+              <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-xs">
+                <table className="w-full min-w-[1000px] border-collapse text-left table-fixed">
+                  <thead className="bg-[#f0f9ff]/70 border-b border-slate-200">
+                    <tr>
+                      <th className="w-[100px] py-3.5 px-3 text-center border-r border-slate-200 font-bold text-sky-700 text-xs uppercase tracking-wider">
+                        Ca học
+                      </th>
+                      {DAYS.map((day) => (
+                        <th key={day.value} className="py-3.5 px-3 text-center border-r border-slate-200 font-bold text-sky-700 text-xs last:border-r-0">
+                          <div className="font-bold text-sky-800">{day.label}</div>
+                          <div className="text-[10px] font-semibold text-slate-500 mt-0.5">{getHeaderDate(day.value)}</div>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {SHIFTS.map((shift) => (
+                      <tr key={shift.value} className="border-b border-slate-200 last:border-b-0">
+                        <td className="py-6 px-3 text-center font-bold text-slate-700 border-r border-slate-200 bg-slate-50/50 text-xs">
+                          {shift.label}
+                        </td>
+                        {DAYS.map((day) => {
+                          const cellItems = getItemsForCell(day.value, shift.value as 'Sáng' | 'Chiều' | 'Tối')
 
-                      {/* Day Content */}
-                      <div className="flex-1 p-2 space-y-2 min-h-[120px]">
-                        {daySchedules.length === 0 ? (
-                          <div className="flex h-full min-h-[80px] items-center justify-center">
-                            <span className="text-[11px] text-slate-400 italic">Trống lịch</span>
-                          </div>
-                        ) : (
-                          daySchedules.map((item, idx) => {
-                            const endPeriod = item.periodsPerSession
-                              ? (item.startPeriod ?? 1) + item.periodsPerSession - 1
-                              : item.startPeriod
+                          return (
+                            <td
+                              key={day.value}
+                              className="p-2 border-r border-slate-200 align-top min-h-[150px] last:border-r-0"
+                              style={{
+                                backgroundImage: 'linear-gradient(to right, #f8fafc 1px, transparent 1px), linear-gradient(to bottom, #f8fafc 1px, transparent 1px)',
+                                backgroundSize: '15px 15px',
+                                backgroundColor: '#ffffff'
+                              }}
+                            >
+                              <div className="flex flex-col gap-2 min-h-[100px]">
+                                {cellItems.length > 0 ? (
+                                  cellItems.map((item, idx) => {
+                                    const endPeriod = item.periodsPerSession
+                                      ? (item.startPeriod ?? 1) + item.periodsPerSession - 1
+                                      : item.startPeriod
 
-                            const isCancelled = item.classStatus === 'CANCELLED'
+                                    const isCancelled = item.classStatus === 'CANCELLED'
 
-                            return (
-                              <div
-                                key={idx}
-                                className={`group relative rounded-lg border p-2.5 transition-all text-left hover:shadow-xs ${
-                                  isCancelled
-                                    ? 'bg-rose-50/60 border-rose-100 text-rose-800 line-through decoration-rose-300'
-                                    : 'bg-indigo-50/30 border-indigo-100/70 text-slate-700 hover:border-indigo-200 hover:bg-indigo-50/50'
-                                }`}
-                              >
-                                <div className="space-y-1 text-xs">
-                                  <div className="font-bold text-slate-800 group-hover:text-indigo-900 transition-colors line-clamp-2">
-                                    {item.courseName}
+                                    return (
+                                      <div
+                                        key={idx}
+                                        className={`group relative rounded-lg border-2 p-2.5 transition-all text-left shadow-xs hover:shadow-md hover:scale-[1.01] ${
+                                          isCancelled
+                                            ? 'border-rose-200 bg-rose-50/20 text-slate-400 line-through decoration-rose-300'
+                                            : 'border-amber-400/80 bg-white hover:border-amber-500'
+                                        }`}
+                                      >
+                                        <div className="space-y-1 text-[11px] leading-relaxed">
+                                          <div className="font-bold text-[#002060] group-hover:text-indigo-900 transition-colors line-clamp-3 text-xs leading-snug">
+                                            {item.courseName}
+                                          </div>
+                                          <div className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">
+                                            {item.courseCode} · {item.credits} TC
+                                          </div>
+
+                                          <div className="text-slate-600 font-medium mt-1">
+                                            Tiết: {item.startPeriod} - {endPeriod}
+                                          </div>
+
+                                          <div className="text-slate-600 font-medium">
+                                            Giờ: {getPeriodTimeRange(item.startPeriod ?? 1, endPeriod ?? 1)}
+                                          </div>
+
+                                          {item.room && (
+                                            <div className="text-slate-600 font-medium">
+                                              Phòng: {item.room}
+                                            </div>
+                                          )}
+
+                                          {item.lecturerName && (
+                                            <div className="text-slate-500 italic mt-0.5 border-t border-slate-100 pt-0.5">
+                                              GV: {item.lecturerName}
+                                            </div>
+                                          )}
+
+                                          {isCancelled && (
+                                            <div className="mt-1 text-[10px] text-rose-600 font-bold flex items-center gap-1">
+                                              <AlertCircle className="size-3 shrink-0" />
+                                              <span>Đã hủy lớp</span>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )
+                                  })
+                                ) : (
+                                  <div className="flex h-full min-h-[100px] items-center justify-center">
+                                    <span className="text-[10px] text-slate-400 italic">Trống lịch</span>
                                   </div>
-                                  <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
-                                    {item.courseCode} · {item.credits} TC
-                                  </div>
-
-                                  <div className="flex items-center gap-1.5 pt-1.5 text-slate-500 font-medium">
-                                    <Clock className="size-3 text-indigo-500/70" />
-                                    <span>
-                                      Tiết {item.startPeriod} - {endPeriod}
-                                    </span>
-                                  </div>
-
-                                  {item.room && (
-                                    <div className="flex items-center gap-1.5 text-slate-500 font-medium">
-                                      <MapPin className="size-3 text-emerald-500/70" />
-                                      <span>Phòng {item.room}</span>
-                                    </div>
-                                  )}
-
-                                  {item.lecturerName && (
-                                    <div className="flex items-center gap-1.5 text-slate-500 font-medium">
-                                      <User className="size-3 text-violet-500/70" />
-                                      <span className="truncate">{item.lecturerName}</span>
-                                    </div>
-                                  )}
-
-                                  {isCancelled && (
-                                    <div className="mt-1 text-[10px] text-rose-600 font-semibold flex items-center gap-1">
-                                      <AlertCircle className="size-3 shrink-0" />
-                                      <span>Đã hủy lớp</span>
-                                    </div>
-                                  )}
-                                </div>
+                                )}
                               </div>
-                            )
-                          })
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
+                            </td>
+                          )
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           ) : (
