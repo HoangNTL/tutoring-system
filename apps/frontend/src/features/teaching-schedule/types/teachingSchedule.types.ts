@@ -22,6 +22,8 @@ export type SchedulePeriodOption = {
   id: number
   title: string
   status: string
+  studyStartAt?: string
+  studyEndAt?: string
 }
 
 export type TeachingScheduleResponse = {

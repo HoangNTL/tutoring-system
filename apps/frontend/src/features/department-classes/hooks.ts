@@ -10,6 +10,7 @@ import {
   updateClassSchedule,
   updateClassLecturer,
   getDepartmentLecturers,
+  getStudentSchedulesForClass,
 } from '@/features/department-classes/api/departmentTutorialClasses.api'
 import { departmentCourseRegistrationsQueryKey } from '@/features/department-registration/hooks'
 import type {
@@ -21,6 +22,7 @@ import type {
 
 export const departmentTutorialClassesQueryKey = ['department-tutorial-classes'] as const
 export const departmentLecturersQueryKey = ['department-lecturers'] as const
+export const studentSchedulesForClassQueryKey = ['student-schedules-for-class'] as const
 
 export const useDepartmentLecturers = (courseCode?: string) => {
   const authStatus = useAppSelector((state) => state.auth.status)
@@ -158,5 +160,15 @@ export const useUpdateClassLecturerMutation = () => {
         queryKey: [...departmentTutorialClassesQueryKey, variables.tutorialPeriodId],
       })
     },
+  })
+}
+
+export const useStudentSchedulesForClass = (classId: number | null) => {
+  const authStatus = useAppSelector((state) => state.auth.status)
+
+  return useQuery({
+    queryKey: [...studentSchedulesForClassQueryKey, classId],
+    enabled: authStatus === 'authenticated' && classId !== null,
+    queryFn: () => getStudentSchedulesForClass(classId as number),
   })
 }

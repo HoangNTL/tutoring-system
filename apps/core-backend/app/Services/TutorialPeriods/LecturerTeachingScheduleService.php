@@ -50,6 +50,8 @@ class LecturerTeachingScheduleService
             'id' => $period->id,
             'title' => $period->title,
             'status' => $period->status->name,
+            'studyStartAt' => $period->study_start_at->toIso8601String(),
+            'studyEndAt' => $period->study_end_at->toIso8601String(),
         ])->all();
 
         // Determine which period to query

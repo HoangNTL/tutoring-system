@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\DepartmentTutorialClassController;
 use App\Http\Controllers\Api\V1\DepartmentLecturerController;
 use App\Http\Controllers\Api\V1\LecturerTeachingScheduleController;
 use App\Http\Controllers\Api\V1\LegacyPeriodController;
+use App\Http\Controllers\Api\V1\StudentScheduleForDepartmentController;
 use App\Http\Controllers\Api\V1\StudentStudyScheduleController;
 use App\Http\Controllers\Api\V1\StudentTutorialPeriodCourseController;
 use App\Http\Controllers\Api\V1\StudentTutorialPeriodController;
@@ -36,6 +37,7 @@ Route::prefix('v1')->group(function () {
         Route::patch('/department/classes/{classId}/restore', [DepartmentTutorialClassController::class, 'restore']);
         Route::put('/department/classes/{classId}/schedule', [DepartmentTutorialClassController::class, 'updateSchedule']);
         Route::put('/department/classes/{classId}/lecturer', [DepartmentTutorialClassController::class, 'updateLecturer']);
+        Route::get('/department/classes/{classId}/student-schedules', [StudentScheduleForDepartmentController::class, 'index']);
         Route::get('/department/lecturers', [DepartmentLecturerController::class, 'index']);
         Route::get('/student/tutorial-periods/{tutorialPeriodId}/courses', [StudentTutorialPeriodCourseController::class, 'index']);
         Route::get('/student/tutorial-periods/{tutorialPeriodId}/registration-info', [StudentTutorialRegistrationInfoController::class, 'show']);

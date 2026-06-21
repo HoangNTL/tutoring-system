@@ -6,6 +6,7 @@ import type {
   UpdateDepartmentTutorialClassPayload,
   UpdateClassSchedulePayload,
   UpdateClassLecturerPayload,
+  StudentSchedulesResponse,
 } from '@/features/department-classes/types/departmentTutorialClass.types'
 
 const DEPARTMENT_TUTORIAL_PERIODS_ENDPOINT = '/api/v1/department/tutorial-periods'
@@ -106,6 +107,16 @@ export const updateClassLecturer = async (
   const response = await http.put<BaseResponse<DepartmentTutorialClass>>(
     `${DEPARTMENT_TUTORIAL_CLASSES_ENDPOINT}/${classId}/lecturer`,
     payload
+  )
+
+  return response.data
+}
+
+export const getStudentSchedulesForClass = async (
+  classId: number
+): Promise<BaseResponse<StudentSchedulesResponse>> => {
+  const response = await http.get<BaseResponse<StudentSchedulesResponse>>(
+    `${DEPARTMENT_TUTORIAL_CLASSES_ENDPOINT}/${classId}/student-schedules`
   )
 
   return response.data

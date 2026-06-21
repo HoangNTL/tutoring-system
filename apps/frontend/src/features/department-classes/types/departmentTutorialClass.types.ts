@@ -45,3 +45,15 @@ export type UpdateClassLecturerPayload = {
   lecturerId: number
   lecturerName: string
 }
+
+export type StudentBusySlot = {
+  dayOfWeek: number
+  startPeriod: number
+  conflictCount: number
+  students: string[]
+}
+
+export type StudentSchedulesResponse = {
+  totalStudents: number
+  busySlots: StudentBusySlot[]
+}

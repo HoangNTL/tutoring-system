@@ -124,10 +124,29 @@ export default function TeachingSchedulePage() {
     return format(targetDate, 'dd/MM/yyyy')
   }
 
+  const isDateInStudyPeriod = (dayValue: number) => {
+    if (!selectedPeriodId) return false
+    if (!selectedPeriod || !selectedPeriod.studyStartAt || !selectedPeriod.studyEndAt) return true
+
+    const index = dayValue === 8 ? 6 : dayValue - 2
+    const actualDate = addDays(currentWeekStart, index)
+    const actualDateStr = format(actualDate, 'yyyy-MM-dd')
+
+    const startStr = format(new Date(selectedPeriod.studyStartAt), 'yyyy-MM-dd')
+    const endStr = format(new Date(selectedPeriod.studyEndAt), 'yyyy-MM-dd')
+
+    return actualDateStr >= startStr && actualDateStr <= endStr
+  }
+
   const getItemsForCell = (dayValue: number, shift: 'Sáng' | 'Chiều' | 'Tối') => {
-    return scheduledItems.filter(
-      (item) => item.dayOfWeek === dayValue && getShiftOfPeriod(item.startPeriod) === shift
-    )
+    if (!isDateInStudyPeriod(dayValue)) {
+      return []
+    }
+    return scheduledItems
+      .filter(
+        (item) => item.dayOfWeek === dayValue && getShiftOfPeriod(item.startPeriod) === shift
+      )
+      .sort((a, b) => (a.startPeriod ?? 0) - (b.startPeriod ?? 0))
   }
 
   const scheduleQuery = useTeachingSchedule(selectedPeriodId)
