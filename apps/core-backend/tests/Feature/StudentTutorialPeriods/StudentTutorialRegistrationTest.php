@@ -206,7 +206,37 @@ class StudentTutorialRegistrationTest extends TestCase
             ->postJson("/api/v1/student/tutorial-periods/{$tutorialPeriod->id}/registrations", [
                 'courseCode' => 'INT123',
             ])
-            ->assertNotFound();
+            ->assertStatus(422);
+    }
+
+    public function test_registration_is_blocked_with_custom_message_when_period_is_assigning(): void
+    {
+        Http::fake();
+
+        $student = $this->createStudent(['student_id' => 88]);
+        $tutorialPeriod = $this->createTutorialPeriod(TutorialPeriodStatus::ASSIGNING, 296);
+
+        $this
+            ->actingAs($student, 'web')
+            ->postJson("/api/v1/student/tutorial-periods/{$tutorialPeriod->id}/registrations", [
+                'courseCode' => 'INT123',
+            ])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Bạn không thể đăng ký, lí do là hết thời gian đăng ký rồi và đang trong thời gian phân công.');
+    }
+
+    public function test_cancellation_is_blocked_with_custom_message_when_period_is_assigning(): void
+    {
+        Http::fake();
+
+        $student = $this->createStudent(['student_id' => 88]);
+        $tutorialPeriod = $this->createTutorialPeriod(TutorialPeriodStatus::ASSIGNING, 296);
+
+        $this
+            ->actingAs($student, 'web')
+            ->deleteJson("/api/v1/student/tutorial-periods/{$tutorialPeriod->id}/registrations/INT123")
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Bạn không thể hủy đăng ký, lí do là hết thời gian đăng ký rồi và đang trong thời gian phân công.');
     }
 
     public function test_registration_info_endpoint_returns_registered_courses_from_database(): void

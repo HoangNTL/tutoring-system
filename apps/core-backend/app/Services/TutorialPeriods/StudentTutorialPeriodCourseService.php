@@ -59,13 +59,21 @@ class StudentTutorialPeriodCourseService
 
     private function findOpenTutorialPeriodOrFail(int $tutorialPeriodId): TutorialPeriod
     {
-        try {
-            return TutorialPeriod::query()
-                ->whereKey($tutorialPeriodId)
-                ->where('status', TutorialPeriodStatus::OPEN)
-                ->firstOrFail();
-        } catch (ModelNotFoundException $exception) {
-            throw new NotFoundHttpException('Tutorial period not found', $exception);
+        $tutorialPeriod = TutorialPeriod::query()->find($tutorialPeriodId);
+
+        if ($tutorialPeriod === null) {
+            throw new NotFoundHttpException('Tutorial period not found');
         }
+
+        if ($tutorialPeriod->status !== TutorialPeriodStatus::OPEN) {
+            if ($tutorialPeriod->status === TutorialPeriodStatus::ASSIGNING) {
+                throw new UnprocessableEntityHttpException(
+                    'Bạn không thể lấy danh sách môn học, lí do là hết thời gian đăng ký rồi và đang trong thời gian phân công.'
+                );
+            }
+            throw new UnprocessableEntityHttpException('Đợt học phụ đạo hiện không mở đăng ký.');
+        }
+
+        return $tutorialPeriod;
     }
 }

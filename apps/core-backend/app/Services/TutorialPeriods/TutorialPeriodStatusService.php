@@ -4,6 +4,7 @@ namespace App\Services\TutorialPeriods;
 
 use App\Enums\TutorialPeriodStatus;
 use App\Models\TutorialPeriod;
+use App\Services\TutorialPeriods\States\TutorialPeriodState;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
@@ -24,50 +25,56 @@ class TutorialPeriodStatusService
 
     public function ensureDeletableStatus(TutorialPeriod $tutorialPeriod): void
     {
-        if (!in_array($tutorialPeriod->status, [TutorialPeriodStatus::DRAFT, TutorialPeriodStatus::CLOSED, TutorialPeriodStatus::CANCELLED], true)) {
+        $permissions = TutorialPeriodState::make($tutorialPeriod->status)->getPermissions($tutorialPeriod);
+
+        if (!$permissions['canDelete']) {
             throw new ConflictHttpException("Only tutorial periods in DRAFT, CLOSED, or CANCELLED status can be deleted");
         }
     }
 
     public function open(TutorialPeriod $tutorialPeriod): TutorialPeriod
     {
-        return $this->transition(
-            $tutorialPeriod,
-            TutorialPeriodStatus::DRAFT,
-            TutorialPeriodStatus::OPEN,
-            'opened',
-            true
-        );
+        return DB::transaction(function () use ($tutorialPeriod): TutorialPeriod {
+            $tutorialPeriod = $this->findTutorialPeriodOrFail($tutorialPeriod->id, ['createdBy'], true);
+
+            $this->validateOpenableDates($tutorialPeriod);
+            TutorialPeriodState::make($tutorialPeriod->status)->open($tutorialPeriod);
+
+            return $tutorialPeriod->refresh()->load('createdBy');
+        });
     }
 
     public function assigning(TutorialPeriod $tutorialPeriod): TutorialPeriod
     {
-        return $this->transition(
-            $tutorialPeriod,
-            TutorialPeriodStatus::OPEN,
-            TutorialPeriodStatus::ASSIGNING,
-            'moved to ASSIGNING'
-        );
+        return DB::transaction(function () use ($tutorialPeriod): TutorialPeriod {
+            $tutorialPeriod = $this->findTutorialPeriodOrFail($tutorialPeriod->id, ['createdBy'], true);
+
+            TutorialPeriodState::make($tutorialPeriod->status)->assigning($tutorialPeriod);
+
+            return $tutorialPeriod->refresh()->load('createdBy');
+        });
     }
 
     public function ongoing(TutorialPeriod $tutorialPeriod): TutorialPeriod
     {
-        return $this->transition(
-            $tutorialPeriod,
-            TutorialPeriodStatus::ASSIGNING,
-            TutorialPeriodStatus::ONGOING,
-            'moved to ONGOING'
-        );
+        return DB::transaction(function () use ($tutorialPeriod): TutorialPeriod {
+            $tutorialPeriod = $this->findTutorialPeriodOrFail($tutorialPeriod->id, ['createdBy'], true);
+
+            TutorialPeriodState::make($tutorialPeriod->status)->ongoing($tutorialPeriod);
+
+            return $tutorialPeriod->refresh()->load('createdBy');
+        });
     }
 
     public function close(TutorialPeriod $tutorialPeriod): TutorialPeriod
     {
-        return $this->transition(
-            $tutorialPeriod,
-            TutorialPeriodStatus::ONGOING,
-            TutorialPeriodStatus::CLOSED,
-            'closed'
-        );
+        return DB::transaction(function () use ($tutorialPeriod): TutorialPeriod {
+            $tutorialPeriod = $this->findTutorialPeriodOrFail($tutorialPeriod->id, ['createdBy'], true);
+
+            TutorialPeriodState::make($tutorialPeriod->status)->close($tutorialPeriod);
+
+            return $tutorialPeriod->refresh()->load('createdBy');
+        });
     }
 
     public function cancel(TutorialPeriod $tutorialPeriod): TutorialPeriod
@@ -75,13 +82,7 @@ class TutorialPeriodStatusService
         return DB::transaction(function () use ($tutorialPeriod): TutorialPeriod {
             $tutorialPeriod = $this->findTutorialPeriodOrFail($tutorialPeriod->id, ['createdBy'], true);
 
-            if (in_array($tutorialPeriod->status, [TutorialPeriodStatus::OPEN, TutorialPeriodStatus::CLOSED, TutorialPeriodStatus::CANCELLED], true)) {
-                throw new ConflictHttpException('This tutorial period cannot be cancelled');
-            }
-
-            $tutorialPeriod->update([
-                'status' => TutorialPeriodStatus::CANCELLED->value,
-            ]);
+            TutorialPeriodState::make($tutorialPeriod->status)->cancel($tutorialPeriod);
 
             return $tutorialPeriod->refresh()->load('createdBy');
         });
@@ -89,50 +90,36 @@ class TutorialPeriodStatusService
 
     public function revertToDraft(TutorialPeriod $tutorialPeriod): TutorialPeriod
     {
-        return $this->transition(
-            $tutorialPeriod,
-            TutorialPeriodStatus::OPEN,
-            TutorialPeriodStatus::DRAFT,
-            'reverted to DRAFT'
-        );
+        return DB::transaction(function () use ($tutorialPeriod): TutorialPeriod {
+            $tutorialPeriod = $this->findTutorialPeriodOrFail($tutorialPeriod->id, ['createdBy'], true);
+
+            TutorialPeriodState::make($tutorialPeriod->status)->revertToDraft($tutorialPeriod);
+
+            return $tutorialPeriod->refresh()->load('createdBy');
+        });
     }
 
     public function reopenRegistration(TutorialPeriod $tutorialPeriod): TutorialPeriod
     {
-        return $this->transition(
-            $tutorialPeriod,
-            TutorialPeriodStatus::ASSIGNING,
-            TutorialPeriodStatus::OPEN,
-            'reopened for registration'
-        );
+        return DB::transaction(function () use ($tutorialPeriod): TutorialPeriod {
+            $tutorialPeriod = $this->findTutorialPeriodOrFail($tutorialPeriod->id, ['createdBy'], true);
+
+            TutorialPeriodState::make($tutorialPeriod->status)->reopenRegistration($tutorialPeriod);
+
+            return $tutorialPeriod->refresh()->load('createdBy');
+        });
     }
 
     public function restore(TutorialPeriod $tutorialPeriod, TutorialPeriodStatus $targetStatus): TutorialPeriod
     {
-        $allowedTargets = [TutorialPeriodStatus::DRAFT, TutorialPeriodStatus::OPEN];
-
-        if (!in_array($targetStatus, $allowedTargets, true)) {
-            throw new ConflictHttpException('Cancelled tutorial periods can only be restored to DRAFT or OPEN');
-        }
-
         return DB::transaction(function () use ($tutorialPeriod, $targetStatus): TutorialPeriod {
             $tutorialPeriod = $this->findTutorialPeriodOrFail($tutorialPeriod->id, ['createdBy'], true);
-
-            if ($tutorialPeriod->status !== TutorialPeriodStatus::CANCELLED) {
-                throw new ConflictHttpException('Only cancelled tutorial periods can be restored');
-            }
-
-            if ($tutorialPeriod->has_entered_ongoing) {
-                throw new ConflictHttpException('Cannot restore a tutorial period that has entered ONGOING status');
-            }
 
             if ($targetStatus === TutorialPeriodStatus::OPEN) {
                 $this->validateOpenableDates($tutorialPeriod);
             }
 
-            $tutorialPeriod->update([
-                'status' => $targetStatus->value,
-            ]);
+            TutorialPeriodState::make($tutorialPeriod->status)->restore($tutorialPeriod, $targetStatus);
 
             return $tutorialPeriod->refresh()->load('createdBy');
         });
@@ -202,26 +189,23 @@ class TutorialPeriodStatusService
      */
     public function getPermissions(TutorialPeriod $tutorialPeriod): array
     {
-        $status = $tutorialPeriod->status;
+        $state = TutorialPeriodState::make($tutorialPeriod->status);
+        $permissions = $state->getPermissions($tutorialPeriod);
 
         return [
-            'canEdit' => in_array($status, [TutorialPeriodStatus::DRAFT, TutorialPeriodStatus::OPEN], true),
-            'canDelete' => in_array($status, [TutorialPeriodStatus::DRAFT, TutorialPeriodStatus::CLOSED, TutorialPeriodStatus::CANCELLED], true),
-            'canOpen' => $status === TutorialPeriodStatus::DRAFT,
-            'canAssigning' => $status === TutorialPeriodStatus::OPEN,
-            'canOngoing' => $status === TutorialPeriodStatus::ASSIGNING,
-            'canClose' => $status === TutorialPeriodStatus::ONGOING,
-            'canCancel' => !in_array(
-                $status,
-                [TutorialPeriodStatus::OPEN, TutorialPeriodStatus::CLOSED, TutorialPeriodStatus::CANCELLED],
-                true
-            ),
-            'canRevertToDraft' => $status === TutorialPeriodStatus::OPEN,
-            'canReopenRegistration' => $status === TutorialPeriodStatus::ASSIGNING,
-            'canRestore' => $status === TutorialPeriodStatus::CANCELLED && !$tutorialPeriod->has_entered_ongoing,
+            'canEdit' => $permissions['canEdit'],
+            'canDelete' => $permissions['canDelete'],
+            'canOpen' => $permissions['canOpen'],
+            'canAssigning' => $permissions['canAssigning'],
+            'canOngoing' => $permissions['canOngoing'],
+            'canClose' => $permissions['canClose'],
+            'canCancel' => $permissions['canCancel'],
+            'canRevertToDraft' => $permissions['canRevertToDraft'],
+            'canReopenRegistration' => $permissions['canReopenRegistration'],
+            'canRestore' => $permissions['canRestore'],
             'editableFields' => array_map(
                 fn (string $field) => Str::camel($field),
-                $this->getEditableFields($status)
+                $state->getEditableFields()
             ),
         ];
     }
@@ -231,57 +215,7 @@ class TutorialPeriodStatusService
      */
     public function getEditableFields(TutorialPeriodStatus $status): array
     {
-        return match ($status) {
-            TutorialPeriodStatus::DRAFT => [
-                'academic_period_id',
-                'title',
-                'description',
-                'registration_start_at',
-                'registration_end_at',
-                'study_start_at',
-                'study_end_at',
-            ],
-            TutorialPeriodStatus::OPEN => [
-                'title',
-                'description',
-                'registration_start_at',
-                'registration_end_at',
-            ],
-            default => [],
-        };
-    }
-
-    private function transition(
-        TutorialPeriod $tutorialPeriod,
-        TutorialPeriodStatus $from,
-        TutorialPeriodStatus $to,
-        string $action,
-        bool $validateDates = false
-    ): TutorialPeriod {
-        return DB::transaction(function () use ($tutorialPeriod, $from, $to, $action, $validateDates): TutorialPeriod {
-            $tutorialPeriod = $this->findTutorialPeriodOrFail($tutorialPeriod->id, ['createdBy'], true);
-
-            if ($tutorialPeriod->status !== $from) {
-                throw new ConflictHttpException(sprintf(
-                    'Only tutorial periods in %s status can be %s',
-                    $from->name,
-                    $action
-                ));
-            }
-
-            if ($validateDates) {
-                $this->validateOpenableDates($tutorialPeriod);
-            }
-
-            $updateData = ['status' => $to->value];
-            if ($to === TutorialPeriodStatus::ONGOING) {
-                $updateData['has_entered_ongoing'] = true;
-            }
-
-            $tutorialPeriod->update($updateData);
-
-            return $tutorialPeriod->refresh()->load('createdBy');
-        });
+        return TutorialPeriodState::make($status)->getEditableFields();
     }
 
     /**
@@ -305,3 +239,4 @@ class TutorialPeriodStatusService
         }
     }
 }
+

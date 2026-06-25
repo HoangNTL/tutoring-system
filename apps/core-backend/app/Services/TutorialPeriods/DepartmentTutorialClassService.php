@@ -13,6 +13,10 @@ use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use App\Enums\TutorialRegistrationStatus;
 use Illuminate\Support\Facades\DB;
+use App\DTOs\CreateClassDTO;
+use App\DTOs\UpdateClassDTO;
+use App\DTOs\UpdateClassScheduleDTO;
+use App\DTOs\UpdateClassLecturerDTO;
 
 class DepartmentTutorialClassService
 {
@@ -43,10 +47,10 @@ class DepartmentTutorialClassService
         return $this->attachStudentCounts($tutorialPeriod->id, $classes, $departmentId)->all();
     }
 
-    public function createClass(int $tutorialPeriodId, array $data, int $userId, ?int $departmentId): TutorialClass
+    public function createClass(int $tutorialPeriodId, CreateClassDTO $dto, int $userId, ?int $departmentId): TutorialClass
     {
         $tutorialPeriod = $this->findAssignableTutorialPeriodOrFail($tutorialPeriodId);
-        $courseCode = (string) $data['course_code'];
+        $courseCode = $dto->courseCode;
 
         $existingClass = TutorialClass::query()
             ->where('tutorial_period_id', $tutorialPeriod->id)
@@ -77,8 +81,8 @@ class DepartmentTutorialClassService
             throw new ConflictHttpException('Cannot create tutorial class without registered students');
         }
 
-        $totalSessions = (int) $data['total_sessions'];
-        $periodsPerSession = (int) $data['periods_per_session'];
+        $totalSessions = $dto->totalSessions;
+        $periodsPerSession = $dto->periodsPerSession;
 
         $tutorialClass = TutorialClass::create([
             'tutorial_period_id' => $tutorialPeriod->id,
@@ -97,14 +101,14 @@ class DepartmentTutorialClassService
         return $this->attachStudentCount($tutorialClass);
     }
 
-    public function updateClass(int $classId, array $data): TutorialClass
+    public function updateClass(int $classId, UpdateClassDTO $dto): TutorialClass
     {
         $tutorialClass = $this->findManagedClassOrFail($classId);
 
         $this->ensureClassCanBeUpdated($tutorialClass);
 
-        $totalSessions = (int) $data['total_sessions'];
-        $periodsPerSession = (int) $data['periods_per_session'];
+        $totalSessions = $dto->totalSessions;
+        $periodsPerSession = $dto->periodsPerSession;
 
         $tutorialClass->fill([
             'total_sessions' => $totalSessions,
@@ -146,7 +150,7 @@ class DepartmentTutorialClassService
         return $this->attachStudentCount($tutorialClass);
     }
 
-    public function updateClassSchedule(int $classId, array $data, ?int $departmentId = null): TutorialClass
+    public function updateClassSchedule(int $classId, UpdateClassScheduleDTO $dto, ?int $departmentId = null): TutorialClass
     {
         $tutorialClass = $this->findManagedClassOrFail($classId);
 
@@ -160,7 +164,7 @@ class DepartmentTutorialClassService
             throw new BadRequestHttpException('Only planned tutorial classes can be scheduled');
         }
 
-        $schedules = $data['schedules'] ?? [];
+        $schedules = $dto->schedules;
 
         // Self conflict check in input (ensure no duplicates)
         $slots = [];
@@ -225,7 +229,7 @@ class DepartmentTutorialClassService
         return $this->attachStudentCount($tutorialClass);
     }
 
-    public function updateClassLecturer(int $classId, array $data, ?int $departmentId = null): TutorialClass
+    public function updateClassLecturer(int $classId, UpdateClassLecturerDTO $dto, ?int $departmentId = null): TutorialClass
     {
         $tutorialClass = $this->findManagedClassOrFail($classId);
 
@@ -248,7 +252,7 @@ class DepartmentTutorialClassService
                     ->where('c.tutorial_period_id', $tutorialClass->tutorial_period_id)
                     ->where('c.id', '!=', $classId)
                     ->where('c.status', '!=', TutorialClassStatus::CANCELLED->value)
-                    ->where('c.lecturer_id', (int) $data['lecturer_id'])
+                    ->where('c.lecturer_id', $dto->lecturerId)
                     ->where('s.day_of_week', $slot->day_of_week)
                     ->where('s.start_period', $slot->start_period)
                     ->exists();
@@ -260,8 +264,8 @@ class DepartmentTutorialClassService
         }
 
         $tutorialClass->fill([
-            'lecturer_id' => (int) $data['lecturer_id'],
-            'lecturer_name' => (string) $data['lecturer_name'],
+            'lecturer_id' => $dto->lecturerId,
+            'lecturer_name' => $dto->lecturerName,
         ]);
         $tutorialClass->save();
 

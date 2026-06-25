@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Contracts\LegacyDataGateway;
 use App\Services\External\CachedLegacyDataGateway;
+use App\Services\External\NullLegacyDataGateway;
 use App\Services\External\LegacyApiService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -19,8 +20,15 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(LegacyDataGateway::class, function ($app): LegacyDataGateway {
+            $config = config('services.legacy_service');
+            $useNull = empty($config['base_url']) || empty($config['api_key']);
+
+            $inner = $useNull
+                ? $app->make(NullLegacyDataGateway::class)
+                : $app->make(LegacyApiService::class);
+
             return new CachedLegacyDataGateway(
-                $app->make(LegacyApiService::class),
+                $inner,
                 $app->make('cache.store')
             );
         });

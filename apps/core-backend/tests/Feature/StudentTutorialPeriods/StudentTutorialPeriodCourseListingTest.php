@@ -86,7 +86,27 @@ class StudentTutorialPeriodCourseListingTest extends TestCase
         $this
             ->actingAs($student, 'web')
             ->getJson("/api/v1/student/tutorial-periods/{$tutorialPeriod->id}/courses")
-            ->assertNotFound();
+            ->assertStatus(422);
+
+        Http::assertNothingSent();
+    }
+
+    public function test_non_open_periods_are_blocked_with_custom_message_when_period_is_assigning(): void
+    {
+        Http::fake();
+
+        $student = User::factory()->create([
+            'role' => UserRole::STUDENT,
+            'student_id' => 88,
+            'username' => 'sv0001',
+        ]);
+        $tutorialPeriod = $this->createTutorialPeriod(TutorialPeriodStatus::ASSIGNING, 296);
+
+        $this
+            ->actingAs($student, 'web')
+            ->getJson("/api/v1/student/tutorial-periods/{$tutorialPeriod->id}/courses")
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Bạn không thể lấy danh sách môn học, lí do là hết thời gian đăng ký rồi và đang trong thời gian phân công.');
 
         Http::assertNothingSent();
     }

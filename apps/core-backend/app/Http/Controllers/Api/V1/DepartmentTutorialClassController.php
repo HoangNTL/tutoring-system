@@ -12,6 +12,10 @@ use App\Http\Resources\DepartmentTutorialClassResource;
 use App\Services\TutorialPeriods\DepartmentTutorialClassService;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use App\DTOs\CreateClassDTO;
+use App\DTOs\UpdateClassDTO;
+use App\DTOs\UpdateClassScheduleDTO;
+use App\DTOs\UpdateClassLecturerDTO;
 
 class DepartmentTutorialClassController extends Controller
 {
@@ -40,7 +44,7 @@ class DepartmentTutorialClassController extends Controller
 
         $tutorialClass = $this->departmentTutorialClassService->createClass(
             $tutorialPeriodId,
-            $request->validated(),
+            CreateClassDTO::fromArray($request->validated()),
             (int) $request->user()->id,
             $request->user()->department_id !== null ? (int) $request->user()->department_id : null
         );
@@ -59,7 +63,7 @@ class DepartmentTutorialClassController extends Controller
 
         $tutorialClass = $this->departmentTutorialClassService->updateClass(
             $classId,
-            $request->validated()
+            UpdateClassDTO::fromArray($request->validated())
         );
 
         return $this->success(
@@ -98,7 +102,7 @@ class DepartmentTutorialClassController extends Controller
 
         $tutorialClass = $this->departmentTutorialClassService->updateClassSchedule(
             $classId,
-            $request->validated(),
+            UpdateClassScheduleDTO::fromArray($request->validated()),
             $request->user()->department_id !== null ? (int) $request->user()->department_id : null
         );
 
@@ -114,7 +118,7 @@ class DepartmentTutorialClassController extends Controller
 
         $tutorialClass = $this->departmentTutorialClassService->updateClassLecturer(
             $classId,
-            $request->validated(),
+            UpdateClassLecturerDTO::fromArray($request->validated()),
             $request->user()->department_id !== null ? (int) $request->user()->department_id : null
         );
 

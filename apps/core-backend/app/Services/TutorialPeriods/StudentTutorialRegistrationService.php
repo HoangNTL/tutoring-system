@@ -24,7 +24,7 @@ class StudentTutorialRegistrationService
     public function register(User $user, int $tutorialPeriodId, string $courseCode): TutorialRegistration
     {
         $this->ensureStudent($user);
-        $tutorialPeriod = $this->findOpenTutorialPeriodOrFail($tutorialPeriodId);
+        $tutorialPeriod = $this->findOpenTutorialPeriodOrFail($tutorialPeriodId, 'register');
         $normalizedCourseCode = trim($courseCode);
 
         if ($normalizedCourseCode === '') {
@@ -80,7 +80,7 @@ class StudentTutorialRegistrationService
     public function cancel(User $user, int $tutorialPeriodId, string $courseCode): TutorialRegistration
     {
         $this->ensureStudent($user);
-        $this->findOpenTutorialPeriodOrFail($tutorialPeriodId);
+        $this->findOpenTutorialPeriodOrFail($tutorialPeriodId, 'cancel');
         $normalizedCourseCode = trim($courseCode);
 
         if ($normalizedCourseCode === '') {
@@ -116,15 +116,27 @@ class StudentTutorialRegistrationService
         }
     }
 
-    private function findOpenTutorialPeriodOrFail(int $tutorialPeriodId): TutorialPeriod
+    private function findOpenTutorialPeriodOrFail(int $tutorialPeriodId, string $action = 'register'): TutorialPeriod
     {
-        try {
-            return TutorialPeriod::query()
-                ->whereKey($tutorialPeriodId)
-                ->where('status', TutorialPeriodStatus::OPEN)
-                ->firstOrFail();
-        } catch (ModelNotFoundException $exception) {
-            throw new NotFoundHttpException('Tutorial period not found', $exception);
+        $tutorialPeriod = TutorialPeriod::query()->find($tutorialPeriodId);
+
+        if ($tutorialPeriod === null) {
+            throw new NotFoundHttpException('Tutorial period not found');
         }
+
+        if ($tutorialPeriod->status !== TutorialPeriodStatus::OPEN) {
+            if ($tutorialPeriod->status === TutorialPeriodStatus::ASSIGNING) {
+                $message = $action === 'cancel'
+                    ? 'Bạn không thể hủy đăng ký, lí do là hết thời gian đăng ký rồi và đang trong thời gian phân công.'
+                    : 'Bạn không thể đăng ký, lí do là hết thời gian đăng ký rồi và đang trong thời gian phân công.';
+                throw new UnprocessableEntityHttpException($message);
+            }
+            $message = $action === 'cancel'
+                ? 'Đợt học phụ đạo hiện không mở để hủy đăng ký.'
+                : 'Bạn không thể đăng ký, đợt học phụ đạo hiện không mở đăng ký.';
+            throw new UnprocessableEntityHttpException($message);
+        }
+
+        return $tutorialPeriod;
     }
 }
