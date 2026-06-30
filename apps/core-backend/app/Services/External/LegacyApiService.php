@@ -11,7 +11,7 @@ use RuntimeException;
 class LegacyApiService implements LegacyDataGateway
 {
     private const LIMIT = 100;
-    private const TIMEOUT_SECONDS = 5;
+    private const TIMEOUT_SECONDS = 15;
     private const RETRY_TIMES = 3;
     private const RETRY_DELAY_MS = 200;
 

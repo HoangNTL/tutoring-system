@@ -80,7 +80,7 @@ export class StudentRepository {
         .join('TKB_MonHoc as mh', 'mh.Id', 'lhp.IDMonHoc')
         .join('DM_Dot as dot', 'lhp.IDDot', 'dot.Id')
         .where('sv.Id', studentId)
-        .andWhere('sv.DanToc', 'Lào')
+        .whereRaw("sv.DanToc = N'Lào'")
         .andWhere('dot.Id', periodId)
         .distinct(
           'mh.MaMonHoc as courseCode',
@@ -120,7 +120,7 @@ export class StudentRepository {
         .join('TKB_MonHoc as mh', 'mh.Id', 'lhp.IDMonHoc')
         .join('DM_Dot as dot', 'lhp.IDDot', 'dot.Id')
         .where('sv.MaSinhVien', studentCode)
-        .andWhere('sv.DanToc', 'Lào')
+        .whereRaw("sv.DanToc = N'Lào'")
         .andWhere('dot.Id', periodId)
         .distinct(
           'mh.MaMonHoc as courseCode',
@@ -153,7 +153,7 @@ export class StudentRepository {
     try {
       const student = await db('DT_SinhVien')
         .where('Id', studentId)
-        .andWhere('DanToc', 'Lào')
+        .whereRaw("DanToc = N'Lào'")
         .first(
           'MaSinhVien as studentCode',
           'HoDem as lastName',
@@ -178,7 +178,7 @@ export class StudentRepository {
     try {
       const student = await db('DT_SinhVien')
         .where('MaSinhVien', studentCode)
-        .andWhere('DanToc', 'Lào')
+        .whereRaw("DanToc = N'Lào'")
         .first(
           'MaSinhVien as studentCode',
           'HoDem as lastName',

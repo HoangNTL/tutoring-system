@@ -8,6 +8,8 @@ let databaseAvailable: boolean | null = null;
 const connectionOptions: Record<string, unknown> = {
   encrypt: false,
   trustServerCertificate: true,
+  requestTimeout: 30000,
+  connectionTimeout: 30000,
 };
 
 if (env.db.instance) {
